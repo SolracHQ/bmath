@@ -1,0 +1,63 @@
+# bm Feature Demonstration
+# ===================================
+# Shows syntax, operators, functions, and language capabilities
+
+# [1] Numeric Literals
+answer = 42                  # Integer
+pi = 3.1415                  # Float
+avogadro = 6.022e23          # Scientific notation (positive)
+micro = 1.6e-6               # Scientific notation (negative)
+
+# [2] Basic Arithmetic Operations
+sum = 5 + 3.5                # Addition: 8.5
+difference = 10 - 2.5        # Subtraction: 7.5
+product = 4 * 2.5            # Multiplication: 10.0
+quotient = 15 / 4            # Division: 3.75
+power_op = 2 ^ 8             # Exponentiation: 256 (operator)
+modulus = 28 % 5             # Modulo: 3
+
+# [3] Function Calls
+power_func = pow(2, 8)       # Exponentiation: 256 (function)
+root = sqrt(256)             # Square root: 16.0
+rounded = round(3.1415)      # Rounding: 3
+floored = floor(4.999)       # Floor: 4
+ceiling = ceil(4.001)        # Ceiling: 5
+
+# [4] Parentheses and Precedence
+complex = (5 + 3) * (6 - 2) / 2 ^ 2  # (8 * 4) / 4 = 8.0
+
+# [5] Unary Operations
+negative = -(10 / 2)         # Unary negation: -5.0
+
+# [6] Variable Reuse
+result = (root + negative) * modulus  # (16 + (-5)) * 3 = 33
+
+# [7] Scientific Notation Operations
+molecules = avogadro * micro # 6.022e23 * 1.6e-6 = 9.6352e17
+
+# [8] Geometric Calculations
+radius = 7.5
+area = pi * pow(radius, 2)   # Circle area: πr²
+circumference = 2 * pi * radius
+
+# [9] Advanced Expressions
+# Pythagorean theorem with mixed operators/functions
+a = 3
+b = 4
+c = sqrt(a ^ 2 + pow(b, 2))  # Hypotenuse: 5.0
+
+# [10] Multiple Assignments
+x = y = 5                    # Chain assignment
+cube = pow(x, 3)             # 125
+
+# [11] Edge Cases
+zero_check = 15 % 5          # Modulo zero prevention: 0
+div_check = 0.0001 / 1e6     # Very small number: 1e-10
+
+# [12] Function Argument Handling
+# Proper function call with multiple parameters
+distance = pow(3 ^ 2 + 4 ^ 2, 0.5)
+
+# [13] Error-Resilient Features
+# (Would show error handling in actual execution)
+bad_expr = 10 / 0
