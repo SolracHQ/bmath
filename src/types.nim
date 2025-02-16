@@ -97,6 +97,7 @@ type
     nkMod      ## Modulus operation (left % right)
     nkIdent    ## Identifier reference
     nkAssign   ## Variable assignment (ident = expr)
+    nkBlock    ## Block expression (sequence of statements)
     nkFuncCall ## Function call with arguments
 
   AstNode* = ref object
@@ -126,6 +127,8 @@ type
     of nkFuncCall:
       fun*: string           ## Function name to call
       args*: seq[AstNode]    ## Arguments for function call
+    of nkBlock:
+      expressions*: seq[AstNode]  ## Sequence of statements in block
 
   Environment* = ref object
     values*: Table[string, Value]
@@ -141,12 +144,19 @@ proc `$`*(pos: Position): string =
   ## Returns human-readable string representation of source position
   $pos.line & ":" & $pos.column
 
+proc `$`*(value: Value): string =
+  ## Returns string representation of numeric value
+  case value.kind:
+  of vkInt: $value.iValue
+  of vkFloat: $value.fValue
+  of vkNativeFunc: "<native func>"
+
 proc stringify(node: AstNode, indent: int): string =
   ## Helper for AST string representation (internal use)
   let indentation = " ".repeat(indent)
   case node.kind:
   of nkNumber:
-    result = indentation & "value: " & $node.value
+    result = indentation & "value: " & $node.value & "\n"
   of nkAdd, nkSub, nkMul, nkDiv, nkMod, nkPow:
     let kindStr = toLowerAscii($node.kind).substr(2)
     result = indentation & kindStr & ":\n"
@@ -169,18 +179,15 @@ proc stringify(node: AstNode, indent: int): string =
     result = indentation & "func: " & node.fun & "\n"
     for arg in node.args:
       result.add(arg.stringify(indent + 2))
+  of nkBlock:
+    result = indentation & "block:\n"
+    for expr in node.expressions:
+      result.add(expr.stringify(indent + 2))
 
 proc `$`*(node: AstNode): string =
   ## Returns multi-line string representation of AST structure
   if node.isNil: return "nil"
   node.stringify(0)
-
-proc `$`*(value: Value): string =
-  ## Returns string representation of numeric value
-  case value.kind:
-  of vkInt: $value.iValue
-  of vkFloat: $value.fValue
-  of vkNativeFunc: "<native func>"
 
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
@@ -207,3 +214,10 @@ proc `$`*(val: LabeledValue): string =
   if val.label != "":
     result = val.label & " = "
   result &= $val.value
+
+proc `$`*(env: Environment): string =
+  ## Returns string representation of environment values
+  if env.parent != nil:
+    result = "Environment(parent: " & $env.parent & ", values: " & $env.values & ")"
+  else:
+    result = "Environment(values: " & $env.values & ")"

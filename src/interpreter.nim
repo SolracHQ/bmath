@@ -44,11 +44,12 @@ proc newInterpreter*(): Interpreter =
   result = Interpreter()
   result.env = newEnv()
 
-proc eval*(interpreter: var Interpreter, node: AstNode, env: Environment = nil): LabeledValue =
+proc eval*(interpreter: var Interpreter, node: AstNode, environment: Environment = nil): LabeledValue =
   ## Recursively evaluates an abstract syntax tree node
   ## 
   ## Parameters:
   ##   node: AstNode - Abstract syntax tree node to evaluate
+  ##   environment: Environment - Optional environment for variable lookup
   ## 
   ## Returns:
   ##   Value - Result of node evaluation with type promotion
@@ -62,25 +63,25 @@ proc eval*(interpreter: var Interpreter, node: AstNode, env: Environment = nil):
   ##   - Returns 0 with warning for nil nodes (shouldn't occur)
   assert node != nil, "Node is nil"
 
-  let env = if env == nil: interpreter.env else: env
+  let env = if environment == nil: interpreter.env else: environment
 
   let value = try: 
     case node.kind:
     of nkNumber: node.value 
-    of nkAdd: interpreter.eval(node.left).value + interpreter.eval(node.right).value
-    of nkSub: interpreter.eval(node.left).value - interpreter.eval(node.right).value
-    of nkMul: interpreter.eval(node.left).value * interpreter.eval(node.right).value
-    of nkDiv: interpreter.eval(node.left).value / interpreter.eval(node.right).value
-    of nkPow: interpreter.eval(node.left).value ^ interpreter.eval(node.right).value
-    of nkMod: interpreter.eval(node.left).value % interpreter.eval(node.right).value
-    of nkGroup: interpreter.eval(node.child).value
-    of nkNeg: -interpreter.eval(node.operand).value
+    of nkAdd: interpreter.eval(node.left, env).value + interpreter.eval(node.right, env).value
+    of nkSub: interpreter.eval(node.left, env).value - interpreter.eval(node.right, env).value
+    of nkMul: interpreter.eval(node.left, env).value * interpreter.eval(node.right, env).value
+    of nkDiv: interpreter.eval(node.left, env).value / interpreter.eval(node.right, env).value
+    of nkPow: interpreter.eval(node.left, env).value ^ interpreter.eval(node.right, env).value
+    of nkMod: interpreter.eval(node.left, env).value % interpreter.eval(node.right, env).value
+    of nkGroup: interpreter.eval(node.child, env).value
+    of nkNeg: -interpreter.eval(node.operand, env).value
     of nkAssign:
-      let value = interpreter.eval(node.expr).value
+      let value = interpreter.eval(node.expr, env).value
       env[node.ident] = value
       return LabeledValue(label: node.ident, value: value)
     of nkIdent:
-      interpreter.env[node.name]
+      env[node.name]
     of nkFuncCall:
       if not env.hasKey(node.fun):
         raise newBMathError("Undefined function: " & node.fun, node.position)
@@ -88,10 +89,16 @@ proc eval*(interpreter: var Interpreter, node: AstNode, env: Environment = nil):
       if funValue.kind != vkNativeFunc:
         raise newBMathError("Function " & node.fun & " is not callable", node.position)
       let fun = funValue.nativeFunc
-      let args = node.args.mapIt(interpreter.eval(it).value)
+      let args = node.args.mapIt(interpreter.eval(it, env).value)
       if args.len != fun.argc:
           raise newBMathError("Function " & node.fun & " expects " & $fun.argc & " arguments, got " & $args.len, node.position)
       fun.fun(args)
+    of nkBlock:
+      var value: LabeledValue
+      var blockEnv = newEnv(parent = env)
+      for expr in node.expressions:
+        value = interpreter.eval(expr, blockEnv)
+      return value
   except BMathError as e:
     e.position = node.position
     raise e

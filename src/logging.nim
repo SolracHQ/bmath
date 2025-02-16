@@ -9,7 +9,7 @@ proc logError*(error: ref BMathError) =
   const RED = "\x1b[31m"
   const RESET = "\x1b[0m"
   stderr.writeLine fmt"{timeStamp} [{error.context} {RED}ERROR{RESET}] {error.position}: {error.msg}"
-  # stderr.writeLine error.getStackTrace
+  #when defined(debug): stderr.writeLine error.getStackTrace
 
 when defined(debug):
   import std/strutils

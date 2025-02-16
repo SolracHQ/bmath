@@ -6,10 +6,10 @@ const CORE_NAMES = toHashSet(["pow", "exit", "sqrt", "floor", "ceil", "round"])
 proc `[]`*(env: Environment, name: string): Value =
   if env == nil:
     raise newException(BMathError, "Variable '" & name & "' is not defined")
-  elif not (name in env.values):
-    return env.parent[name]
-  else:
+  elif name in env.values:
     return env.values[name]
+  else:
+    return env.parent[name]
 
 proc `[]=`*(env: Environment, name: string, value: Value) =
   if env == nil:

@@ -130,13 +130,28 @@ proc parseAssignment(parser: var Parser): AstNode =
     return result
   if parser.match({tkAssign}): # Assignment
     let prev = parser.previous()
-    let value = parser.parseAssignment()
+    let value = parser.parseExpression()
     return AstNode(kind: nkAssign, ident: result.name, expr: value, position: prev.position)
   else:
     return result
 
+proc parseBlock(parser: var Parser): AstNode =
+  ## Parses block expressions
+  let pos = parser.previous().position
+  var expressions: seq[AstNode] = @[]
+  while not parser.match({tkRcur}):
+    while parser.match({tkNewline}): continue
+    expressions.add(parser.parseExpression())
+    while parser.match({tkNewline}): continue
+    if parser.match({tkRcur}):
+      break
+  return AstNode(kind: nkBlock, expressions: expressions, position: pos)
+
 proc parseExpression(parser: var Parser): AstNode {.inline.} =
-  result = parser.parseAssignment()
+  if parser.match({tkLcur}):
+    return parser.parseBlock()
+  else:
+    return parser.parseAssignment()
 
 proc parse*(tokens: seq[Token]): AstNode =
   var parser = newParser(tokens)
