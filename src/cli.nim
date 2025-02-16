@@ -15,13 +15,12 @@ import std/[parseopt, strutils, os]
 
 type
   ArgumentKind* = enum
-    akHelp,       ## Show help documentation
-    akFile,       ## Process input from file
-    akExpression, ## Process direct expression
-    akRepl        ## Start interactive REPL
+    akHelp ## Show help documentation
+    akFile ## Process input from file
+    akExpression ## Process direct expression
+    akRepl ## Start interactive REPL
 
-  Arguments* = object
-    ## Structured representation of validated command-line arguments
+  Arguments* = object ## Structured representation of validated command-line arguments
     case kind*: ArgumentKind
     of akHelp: discard
     of akFile: filePath*: string
@@ -33,15 +32,16 @@ type
 import strformat
 
 const
-  RESET* = "\x1B[0m"
-  BOLD* = "\x1B[1m"
-  CYAN* = "\x1B[36m"
-  YELLOW* = "\x1B[33m"
-  GREEN* = "\x1B[32m"
-  MAGENTA* = "\x1B[35m"
-  GRAY* = "\x1B[90m"
+  RESET: string = "\x1B[0m"
+  BOLD: string = "\x1B[1m"
+  CYAN: string = "\x1B[36m"
+  YELLOW: string = "\x1B[33m"
+  GREEN: string = "\x1B[32m"
+  MAGENTA: string = "\x1B[35m"
+  GRAY: string = "\x1B[90m"
 
-const HELP* = fmt"""
+const HELP* =
+  fmt"""
 {BOLD}{CYAN}Basic Math CLI{RESET}
 {BOLD}{YELLOW}Usage:{RESET}
   bm {MAGENTA}[options]{RESET} {MAGENTA}[expression]{RESET}
@@ -58,7 +58,7 @@ const HELP* = fmt"""
 
 proc parse*(): Arguments =
   ## Parses command-line arguments into structured format
-  var 
+  var
     parser = initOptParser()
     positionalArgs: seq[string]
 
@@ -66,10 +66,12 @@ proc parse*(): Arguments =
   while true:
     parser.next()
     case parser.kind
-    of cmdEnd: break
+    of cmdEnd:
+      break
     of cmdShortOption, cmdLongOption:
       case parser.key.normalize
-      of "h", "help": return Arguments(kind: akHelp)
+      of "h", "help":
+        return Arguments(kind: akHelp)
       of "f", "file":
         if parser.val.len == 0:
           raise newException(InputError, "File path cannot be empty")
@@ -85,6 +87,10 @@ proc parse*(): Arguments =
 
   # Handle positional arguments
   case positionalArgs.len
-  of 0: Arguments(kind: akRepl)  # Default to REPL mode
-  of 1: Arguments(kind: akExpression, expr: positionalArgs[0])
-  else: raise newException(InputError, "Too many positional arguments")
+  of 0:
+    Arguments(kind: akRepl)
+  # Default to REPL mode
+  of 1:
+    Arguments(kind: akExpression, expr: positionalArgs[0])
+  else:
+    raise newException(InputError, "Too many positional arguments")

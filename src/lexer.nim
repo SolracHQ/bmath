@@ -13,12 +13,11 @@ import std/strutils
 
 import types, logging
 
-type Lexer* = object
-  ## State container for lexical analysis process
-  source: string         ## Input string being processed
-  current: int               ## Current parsing position in the string
-  line, col: int             ## Current line and column position
-  curlyStack: seq[Position]  ## Stack of curly brace positions
+type Lexer* = object ## State container for lexical analysis process
+  source: string ## Input string being processed
+  current: int ## Current parsing position in the string
+  line, col: int ## Current line and column position
+  curlyStack: seq[Position] ## Stack of curly brace positions
 
 proc newLexer*(source: string): Lexer =
   ## Initializes a new lexer with the given mathematical expression
@@ -29,25 +28,40 @@ proc next*(lexer: var Lexer): Token =
   ## 
   ## Returns:
   ##   Token with either parsed value or error information
-  
-  template current(): char = lexer.source[lexer.current]
-  template atEnd(): bool = lexer.current >= lexer.source.len
-  template isEmpty(): bool = not atEnd and current in {' ', '\r', '\t'}
-  template isDigit(): bool = not atEnd and current in {'0'..'9'}
-  template isAlpha(): bool = not atEnd and current in {'a'..'z', 'A'..'Z', '_'}
-  template isE(): bool = not atEnd and current in {'e', 'E'}
-    
+
+  template current(): char =
+    lexer.source[lexer.current]
+
+  template atEnd(): bool =
+    lexer.current >= lexer.source.len
+
+  template isEmpty(): bool =
+    not atEnd and current in {' ', '\r', '\t'}
+
+  template isDigit(): bool =
+    not atEnd and current in {'0' .. '9'}
+
+  template isAlpha(): bool =
+    not atEnd and current in {'a' .. 'z', 'A' .. 'Z', '_'}
+
+  template isE(): bool =
+    not atEnd and current in {'e', 'E'}
+
   template next() =
     lexer.current.inc
     lexer.col.inc
-  template markError(msg: string) = 
-    raise newBMathError(msg, Position(line: lexer.line, column: lexer.col - (lexer.current - start)))
-  template makeToken(k: TokenKind): Token = 
+
+  template markError(msg: string) =
+    raise newBMathError(
+      msg, Position(line: lexer.line, column: lexer.col - (lexer.current - start))
+    )
+
+  template makeToken(k: TokenKind): Token =
     let len = lexer.current - start + 1
     Token(
-      kind:k, 
-      position: Position(line: lexer.line, column: lexer.col - (lexer.current - start))
-    )  
+      kind: k,
+      position: Position(line: lexer.line, column: lexer.col - (lexer.current - start)),
+    )
 
   while not atEnd:
     # Skip whitespace characters
@@ -60,56 +74,68 @@ proc next*(lexer: var Lexer): Token =
       lexer.line += 1
       lexer.col = 1
       # On curly mode, skip EOE on newline
-      if lexer.curlyStack.len == 0: 
-        return Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
+      if lexer.curlyStack.len == 0:
+        return
+          Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
       # Marker of end of sub-expression on block mode
-      return Token(kind: tkNewline, position: Position(line: lexer.line, column: lexer.col))
+      return
+        Token(kind: tkNewline, position: Position(line: lexer.line, column: lexer.col))
 
     if current() == '#':
-      while not atEnd and current() != '\n': next()
+      while not atEnd and current() != '\n':
+        next()
       continue
 
     let start = lexer.current
-    
+
     # Number parsing
     if isDigit or current == '.':
       var isFloat = false
       # Consume number parts
-      while not atEnd and isDigit: next()
-      if not atEnd and current == '.': 
+      while not atEnd and isDigit:
+        next()
+      if not atEnd and current == '.':
         isFloat = true
         next()
-        while not atEnd and isDigit: next()
-      if isE: 
+        while not atEnd and isDigit:
+          next()
+      if isE:
         isFloat = true
         next()
-        if not atEnd and current in {'+', '-'}: next()
-        while not atEnd and isDigit: next()
-      
-      let numStr = lexer.source[start..<lexer.current]
+        if not atEnd and current in {'+', '-'}:
+          next()
+        while not atEnd and isDigit:
+          next()
+
+      let numStr = lexer.source[start ..< lexer.current]
       try:
-        let value = if isFloat: Value(kind: vkFloat, fValue:parseFloat(numStr)) else: Value(kind: vkInt, iValue:parseInt(numStr))
+        let value =
+          if isFloat:
+            Value(kind: vkFloat, fValue: parseFloat(numStr))
+          else:
+            Value(kind: vkInt, iValue: parseInt(numStr))
         return Token(
           kind: tkNum,
           position: Position(line: lexer.line, column: lexer.col - numStr.len),
-          value: value
+          value: value,
         )
       except:
         markError("Invalid number format '" & numStr & "' is not a valid number")
-    
+
     if isAlpha:
       while isAlpha or isDigit:
         next()
-      let ident = lexer.source[start..<lexer.current]
+      let ident = lexer.source[start ..< lexer.current]
       return Token(
         kind: tkIdent,
         position: Position(line: lexer.line, column: lexer.col - ident.len),
-        name: ident
+        name: ident,
       )
 
     # Handle operators/parentheses
-    defer: next()
-    case current:
+    defer:
+      next()
+    case current
     of '+':
       return makeToken(tkAdd)
     of '-':
@@ -123,19 +149,23 @@ proc next*(lexer: var Lexer): Token =
     of '%':
       return makeToken(tkMod)
     of '(':
-      return makeToken(tkLpar)
+      return makeToken(tkLPar)
     of ')':
-      return makeToken(tkRpar)
+      return makeToken(tkRPar)
     of '=':
       return makeToken(tkAssign)
     of ',':
       return makeToken(tkComma)
     of '{':
       lexer.curlyStack.add(Position(line: lexer.line, column: lexer.col))
-      return makeToken(tkLcur)
+      return makeToken(tkLCurly)
     of '}':
       discard lexer.curlyStack.pop
-      return makeToken(tkRcur)
+      return makeToken(tkRCurly)
+    of '[':
+      return makeToken(tkLSquare)
+    of ']':
+      return makeToken(tkRSquare)
     of '|':
       return makeToken(tkLine)
     else:

@@ -22,9 +22,11 @@ power -> unary ("^" unary)*
 
 unary -> ("-")? primary
 
-primary -> function | NUMBER | "(" expression ")" | IDENTIFIER
+primary -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector
 
 function -> "|" ( IDENTIFIER )? ( "," IDENTIFIER )* "|" expression
+
+vector -> "[" ( expression ("," expression)* )? "]"
 ```
 
 ## Expression Semantics and Line Structure

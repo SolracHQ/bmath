@@ -1,7 +1,7 @@
 ## logging.nim
 
 import std/[times, strformat]
-import types 
+import types
 
 proc logError*(error: ref BMathError) =
   ## Central error logging with context
@@ -24,8 +24,10 @@ when defined(debug):
   template debug*(args: varargs[string, `$`]) =
     ## Debug logging with multiple arguments
     debugInternal(args.join(" "))
+
 else:
-  template debug*(_: varargs[untyped]) = discard
+  template debug*(_: varargs[untyped]) =
+    discard
 
 template newBMathError*(message: string, pos: Position): ref BMathError =
   ## Creates a new BMathError with given position and message
@@ -52,5 +54,4 @@ template wrapError*(ctx: string, fatal: bool = true, body: untyped): untyped =
     if fatal:
       quit(1)
     else:
-      raise e  # Allow error propagation in REPL mode
-
+      raise e # Allow error propagation in REPL mode

@@ -9,8 +9,7 @@
 import std/[sequtils]
 import types, value, logging, environment
 
-type Interpreter* = object
-  ## Abstract Syntax Tree evaluator
+type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
 
 proc newInterpreter*(): Interpreter =
@@ -18,38 +17,60 @@ proc newInterpreter*(): Interpreter =
   result = Interpreter()
   result.env = newEnv()
 
-proc eval*(interpreter: var Interpreter, node: AstNode, environment: Environment = nil): LabeledValue
+proc eval*(
+  interpreter: Interpreter, node: AstNode, environment: Environment = nil
+): LabeledValue
 
-proc evalAssign*(interpreter: var Interpreter, node: AstNode, env: Environment): LabeledValue =
+proc evalAssign*(
+    interpreter: Interpreter, node: AstNode, env: Environment
+): LabeledValue =
   ## Evaluates an assignment node.
   let val = interpreter.eval(node.expr, env).value
   env[node.ident] = val
   return LabeledValue(label: node.ident, value: val)
 
-template emptyLabeled(val: Value): LabeledValue = LabeledValue(value: val)
+template emptyLabeled(val: Value): LabeledValue =
+  LabeledValue(value: val)
 
-proc evalFuncCall*(interpreter: var Interpreter, node: AstNode, env: Environment): LabeledValue =
-  ## Evaluates a function call.
+proc applyFunction*(interpreter: Interpreter, funValue: Value, 
+                      args: seq[AstNode], env: Environment, pos: Position): LabeledValue =
+  ## Dispatches a function value (native or user-defined) with the given arguments
+  if funValue.kind == vkNativeFunc:
+    let native = funValue.nativeFunc
+    if args.len != native.argc:
+      raise newBMathError("Function expects " & $(native.argc) &
+                             " arguments, got " & $(args.len), pos)
+    let evaluator = proc(node: AstNode): Value =
+      interpreter.eval(node, env).value
+    return native.fun(args, evaluator).emptyLabeled
+  elif funValue.kind == vkFunction:
+    if args.len != funValue.params.len:
+      raise newBMathError("Function expects " & $(funValue.params.len) &
+                             " arguments, got " & $(args.len), pos)
+    let funcEnv = newEnv(parent = funValue.env)
+    for i, param in funValue.params.pairs:
+      funcEnv[param] = interpreter.eval(args[i], env).value
+    return interpreter.eval(funValue.body, funcEnv)
+  else:
+    raise newBMathError("Provided value is not callable", pos)
+
+proc evalFuncCall*(interpreter: Interpreter, node: AstNode, env: Environment): LabeledValue =
+  ## Evaluates a function call when the function is looked up via its identifier.
   if not env.hasKey(node.fun):
     raise newBMathError("Undefined function: " & node.fun, node.position)
   let funValue = env[node.fun]
-  if funValue.kind == vkNativeFunc:
-    let fun = funValue.nativeFunc
-    let args = node.args.mapIt(interpreter.eval(it, env).value)
-    if args.len != fun.argc:
-      raise newBMathError("Function " & node.fun & " expects " & $(fun.argc) & " arguments, got " & $(args.len), node.position)
-    return fun.fun(args).emptyLabeled
-  elif funValue.kind == vkFunction:
-    if node.args.len != funValue.params.len:
-      raise newBMathError("Function " & node.fun & " expects " & $(funValue.params.len) & " arguments, got " & $(node.args.len), node.position)
-    let funcEnv = newEnv(parent = funValue.env)
-    for i, param in funValue.params.pairs:
-      funcEnv[param] = interpreter.eval(node.args[i], env).value
-    return interpreter.eval(funValue.body, funcEnv)
-  else:
-    raise newBMathError("Function " & node.fun & " is not callable", node.position)
+  return applyFunction(interpreter, funValue, node.args, env, node.position)
 
-proc evalBlock*(interpreter: var Interpreter, node: AstNode, env: Environment): LabeledValue =
+proc evalFunInvoke*(interpreter: Interpreter, node: AstNode, env: Environment): LabeledValue =
+  ## Evaluates a function invocation when the callee is already computed.
+  let callee = node.callee
+  if callee.kind != vkFunction and callee.kind != vkNativeFunc:
+    raise newBMathError("Value is not a function", node.position)
+  return applyFunction(interpreter, callee, node.arguments, env, node.position)
+
+proc evalBlock*(
+    interpreter: Interpreter, node: AstNode, env: Environment
+): LabeledValue =
   ## Evaluates a block of expressions.
   var blockEnv = newEnv(parent = env)
   var lastVal: LabeledValue
@@ -57,32 +78,40 @@ proc evalBlock*(interpreter: var Interpreter, node: AstNode, env: Environment): 
     lastVal = interpreter.eval(expr, blockEnv)
   return lastVal
 
-proc evalFunc*(interpreter: var Interpreter, node: AstNode, env: Environment): Value =
+proc evalFunc*(interpreter: Interpreter, node: AstNode, env: Environment): Value =
   ## Evaluates a function definition.
   let funcEnv = newEnv(parent = env)
   return Value(kind: vkFunction, body: node.body, env: funcEnv, params: node.params)
 
-proc eval*(interpreter: var Interpreter, node: AstNode, environment: Environment = nil): LabeledValue =
+proc eval*(
+    interpreter: Interpreter, node: AstNode, environment: Environment = nil
+): LabeledValue =
   ## Recursively evaluates an abstract syntax tree node.
   ## Uses helper procs for multi-line expressions.
   assert node != nil, "Node is nil"
   let env = if environment == nil: interpreter.env else: environment
+  template binOp(node, op: untyped): LabeledValue = LabeledValue(value: op(interpreter.eval(node.left, env).value, interpreter.eval(node.right, env).value))
   try:
-    case node.kind:
-    of nkNumber:
+    case node.kind
+    of nkValue:
       return LabeledValue(value: node.value)
     of nkAdd:
-      return LabeledValue(value: interpreter.eval(node.left, env).value + interpreter.eval(node.right, env).value)
+      return binOp(node, `+`)
     of nkSub:
-      return LabeledValue(value: interpreter.eval(node.left, env).value - interpreter.eval(node.right, env).value)
+      return binOp(node, `-`)
     of nkMul:
-      return LabeledValue(value: interpreter.eval(node.left, env).value * interpreter.eval(node.right, env).value)
+      return binOp(node, `*`)
     of nkDiv:
-      return LabeledValue(value: interpreter.eval(node.left, env).value / interpreter.eval(node.right, env).value)
+      return binOp(node, `/`)
     of nkPow:
-      return LabeledValue(value: interpreter.eval(node.left, env).value ^ interpreter.eval(node.right, env).value)
+      return binOp(node, `^`)
     of nkMod:
-      return LabeledValue(value: interpreter.eval(node.left, env).value % interpreter.eval(node.right, env).value)
+      return binOp(node, `%`)
+    of nkVector:
+      return
+        Value(
+          kind: vkVector, values: node.values.mapIt(interpreter.eval(it, env).value)
+        ).emptyLabeled
     of nkGroup:
       return LabeledValue(value: interpreter.eval(node.child, env).value)
     of nkNeg:
@@ -97,6 +126,10 @@ proc eval*(interpreter: var Interpreter, node: AstNode, environment: Environment
       return evalBlock(interpreter, node, env)
     of nkFunc:
       return LabeledValue(value: evalFunc(interpreter, node, env))
+    of nkFuncInvoke:
+      return evalFunInvoke(interpreter, node, env)
+    else:
+      raise newBMathError("Unknown node kind: " & $node.kind, node.position)
   except BMathError as e:
     e.position = node.position
     raise e

@@ -11,11 +11,9 @@
 import lexer, parser, interpreter, logging, types
 export types
 
-type
-  Engine* = ref object
-    ## Stateful evaluation engine maintaining interpreter context
-    interpreter*: Interpreter
-    replMode*: bool
+type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
+  interpreter*: Interpreter
+  replMode*: bool
 
 proc newEngine*(replMode: bool = false): Engine =
   ## Creates a new evaluation engine with fresh state
@@ -27,21 +25,22 @@ iterator run*(engine: Engine, expression: string): LabeledValue =
   ## Executes expression while maintaining interpreter state
   debug("Running expression: ", expression)
   var lexer = newLexer(expression)
-  
+
   while not lexer.atEnd:
     debug("Starting lexing process")
     let tokens = wrapError("LEXING", fatal = not engine.replMode):
       lexer.tokenizeExpression()
-    
+
     debug("Tokens: ", tokens)
-    if tokens.len == 0: continue
-    
+    if tokens.len == 0:
+      continue
+
     debug("Starting parsing process")
     let ast = wrapError("PARSING", fatal = not engine.replMode):
       tokens.parse()
-    
+
     debug("AST: \n", ast)
-    
+
     debug("Starting evaluation")
     wrapError("RUNTIME", fatal = not engine.replMode):
       yield engine.interpreter.eval(ast)
