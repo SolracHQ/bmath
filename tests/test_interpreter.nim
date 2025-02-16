@@ -4,6 +4,7 @@ proc evalString(s: string): Value =
   var interp = newInterpreter()
   var lexer = newLexer(s)
   let tokens = lexer.tokenizeExpression()
+  echo tokens
   let ast = parse(tokens)
   interp.eval(ast).value
 

@@ -79,6 +79,6 @@ main = || {
 }
 main()
 
-# [x] Error-Resilient Features
+# [16] Error-Resilient Features
 # (Would show error handling in actual execution)
 bad_expr = 10 / 0
