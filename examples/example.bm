@@ -51,13 +51,34 @@ x = y = 5                    # Chain assignment
 cube = pow(x, 3)             # 125
 
 # [11] Edge Cases
-zero_check = 15 % 5          # Modulo zero prevention: 0
 div_check = 0.0001 / 1e6     # Very small number: 1e-10
 
 # [12] Function Argument Handling
 # Proper function call with multiple parameters
 distance = pow(3 ^ 2 + 4 ^ 2, 0.5)
 
-# [13] Error-Resilient Features
+# [13] Functions as First-Class Values
+power_fn = pow
+result_power = power_fn(5, 4)
+# Define a lambda that computes the square of the sum of two numbers
+square_sum = |x, y| (x + y) ^ 2
+result_square_sum = square_sum(2, 2)  # (2+2)^2 = 16
+
+# [14] Complex Functions
+# Higher-order function: applies a given function to the sum of two numbers
+apply_after_sum = |fn, a, b| fn(a + b)
+# Example lambda: multiplies its input by 10
+times_ten = |x| x * 10
+result_apply = apply_after_sum(times_ten, 3, 4)  # (3+4)=7; 7*10 = 70
+
+# [15] Using blocks on functions and keeping global env clean
+main = || {
+  a = 5
+  b = 10
+  (a + b) * 2  # Compute the sum and immediately multiply by 2
+}
+main()
+
+# [16] Error-Resilient Features
 # (Would show error handling in actual execution)
 bad_expr = 10 / 0
