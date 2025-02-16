@@ -12,7 +12,7 @@
 
 import cli, engine
 
-proc main() =
+proc main =
   let args = try: parse()
   except InputError as e:
     stderr.writeLine HELP

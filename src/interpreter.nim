@@ -7,12 +7,11 @@
 ## - Type promotion (int/float) during operations
 
 import std/[tables, sequtils, macros]
-import types, value, logging
+import types, value, logging, environment
 
 type Interpreter* = object
   ## Abstract Syntax Tree evaluator
-  env: Table[string, Value] ## Variable environment
-  nativeFuncs: Table[string, NativeFunc] ## Native function table
+  env: Environment
 
 macro native*(call: untyped): NativeFunc =
   ## Creates a NativeFunc from function call syntax.
@@ -43,14 +42,9 @@ macro native*(call: untyped): NativeFunc =
 proc newInterpreter*(): Interpreter =
   ## Initializes a new interpreter with an empty environment
   result = Interpreter()
-  result.nativeFuncs["exit"] = NativeFunc(fun: proc(args: seq[Value]): Value = quit(0))
-  result.nativeFuncs["pow"] = native(a^b)
-  result.nativeFuncs["sqrt"] = native(sqrt(a))
-  result.nativeFuncs["floor"] = native(floor(a))
-  result.nativeFuncs["ceil"] = native(ceil(a))
-  result.nativeFuncs["round"] = native(round(a))
+  result.env = newEnv()
 
-proc eval*(interpreter: var Interpreter, node: AstNode): LabeledValue =
+proc eval*(interpreter: var Interpreter, node: AstNode, env: Environment = nil): LabeledValue =
   ## Recursively evaluates an abstract syntax tree node
   ## 
   ## Parameters:
@@ -68,41 +62,38 @@ proc eval*(interpreter: var Interpreter, node: AstNode): LabeledValue =
   ##   - Returns 0 with warning for nil nodes (shouldn't occur)
   assert node != nil, "Node is nil"
 
-  let value = case node.kind:
-  of nkNumber: node.value 
-  of nkAdd: interpreter.eval(node.left).value + interpreter.eval(node.right).value
-  of nkSub: interpreter.eval(node.left).value - interpreter.eval(node.right).value
-  of nkMul: interpreter.eval(node.left).value * interpreter.eval(node.right).value
-  of nkDiv: 
-    let left = interpreter.eval(node.left).value
-    let right = interpreter.eval(node.right).value
-    if right.isZero:
-      raise newBMathError("Division by zero", node.position)
-    left / right
-  of nkPow: interpreter.eval(node.left).value ^ interpreter.eval(node.right).value
-  of nkMod:
-    let left = interpreter.eval(node.left).value
-    let right = interpreter.eval(node.right).value
-    if right.isZero:
-      raise newBMathError("Modulo by zero", node.position)
-    interpreter.eval(node.left).value % interpreter.eval(node.right).value
-  of nkGroup: interpreter.eval(node.child).value
-  of nkNeg: -interpreter.eval(node.operand).value
-  of nkAssign:
-    let value = interpreter.eval(node.expr).value
-    interpreter.env[node.ident] = value
-    return LabeledValue(label: node.ident, value: value)
-  of nkIdent:
-    if not interpreter.env.hasKey(node.name):
-      raise newBMathError("Undefined variable: " & node.name, node.position)
-    interpreter.env[node.name]
-  of nkFuncCall:
-    if not interpreter.nativeFuncs.hasKey(node.fun):
-      raise newBMathError("Undefined function: " & node.fun, node.position)
-    let fun = interpreter.nativeFuncs[node.fun]
-    let args = node.args.mapIt(interpreter.eval(it).value)
-    if args.len != fun.argc:
-        raise newBMathError("Function " & node.fun & " expects " & $fun.argc & " arguments, got " & $args.len, node.position)
-    fun.fun(args)
+  let env = if env == nil: interpreter.env else: env
+
+  let value = try: 
+    case node.kind:
+    of nkNumber: node.value 
+    of nkAdd: interpreter.eval(node.left).value + interpreter.eval(node.right).value
+    of nkSub: interpreter.eval(node.left).value - interpreter.eval(node.right).value
+    of nkMul: interpreter.eval(node.left).value * interpreter.eval(node.right).value
+    of nkDiv: interpreter.eval(node.left).value / interpreter.eval(node.right).value
+    of nkPow: interpreter.eval(node.left).value ^ interpreter.eval(node.right).value
+    of nkMod: interpreter.eval(node.left).value % interpreter.eval(node.right).value
+    of nkGroup: interpreter.eval(node.child).value
+    of nkNeg: -interpreter.eval(node.operand).value
+    of nkAssign:
+      let value = interpreter.eval(node.expr).value
+      env[node.ident] = value
+      return LabeledValue(label: node.ident, value: value)
+    of nkIdent:
+      interpreter.env[node.name]
+    of nkFuncCall:
+      if not env.hasKey(node.fun):
+        raise newBMathError("Undefined function: " & node.fun, node.position)
+      let funValue = env[node.fun]
+      if funValue.kind != vkNativeFunc:
+        raise newBMathError("Function " & node.fun & " is not callable", node.position)
+      let fun = funValue.nativeFunc
+      let args = node.args.mapIt(interpreter.eval(it).value)
+      if args.len != fun.argc:
+          raise newBMathError("Function " & node.fun & " expects " & $fun.argc & " arguments, got " & $args.len, node.position)
+      fun.fun(args)
+  except BMathError as e:
+    e.position = node.position
+    raise e
   LabeledValue(value: value)
   #else: raise newException(ValueError, "TODO: Implement evaluation for node kind: " & $node.kind)

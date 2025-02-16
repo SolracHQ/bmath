@@ -4,13 +4,14 @@
 ## It includes fundamental types for values, tokens, AST nodes, and errors, along with their
 ## string representation implementations.
 
-import std/strutils
+import std/[strutils, tables]
 
 type
   ValueKind* = enum
     ## Discriminator for runtime value types stored in `Value` objects.
-    vkInt      ## Integer value stored in `iValue` field
-    vkFloat    ## Floating-point value stored in `fValue` field
+    vkInt        ## Integer value stored in `iValue` field
+    vkFloat      ## Floating-point value stored in `fValue` field
+    vkNativeFunc
 
   Value* = object
     ## Variant type representing runtime numeric values with type tracking.
@@ -19,6 +20,8 @@ type
       iValue*: int         ## Integer storage when kind is `vkInt`
     of vkFloat: 
       fValue*: float       ## Float storage when kind is `vkFloat`
+    of vkNativeFunc:
+      nativeFunc*: NativeFunc
       
   LabeledValue* = object
     label*: string
@@ -46,19 +49,23 @@ type
     ## - Literal values
     ## - Structural characters
     ## - Identifiers
-    tkAdd    ## Addition operator '+'
-    tkSub    ## Subtraction operator '-'
-    tkMul    ## Multiplication operator '*'
-    tkDiv    ## Division operator '/'
-    tkPow    ## Exponentiation operator '^'
-    tkLpar   ## Left parenthesis '('
-    tkRpar   ## Right parenthesis ')'
-    tkNum    ## Numeric literal (integer or float)
-    tkMod    ## Modulus operator '%'
-    tkIdent  ## Identifier (variable/function name)
-    tkAssign ## Assignment operator '='
-    tkComma  ## Argument separator ','
-    tkEoe    ## End of expression marker
+    tkAdd      ## Addition operator '+'
+    tkSub      ## Subtraction operator '-'
+    tkMul      ## Multiplication operator '*'
+    tkDiv      ## Division operator '/'
+    tkPow      ## Exponentiation operator '^'
+    tkLpar     ## Left parenthesis '('
+    tkRpar     ## Right parenthesis ')'
+    tkLcur     ## Left curly brace '{'
+    tkRcur     ## Right curly brace '}'
+    tkLine     ## Parameter delimiter '|'
+    tkNum      ## Numeric literal (integer or float)
+    tkMod      ## Modulus operator '%'
+    tkIdent    ## Identifier (variable/function name)
+    tkAssign   ## Assignment operator '='
+    tkComma    ## Argument separator ','
+    tkNewline  ## Newline character '\n' # End of expression marker for parser (due multiline blocks support)
+    tkEoe      ## End of expression marker for lexer
 
   Token* = object
     ## Lexical token with source position and type-specific data.
@@ -120,11 +127,19 @@ type
       fun*: string           ## Function name to call
       args*: seq[AstNode]    ## Arguments for function call
 
+  Environment* = ref object
+    values*: Table[string, Value]
+    parent*: Environment
+
   BMathError* = object of CatchableError
     ## Error type with contextual information for parser/runtime errors.
     position*: Position  ## Source location where error occurred
     context*: string     ## Additional error context/message
     source: string       ## Source code snippet for context
+
+proc `$`*(pos: Position): string =
+  ## Returns human-readable string representation of source position
+  $pos.line & ":" & $pos.column
 
 proc stringify(node: AstNode, indent: int): string =
   ## Helper for AST string representation (internal use)
@@ -160,6 +175,13 @@ proc `$`*(node: AstNode): string =
   if node.isNil: return "nil"
   node.stringify(0)
 
+proc `$`*(value: Value): string =
+  ## Returns string representation of numeric value
+  case value.kind:
+  of vkInt: $value.iValue
+  of vkFloat: $value.fValue
+  of vkNativeFunc: "<native func>"
+
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
   case token.kind:
@@ -169,19 +191,17 @@ proc `$`*(token: Token): string =
   of tkDiv: "'/'" 
   of tkLpar: "'('"
   of tkRpar: "')'"
+  of tkLcur: "'{'"
+  of tkRcur: "'}'"
+  of tkLine: "'|'"
   of tkMod: "'%'"
   of tkPow: "'^'"
   of tkComma: "','"
   of tkAssign: "'='"
-  of tkIdent: "identifier: " & token.name
-  of tkNum: $token.value
+  of tkNewline: "'\\n'"
+  of tkIdent: "'" & token.name & "'"
+  of tkNum: "'" & $token.value & "'"
   of tkEoe: "EOF"
-
-proc `$`*(value: Value): string =
-  ## Returns string representation of numeric value
-  case value.kind:
-  of vkInt: $value.iValue
-  of vkFloat: $value.fValue
 
 proc `$`*(val: LabeledValue): string =
   if val.label != "":

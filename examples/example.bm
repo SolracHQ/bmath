@@ -51,13 +51,18 @@ x = y = 5                    # Chain assignment
 cube = pow(x, 3)             # 125
 
 # [11] Edge Cases
-zero_check = 15 % 5          # Modulo zero prevention: 0
 div_check = 0.0001 / 1e6     # Very small number: 1e-10
 
 # [12] Function Argument Handling
 # Proper function call with multiple parameters
 distance = pow(3 ^ 2 + 4 ^ 2, 0.5)
 
-# [13] Error-Resilient Features
+# [13] functions are values
+a = pow
+p = a(5, 4)
+u = |a, b| (a + b)^2
+u_usage = u(2, 2)
+
+# [x] Error-Resilient Features
 # (Would show error handling in actual execution)
 bad_expr = 10 / 0
