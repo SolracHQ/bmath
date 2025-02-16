@@ -50,7 +50,7 @@ proc `-`*(a: Value): Value =
   case a.kind
   of vkInt: result = Value(kind: vkInt, iValue: -a.iValue)
   of vkFloat: result = Value(kind: vkFloat, fValue: -a.fValue)
-  of vkNativeFunc:
+  of vkNativeFunc, vkFunction:
     raise newException(BMathError, "Cannot negate a function")
 
 proc `*`*(a, b: Value): Value =

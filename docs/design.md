@@ -20,9 +20,9 @@ factor -> power ( ("*" | "/") power )*
 
 power -> unary ("^" unary)*
 
-unary -> ("-")? literal
+unary -> ("-")? primary
 
-literal -> function | NUMBER | "(" expression ")"
+primary -> function | NUMBER | "(" expression ")" | IDENTIFIER
 
 function -> "|" ( IDENTIFIER )? ( "," IDENTIFIER )* "|" expression
 ```

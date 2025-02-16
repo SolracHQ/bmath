@@ -9,9 +9,10 @@ import std/[strutils, tables]
 type
   ValueKind* = enum
     ## Discriminator for runtime value types stored in `Value` objects.
-    vkInt        ## Integer value stored in `iValue` field
-    vkFloat      ## Floating-point value stored in `fValue` field
-    vkNativeFunc
+    vkInt         ## Integer value stored in `iValue` field
+    vkFloat       ## Floating-point value stored in `fValue` field
+    vkNativeFunc  ## Native function stored in `nativeFunc` field
+    vkFunction    ## User-defined function
 
   Value* = object
     ## Variant type representing runtime numeric values with type tracking.
@@ -22,6 +23,10 @@ type
       fValue*: float       ## Float storage when kind is `vkFloat`
     of vkNativeFunc:
       nativeFunc*: NativeFunc
+    of vkFunction:
+      body*: AstNode
+      env*: Environment
+      params*: seq[string]
       
   LabeledValue* = object
     label*: string
@@ -98,6 +103,7 @@ type
     nkIdent    ## Identifier reference
     nkAssign   ## Variable assignment (ident = expr)
     nkBlock    ## Block expression (sequence of statements)
+    nkFunc     ## Function definition
     nkFuncCall ## Function call with arguments
 
   AstNode* = ref object
@@ -129,6 +135,9 @@ type
       args*: seq[AstNode]    ## Arguments for function call
     of nkBlock:
       expressions*: seq[AstNode]  ## Sequence of statements in block
+    of nkFunc:
+      body*: AstNode         ## Function body expression
+      params*: seq[string]   ## Function parameter names
 
   Environment* = ref object
     values*: Table[string, Value]
@@ -150,6 +159,7 @@ proc `$`*(value: Value): string =
   of vkInt: $value.iValue
   of vkFloat: $value.fValue
   of vkNativeFunc: "<native func>"
+  of vkFunction: "<function>"
 
 proc stringify(node: AstNode, indent: int): string =
   ## Helper for AST string representation (internal use)
@@ -183,6 +193,10 @@ proc stringify(node: AstNode, indent: int): string =
     result = indentation & "block:\n"
     for expr in node.expressions:
       result.add(expr.stringify(indent + 2))
+  of nkFunc:
+    result = indentation & "function:\n"
+    result.add(indentation & "  params: " & $node.params & "\n")
+    result.add(node.body.stringify(indent + 2))
 
 proc `$`*(node: AstNode): string =
   ## Returns multi-line string representation of AST structure
