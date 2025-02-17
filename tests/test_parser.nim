@@ -18,28 +18,28 @@ suite "Parser tests":
     var lexer = newLexer("2 + 3")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == nkNumber
+    check ast.kind == nkValue
     check ast.value.ivalue == 5
 
   test "unary negation constant folding":
     var lexer = newLexer("-4")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == nkNumber
+    check ast.kind == nkValue
     check ast.value.ivalue == -4
 
   test "group constant folding":
     var lexer = newLexer("(5.8)")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == nkNumber
+    check ast.kind == nkValue
     check ast.value.fvalue == 5.8
 
   test "power constant folding":
     var lexer = newLexer("2 ^ 3")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == nkNumber
+    check ast.kind == nkValue
     check ast.value.ivalue == 8
 
   test "multiplication without full constant folding":
@@ -49,7 +49,7 @@ suite "Parser tests":
     check ast.kind == nkMul
     check ast.left.kind == nkIdent
     check ast.left.name == "a"
-    check ast.right.kind == nkNumber
+    check ast.right.kind == nkValue
     check ast.right.value.fvalue == 3.0
 
   test "lambda function definition with block":
@@ -72,5 +72,27 @@ suite "Parser tests":
     var ast = parse(tokens)
     check ast.kind == nkFuncCall
     check ast.fun == "main"
+   
+test "vector literal parsing":
+  var lexer = newLexer("v = [1, 2, 3]")
+  let tokens = tokenizeExpression(lexer)
+  var ast = parse(tokens)
+  check ast.kind == nkAssign
+  check ast.ident == "v"
+  check ast.expr.kind == nkVector
+  check ast.expr.values.len == 3
+  check ast.expr.values[0].kind == nkValue
+  check ast.expr.values[1].kind == nkValue
+  check ast.expr.values[2].kind == nkValue
 
-
+test "vec function call parsing":
+  var lexer = newLexer("v2 = vec(3, 4)")
+  let tokens = tokenizeExpression(lexer)
+  var ast = parse(tokens)
+  check ast.kind == nkAssign
+  check ast.ident == "v2"
+  check ast.expr.kind == nkFuncCall
+  check ast.expr.fun == "vec"
+  check ast.expr.args.len == 2
+  check ast.expr.args[0].kind == nkValue
+  check ast.expr.args[1].kind == nkValue

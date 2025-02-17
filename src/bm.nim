@@ -12,19 +12,22 @@
 
 import cli, engine
 
-proc main =
-  let args = try: parse()
-  except InputError as e:
-    stderr.writeLine HELP
-    stderr.writeLine "[ERROR] " & e.msg
-    quit(1)
+proc main() =
+  let args =
+    try:
+      parse()
+    except InputError as e:
+      stderr.writeLine HELP
+      stderr.writeLine "[ERROR] " & e.msg
+      quit(1)
 
   case args.kind
   of akHelp:
     echo HELP
   of akExpression:
     let engine = newEngine()
-    for value in engine.run(args.expr): echo value
+    for value in engine.run(args.expr):
+      echo value
   of akFile:
     let engine = newEngine()
     let content = readFile(args.filePath)
@@ -39,7 +42,9 @@ proc main =
         input = stdin.readLine()
         for result in engine.run(input):
           echo "=> ", result
-      except BMathError: discard # already handled by engine
+      except BMathError:
+        discard
+      # already handled by engine
       except:
         echo "Unexpected error: ", getCurrentExceptionMsg()
 

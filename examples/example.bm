@@ -37,7 +37,7 @@ molecules = avogadro * micro # 6.022e23 * 1.6e-6 = 9.6352e17
 
 # [8] Geometric Calculations
 radius = 7.5
-area = pi * pow(radius, 2)   # Circle area: πr²
+area = pi * radius ^ 2   # Circle area: πr²
 circumference = 2 * pi * radius
 
 # [9] Advanced Expressions
@@ -79,6 +79,48 @@ main = || {
 }
 main()
 
-# [16] Error-Resilient Features
-# (Would show error handling in actual execution)
-bad_expr = 10 / 0
+# [16] Vector Operations and Demonstrations
+
+# Create a counter starting at 3
+counter456 = |index| index + 3
+
+# Define two vectors:
+v1 = [1, 2, 3]
+# vec(N, lambda) creates a vector of length N with each element computed by the lambda (here, using counter456).
+v2 = vec(3, counter456)
+
+# Element-wise vector operations:
+sumVec = v1 + v2         # Element-wise addition: each corresponding element of v1 and v2 is added.
+diffVec = v2 - v1        # Element-wise subtraction.
+scaledVec = 3 * v1       # Scalar multiplication: each element of v1 is multiplied by 3.
+
+# Dot product computes the sum of the products of corresponding vector elements.
+dotProd = dot(v1, v2)    # For example: 1*v2[0] + 2*v2[1] + 3*v2[2]
+
+# Mixing vector types: adding an integer vector to a float vector promotes integers to float.
+vFloat = [1.5, 2.5, 3.5]
+mixedVec = v1 + vFloat   # The result is a float vector: element-wise addition with type promotion.
+
+# Fibonacci Sequence Generation Using Vectors:
+# Define a generator lambda that updates two numbers to produce the next Fibonacci number.
+# The returned lambda, when called, computes and updates the Fibonacci sequence.
+fibonacci = {
+  num1 = 0
+  num2 = 1
+  |_| {
+    tmp = num2
+    num2 = num1 + num2
+    num1 = tmp
+  }
+}
+# Use the Fibonacci generator to create a vector of 10 numbers.
+sequence = vec(10, fibonacci) # Fibonacci sequence: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+# Access the fifth number in the sequence (index 4, 0-based).
+fiveNumber = nth(sequence, 4) # prints 5
+_first = first(sequence)       # prints 1
+_last = last(sequence)         # prints 55
+
+# [17] Error-Resilient Features and Debug Demonstration
+# This section shows how the language handles error conditions gracefully.
+# For example, dividing by zero could trigger error-handling routines on execution.
+bad_expr = 10 / 0   # An intentional error: division by zero.

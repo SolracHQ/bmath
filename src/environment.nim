@@ -1,7 +1,7 @@
 import std/[sets, tables, macros]
 import types, value
 
-const CORE_NAMES = toHashSet(["pow", "exit", "sqrt", "floor", "ceil", "round"])
+const CORE_NAMES = toHashSet(["pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first", "last"])
 
 proc `[]`*(env: Environment, name: string): Value =
   if env == nil:
@@ -37,29 +37,39 @@ macro native(call: untyped): Value =
   ## 
   ## Usage:
   ##   native(pow(a, b))  # Creates NativeFunc with argc=2
-  
   let funcSym = call[0]
   let callArgs = call.len - 1
   let param = ident("args")
-
+  let evaluator = ident("evaluator")
   # Generate argument unpacking
   var funcCall = newCall(funcSym)
-  for i in 0..<callArgs:
-    funcCall.add nnkBracketExpr.newTree(param, newLit(i))
+  for i in 0 ..< callArgs:
+    funcCall.add: quote: `evaluator`(`param`[`i`])
 
   # Construct NativeFunc using quote for clarity
-  result = quote do:
-    Value(kind: vkNativeFunc, nativeFunc: NativeFunc(argc: `callArgs`, fun: proc(`param`: seq[Value]): Value = `funcCall`))
+  result = quote:
+    Value(
+      kind: vkNativeFunc,
+      nativeFunc: NativeFunc(
+        argc: `callArgs`,
+        fun: proc(`param`: openArray[AstNode], `evaluator`: proc(node: AstNode): Value): Value =
+          `funcCall`,
+      ),
+    )
 
 proc newEnv*(parent: Environment = nil): Environment =
   new(result)
   result.parent = parent
   if parent == nil:
     # Initialize with core functions
-    result.values["exit"] = Value(kind: vkNativeFunc, nativeFunc: NativeFunc(fun: proc(args: seq[Value]): Value = quit(0)))
+    result.values["exit"] = native(quit())
     result.values["pow"] = native(`^`(a, b))
     result.values["sqrt"] = native(sqrt(a))
     result.values["floor"] = native(floor(a))
     result.values["ceil"] = native(ceil(a))
     result.values["round"] = native(round(a))
-
+    result.values["dot"] = native(dotProduct(a, b))
+    result.values["nth"] = native(nth(a, b))
+    result.values["first"] = native(first(a))
+    result.values["last"] = native(last(a))
+    result.values["vec"] = Value(kind: vkNativeFunc, nativeFunc: NativeFunc(argc: 2, fun: createVector) )
