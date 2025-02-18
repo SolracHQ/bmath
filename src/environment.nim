@@ -11,11 +11,14 @@ proc `[]`*(env: Environment, name: string): Value =
   else:
     return env.parent[name]
 
-proc `[]=`*(env: Environment, name: string, value: Value) =
+proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
   if env == nil:
     raise newException(ValueError, "Trying to write on a nil environment")
   if name in CORE_NAMES:
     raise newException(BMathError, "Cannot overwrite the reserved name '" & name & "'")
+  if local:
+    env.values[name] = value
+    return
   var current = env
   while current != nil:
     if current.values.hasKey(name):
@@ -52,7 +55,7 @@ macro native(call: untyped): Value =
       kind: vkNativeFunc,
       nativeFunc: NativeFunc(
         argc: `callArgs`,
-        fun: proc(`param`: openArray[AstNode], `evaluator`: proc(node: AstNode): Value): Value =
+        fun: proc(`param`: openArray[Expression], `evaluator`: proc(node: Expression): Value): Value =
           `funcCall`,
       ),
     )

@@ -1,18 +1,27 @@
 # Formal Design Document for Math CLI Language
 
 ## Overview
-This document formally defines the syntax and semantics of a math CLI language focused on pure mathematical expressions. Every source line is an expression, except for block expressions, which group multiple expressions enclosed in curly braces (`{ }`) and evaluate to the value of their last expression. Unlike many languages, the language omits constructs for booleans, strings, or a nil value. Functions are defined inline, and lambda expressions can have optional arguments. If parameters are provided, they are listed as identifiers separated by commas between pipes; an expression must always follow the closing pipe.
+This document formally defines the syntax and semantics of a math CLI language focused on pure mathematical expressions. 
+Every source line is an expression, except for block expressions, which group multiple expressions enclosed in curly braces (`{ }`) and evaluate to the value of their last expression. 
+Unlike many languages, the language omits constructs strings, or a nil value. Functions are defined inline, and lambda expressions can have optional arguments. 
+If parameters are provided, they are listed as identifiers separated by commas between pipes; an expression must always follow the closing pipe.
 
 ## Formal Syntax
 
 The grammar is informally defined as follows:
 
 ```
-expression -> ( assignation "\n" | block )
+expression -> ( assignation | block | if_expression )
 
 block -> "{" (expression)* "}"
 
-assignation -> ( IDENTIFIER "=" )? ( term | expression )
+assignation -> ( "local" )? ( IDENTIFIER "=" )? ( IDENTIFIER "=" )* boolean
+
+if_expression -> "if(" expression ")" expression ( "elif(" expression ")" expression )* "else" expression "endif"
+
+boolean -> comparison ( ("&" | "|") comparison )*
+
+comparison -> term ( ("==" | "!=" | "<" | "<=" | ">" | ">=") term )* 
 
 term -> factor ( ("+" | "-") factor )*
 
@@ -22,12 +31,18 @@ power -> unary ("^" unary)*
 
 unary -> ("-")? primary
 
-primary -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector
+primary -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN
 
 function -> "|" ( IDENTIFIER )? ( "," IDENTIFIER )* "|" expression
 
 vector -> "[" ( expression ("," expression)* )? "]"
 ```
+
+### If Expression details
+- The if expression is a conditional expression that evaluates to the value of the first expression that matches the condition.
+- The if expression can have multiple elif clauses, each with a condition and an expression.
+- The else clause is mandatory and is evaluated if none of the conditions match.
+- The endif keyword marks the end of the if expression.
 
 ## Expression Semantics and Line Structure
 
@@ -54,6 +69,22 @@ vector -> "[" ( expression ("," expression)* )? "]"
   }
   b  // error: variable 'b' does not exist in the outer scope.
   ```
+  - local keyword can be used to declare a variable as local:
+  ```
+  a = 8
+  {
+    local b = 9
+  }
+  b  // error: variable 'b' does not exist in the outer scope.
+  ```
+  - If a variable declared as local is already declared in an outer scope, the inner variable shadows the outer variable:
+  ```
+  a = 8
+  {
+    local a = 9
+  }
+  a  // evaluates to 8 since the inner block shadows the outer variable.
+  ```
 
 ## Function Definition and Closure Behavior
 
@@ -78,12 +109,30 @@ vector -> "[" ( expression ("," expression)* )? "]"
   a      // now evaluates to 3
   ```
 
+- **Closure Uniqueness:**
+  Since functions capture reference to the variable and not a copy, all functions that reference the same variable will observe the same changes:
+  ```
+  a = 1
+  inc = || a = a + 1
+  dec = || a = a - 1
+  a = 5
+  inc()  // updates a to 6
+  dec()  // updates a to 5
+  a      // now evaluates to 5
+  ```
+  Function parameters are local by default, and they shadow outer variables:
+  ```
+  a = 1
+  inc = |a| a = a + 1
+  inc(5)  // updates a to 6
+  a       // now evaluates to 1
+  ```
+
 ## Language Decisions
 
 - Every source line outside of blocks is an expression.  
 - Block expressions use newline separation without semicolons, and they evaluate to the result of their last expression.  
-- Variable assignments in inner scopes modify outer variables if they exist; otherwise, they are local to the block.  
-- Functions capture and manipulate variable references rather than static values.  
-- Future work includes the addition of vectors and vector operations, although control flow constructs will likely remain minimal.
+- Variable assignments in inner scopes modify outer variables if they exist; otherwise, they are local to the block, specific local keyword can be used to declare a variable as local.  
+- Functions capture and manipulate variable references rather than static values. 
 
 

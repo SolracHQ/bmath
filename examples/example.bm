@@ -1,126 +1,163 @@
-# bm Feature Demonstration
-# ===================================
-# Shows syntax, operators, functions, and language capabilities
+# bm Enhanced Feature Demonstration
+# =====================================
+# This file demonstrates the math CLI language's features. Examples include numeric literals,
+# arithmetic operations, comparisons, functions, and advanced constructs like blocks, vectors,
+# boolean logic with short-circuit evaluation, and inline lambda invocation.
 
 # [1] Numeric Literals
-answer = 42                  # Integer
-pi = 3.1415                  # Float
-avogadro = 6.022e23          # Scientific notation (positive)
-micro = 1.6e-6               # Scientific notation (negative)
+integerLiteral = 42              # An integer literal
+piConstant = 3.1415              # A floating-point literal (pi)
+avogadroNumber = 6.022e23        # Scientific notation (Avogadro's number)
+smallNumber = 1.6e-6             # Scientific notation (small number)
 
 # [2] Basic Arithmetic Operations
-sum = 5 + 3.5                # Addition: 8.5
-difference = 10 - 2.5        # Subtraction: 7.5
-product = 4 * 2.5            # Multiplication: 10.0
-quotient = 15 / 4            # Division: 3.75
-power_op = 2 ^ 8             # Exponentiation: 256 (operator)
-modulus = 28 % 5             # Modulo: 3
+additionExample = 5 + 3.5                   # Addition (result: 8.5)
+subtractionExample = 10 - 2.5               # Subtraction (result: 7.5)
+multiplicationExample = 4 * 2.5             # Multiplication (result: 10.0)
+divisionExample = 15 / 4                    # Division (result: 3.75)
+exponentiationOperator = 2 ^ 8              # Exponentiation using operator (result: 256)
+modulusOperator = 28 % 5                    # Modulo operation (result: 3)
 
-# [3] Function Calls
-power_func = pow(2, 8)       # Exponentiation: 256 (function)
-root = sqrt(256)             # Square root: 16.0
-rounded = round(3.1415)      # Rounding: 3
-floored = floor(4.999)       # Floor: 4
-ceiling = ceil(4.001)        # Ceiling: 5
+# [3] Equality and Comparison Operators
+# These examples show how to compare values.
+equalityTest = (5 + 3) == 8                 # Equality check; expected true
+inequalityTest = 10 != 5                    # Inequality check; expected true
+lessThanTest = 3 < 7                        # Less than comparison; true
+greaterThanTest = 10 > 2                    # Greater than comparison; true
+lessOrEqualTest = 4 <= 4                    # Less than or equal; true
+greaterOrEqualTest = 5 >= 2                 # Greater than or equal; true
 
-# [4] Parentheses and Precedence
-complex = (5 + 3) * (6 - 2) / 2 ^ 2  # (8 * 4) / 4 = 8.0
+# [4] Parentheses and Order of Operations
+# Parentheses enforce a custom order:
+priorityExample = (5 + 3) * (6 - 2) / 2 ^ 2  # (8 * 4) / 4 = 8.0
 
 # [5] Unary Operations
-negative = -(10 / 2)         # Unary negation: -5.0
+unaryNegation = -(10 / 2)                   # Unary negation (result: -5.0)
 
-# [6] Variable Reuse
-result = (root + negative) * modulus  # (16 + (-5)) * 3 = 33
+# [6] Variable Reuse and Chain Assignment
+simpleSum = 3 + 2                           # Basic arithmetic for reuse
+reuseExample = simpleSum * modulusOperator    # Reuses modulusOperator (5 * 3 = 15)
+chainAssignedA = chainAssignedB = 5           # Chain assignment; both values equal to 5
 
-# [7] Scientific Notation Operations
-molecules = avogadro * micro # 6.022e23 * 1.6e-6 = 9.6352e17
+# [7] Scientific Notation in Operations
+sciNotationResult = avogadroNumber * smallNumber  # Expected: 9.6352e17
 
 # [8] Geometric Calculations
-radius = 7.5
-area = pi * radius ^ 2   # Circle area: πr²
-circumference = 2 * pi * radius
+circleRadius = 7.5
+circleArea = piConstant * circleRadius ^ 2         # Area of a circle: πr²
+circleCircumference = 2 * piConstant * circleRadius   # Circumference: 2πr
 
-# [9] Advanced Expressions
-# Pythagorean theorem with mixed operators/functions
-a = 3
-b = 4
-c = sqrt(a ^ 2 + pow(b, 2))  # Hypotenuse: 5.0
+# [9] Function Calls for Standard Math Operations
+# Using built-in functions with descriptive names.
+powerFunctionResult = pow(2, 8)          # pow function: 2^8 = 256
+squareRootResult = sqrt(256)             # Square root: 16.0
+roundedValue = round(3.1415)             # Rounds to nearest integer: 3
+flooredValue = floor(4.999)              # Floor function: 4
+ceilingValue = ceil(4.001)               # Ceiling function: 5
 
-# [10] Multiple Assignments
-x = y = 5                    # Chain assignment
-cube = pow(x, 3)             # 125
+# [10] Advanced Expressions with Variables
+# Example: Calculating the hypotenuse using the Pythagorean theorem.
+sideA = 3
+sideB = 4
+hypotenuse = sqrt(sideA ^ 2 + pow(sideB, 2))  # Expected: 5.0
 
-# [11] Edge Cases
-div_check = 0.0001 / 1e6     # Very small number: 1e-10
+# [11] Multiple Assignments and Function Arguments
+cubeResult = pow(chainAssignedA, 3)   # Cube of 5: 125
 
-# [12] Function Argument Handling
-# Proper function call with multiple parameters
-distance = pow(3 ^ 2 + 4 ^ 2, 0.5)
+# [12] Edge Case: Extremely Small Values
+tinyDivision = 0.0001 / 1e6            # Results in a very small number (~1e-10)
 
-# [13] Functions as First-Class Values
-power_fn = pow
-result_power = power_fn(5, 4)
-# Define a lambda that computes the square of the sum of two numbers
-square_sum = |x, y| (x + y) ^ 2
-result_square_sum = square_sum(2, 2)  # (2+2)^2 = 16
+# [13] Functions as First-Class Citizens
+# Declare a lambda that computes the square of the sum of two numbers.
+squareOfSum = |x, y| (x + y) ^ 2
+computedSquare = squareOfSum(2, 2)    # Calculation: (2+2)^2 = 16
 
-# [14] Complex Functions
-# Higher-order function: applies a given function to the sum of two numbers
-apply_after_sum = |fn, a, b| fn(a + b)
-# Example lambda: multiplies its input by 10
-times_ten = |x| x * 10
-result_apply = apply_after_sum(times_ten, 3, 4)  # (3+4)=7; 7*10 = 70
+# [14] Higher-Order Functions: Passing Functions as Arguments
+# A lambda that applies a passed-in function to the sum of two numbers.
+applyAfterSum = |fn, num1, num2| fn(num1 + num2)
+# A simple lambda that multiplies its input by 10.
+multiplyByTen = |x| x * 10
+appliedResult = applyAfterSum(multiplyByTen, 3, 4)   # (3+4)=7; then 7*10 = 70
 
-# [15] Using blocks on functions and keeping global env clean
-main = || {
-  a = 5
-  b = 10
-  (a + b) * 2  # Compute the sum and immediately multiply by 2
+# [15] Blocks for Isolated Computations and Local Scope
+# Blocks group multiple expressions; only the last value is returned.
+mainFunction = || {
+  local tempA = 5       # Declared as local within the block
+  local tempB = 10
+  (tempA + tempB) * 2   # Computes (5 + 10) * 2 = 30
 }
-main()
+blockResult = mainFunction()
 
 # [16] Vector Operations and Demonstrations
-
-# Create a counter starting at 3
-counter456 = |index| index + 3
-
-# Define two vectors:
-v1 = [1, 2, 3]
-# vec(N, lambda) creates a vector of length N with each element computed by the lambda (here, using counter456).
-v2 = vec(3, counter456)
+# Demonstrates vector creation and element-wise arithmetic.
+# Define a simple counter lambda that adds 3 to an index.
+incrementCounter = |index| index + 3
+vectorOne = [1, 2, 3]
+# Create a vector of length 3 using the lambda (e.g., [1+3, 2+3, 3+3])
+vectorTwo = vec(3, incrementCounter)   # Expected: [4, 5, 6]
 
 # Element-wise vector operations:
-sumVec = v1 + v2         # Element-wise addition: each corresponding element of v1 and v2 is added.
-diffVec = v2 - v1        # Element-wise subtraction.
-scaledVec = 3 * v1       # Scalar multiplication: each element of v1 is multiplied by 3.
+vectorAddition = vectorOne + vectorTwo            # [5, 7, 9]
+vectorSubtraction = vectorTwo - vectorOne         # [3, 3, 3]
+vectorScaled = 3 * vectorOne                      # [3, 6, 9]
 
-# Dot product computes the sum of the products of corresponding vector elements.
-dotProd = dot(v1, v2)    # For example: 1*v2[0] + 2*v2[1] + 3*v2[2]
+# Calculate dot product: 1*4 + 2*5 + 3*6 = 32
+dotProductResult = dot(vectorOne, vectorTwo)
 
-# Mixing vector types: adding an integer vector to a float vector promotes integers to float.
-vFloat = [1.5, 2.5, 3.5]
-mixedVec = v1 + vFloat   # The result is a float vector: element-wise addition with type promotion.
+# Mixing integer and float vectors promotes results to float.
+floatVector = [1.5, 2.5, 3.5]
+mixedVector = vectorOne + floatVector             # [2.5, 4.5, 6.5]
 
-# Fibonacci Sequence Generation Using Vectors:
-# Define a generator lambda that updates two numbers to produce the next Fibonacci number.
-# The returned lambda, when called, computes and updates the Fibonacci sequence.
-fibonacci = {
+# [17] Fibonacci Sequence Generation Using Vectors
+# Use a lambda generator that updates internal state to produce Fibonacci numbers.
+fibonacciGenerator = {
   num1 = 0
   num2 = 1
   |_| {
-    tmp = num2
+    temp = num2
     num2 = num1 + num2
-    num1 = tmp
+    num1 = temp
   }
 }
-# Use the Fibonacci generator to create a vector of 10 numbers.
-sequence = vec(10, fibonacci) # Fibonacci sequence: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
-# Access the fifth number in the sequence (index 4, 0-based).
-fiveNumber = nth(sequence, 4) # prints 5
-_first = first(sequence)       # prints 1
-_last = last(sequence)         # prints 55
+# Create a Fibonacci sequence vector of 10 elements.
+fibonacciSequence = vec(10, fibonacciGenerator)  # Expected: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+fifthFibonacci = nth(fibonacciSequence, 4)         # 0-based index (fifth element: 5)
+firstFibonacci = first(fibonacciSequence)          # First element: 1
+lastFibonacci = last(fibonacciSequence)            # Last element: 55
 
-# [17] Error-Resilient Features and Debug Demonstration
-# This section shows how the language handles error conditions gracefully.
-# For example, dividing by zero could trigger error-handling routines on execution.
-bad_expr = 10 / 0   # An intentional error: division by zero.
+# [18] Conditional Expressions and Recursive Functions
+# Using if as an expression directly in assignments.
+directIfTrue = if (5 > 3) 100 else 50 endif       # Evaluates to 100 (if expression used directly)
+directIfFalse = if (5 < 3) 100 else 50 endif      # Evaluates to 50
+
+# Boolean expressions using if with logical operators and short-circuit evaluation.
+errorDivision = |value| (10 / value == value)
+# The '&' operator short-circuits if the left operand is false.
+andShortCircuit = false & errorDivision(0)    # Evaluates to false without error
+# The '|' operator short-circuits if the left operand is true.
+orShortCircuit = true | errorDivision(0)       # Evaluates to true without error
+
+# Recursive Factorial Function
+factorialFunction = |n| if (n == 0) 1 
+  else n * factorialFunction(n - 1) 
+  endif
+factorialOfFive = factorialFunction(5)  # Expected: 120
+
+# Recursive Fibonacci Function
+recursiveFibonacci = |n| {
+  if (n <= 1)
+    n
+  else
+    recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2)
+  endif
+}
+tenthFibonacciRecursive = recursiveFibonacci(10)  # Expected: 55
+
+# [19] Inline Lambda Invocation Examples
+# Directly use lambdas in function calls. For example, creating a vector with an inline lambda.
+inlineLambdaVector = vec(5, |i| i + 1)  # Expected: [1, 2, 3, 4, 5]
+
+# [20] Error-Resilient Feature Demonstration
+# This example intentionally causes an error (division by zero) to demonstrate error handling.
+errorExample = 10 / 0   # Intentional error: division by zero.
+# following expressions will not be evaluated due to the error above

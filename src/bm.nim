@@ -36,14 +36,24 @@ proc main() =
   of akRepl:
     let engine = newEngine(replMode = true)
     var input: string
+    var incompleteMode = false
     while true:
-      stdout.write "bm> "
+      if not incompleteMode:
+        stdout.write "bm> "
+      else:
+        stdout.write "... "
       try:
-        input = stdin.readLine()
+        if incompleteMode:
+          input.add "\n"
+          input &= stdin.readLine()
+        else:
+          input = stdin.readLine()
         for result in engine.run(input):
           echo "=> ", result
-      except BMathError:
-        discard
+        incompleteMode = false
+      except IncompleteInputError:
+        incompleteMode = true
+        continue
       # already handled by engine
       except:
         echo "Unexpected error: ", getCurrentExceptionMsg()

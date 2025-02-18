@@ -14,6 +14,7 @@ type
     vkNativeFunc ## Native function stored in `nativeFunc` field
     vkFunction ## User-defined function
     vkVector ## Vector value
+    vkBool ## Boolean value
 
   Value* = object
     ## Variant type representing runtime numeric values with type tracking.
@@ -25,20 +26,22 @@ type
     of vkNativeFunc:
       nativeFunc*: NativeFunc
     of vkFunction:
-      body*: AstNode
+      body*: Expression
       env*: Environment
       params*: seq[string]
     of vkVector:
       values*: seq[Value]
+    of vkBool:
+      bValue*: bool
 
   LabeledValue* = object
     label*: string
     value*: Value
 
-  Evaluator* = proc(node: AstNode): Value
+  Evaluator* = proc(node: Expression): Value
     ## Function type for evaluating AST nodes in the interpreter.
 
-  HostFunction* = proc(args: openArray[AstNode], evaluator: Evaluator): Value
+  HostFunction* = proc(args: openArray[Expression], evaluator: Evaluator): Value
     ## Function in the host language callable from the interpreter.
 
   NativeFunc* = object
@@ -63,11 +66,30 @@ type
     ## - Literal values
     ## - Structural characters
     ## - Identifiers
+
+    # Operators
     tkAdd ## Addition operator '+'
     tkSub ## Subtraction operator '-'
     tkMul ## Multiplication operator '*'
     tkDiv ## Division operator '/'
     tkPow ## Exponentiation operator '^'
+    tkMod ## Modulus operator '%'
+    tkAssign ## Assignment operator '='
+
+    # Boolean operators
+    tkAnd ## Logical AND operator '&'
+    # for tkOr we will reuse the tkLine '|' character
+    tkNot ## Logical NOT operator '!'
+
+    # Comparison operators
+    tkEq ## Equality operator '=='
+    tkNe ## Inequality operator '!='
+    tkLt ## Less than operator '<'
+    tkLe ## Less than or equal operator '<='
+    tkGt ## Greater than operator '>'
+    tkGe ## Greater than or equal operator '>='
+
+    # Structural tokens
     tkLPar ## Left parenthesis '('
     tkRPar ## Right parenthesis ')'
     tkLCurly ## Left curly brace '{'
@@ -75,13 +97,22 @@ type
     tkRSquare ## Square bracket '['
     tkLSquare ## Square bracket ']'
     tkLine ## Parameter delimiter '|'
-    tkNum ## Numeric literal (integer or float)
-    tkMod ## Modulus operator '%'
+
+    # Literals and identifiers
+    tkValue ## literal (integer or float)
     tkIdent ## Identifier (variable/function name)
-    tkAssign ## Assignment operator '='
+
+    # Keywords
+    tkIf ## If keyword
+    tkElse ## Else keyword
+    tkElif ## Elif keyword
+    tkEndIf ## EndIf keyword
+    tkReturn ## Return keyword
+    tkLocal ## Local keyword
+
+    # Control tokens
     tkComma ## Argument separator ','
-    tkNewline
-      ## Newline character '\n' # End of expression marker for parser (due multiline blocks support)
+    tkNewline # End of expression marker for parser (due multiline blocks support)
     tkEoe ## End of expression marker for lexer
 
   Token* = object
@@ -92,72 +123,105 @@ type
     ## - `name` for identifiers (tkIdent)
     position*: Position ## Source location of the token
     case kind*: TokenKind
-    of tkNum:
-      value*: Value ## Numeric value for tkNum tokens
+    of tkValue:
+      value*: Value ## Literal value for tkNum tokens
     of tkIdent:
       name*: string ## Identifier name for tkIdent tokens
     else:
       discard
 
-  NodeKind* = enum
-    ## Abstract Syntax Tree node categories.
+  ExpressionKind* = enum
+    ## Abstract Syntax Tree (AST) node categories (now called Expressions).
     ## 
-    ## Each variant corresponds to different language constructs
-    ## with associated child nodes or values.
-    nkValue ## Numeric literal value
-    nkAdd ## Addition operation (left + right)
-    nkSub ## Subtraction operation (left - right)
-    nkMul ## Multiplication operation (left * right)
-    nkDiv ## Division operation (left / right)
-    nkPow ## Exponentiation operation (left ^ right)
-    nkGroup ## Parenthesized expression group
-    nkNeg ## Unary negation operation (-operand)
-    nkMod ## Modulus operation (left % right)
-    nkIdent ## Identifier reference
-    nkAssign ## Variable assignment (ident = expr)
-    nkVector ## Vector literal
-    nkBlock ## Block expression (sequence of statements)
-    nkFunc ## Function definition
-    nkFuncCall ## Function call with arguments
-    nkFuncInvoke ## Function invocation (internal use)
+    ## Each variant corresponds to a different language construct with
+    ## associated child nodes or values.
+    
+    # Literals and grouping
+    ekValue    ## Numeric literal value
+    ekGroup    ## Parenthesized expression group
 
-  AstNode* = ref object
-    ## Abstract Syntax Tree node with source position information.
-    ## 
+    # Unary operations
+    ekNeg      ## Unary negation operation (-operand)
+
+    # Binary operations
+    ekAdd      ## Addition operation (left + right)
+    ekSub      ## Subtraction operation (left - right)
+    ekMul      ## Multiplication operation (left * right)
+    ekDiv      ## Division operation (left / right)
+    ekPow      ## Exponentiation operation (left ^ right)
+    ekMod      ## Modulus operation (left % right)
+
+    # Comparison operations
+    ekEq       ## Equality comparison (left == right)
+    ekNe       ## Inequality comparison (left != right)
+    ekLt       ## Less-than comparison (left < right)
+    ekLe       ## Less-than-or-equal comparison (left <= right)
+    ekGt       ## Greater-than comparison (left > right)
+    ekGe       ## Greater-than-or-equal comparison (left >= right)
+
+    # Logical operations
+    ekAnd      ## Logical AND operation (left & right)
+    ekOr       ## Logical OR operation (left | right)
+
+    # Identifiers and assignments
+    ekIdent    ## Identifier reference
+    ekAssign   ## Variable assignment (ident = expr)
+    
+    # Vector literal
+    ekVector   ## Vector literal
+
+    # Function constructs
+    ekFunc         ## Function definition
+    ekFuncCall     ## Function call with arguments
+    ekFuncInvoke   ## Function invocation (internal use)
+
+    # Block expression
+    ekBlock    ## Block expression (sequence of statements)
+
+    # Control flow
+    ekIf       ## If-else conditional expression
+
+  Expression* = ref object
+    ## Abstract Syntax Tree (AST) node (renamed to Expression).
+    ##
     ## The active fields depend on the node kind:
-    ## - Values for nkNumber
-    ## - Left/right operands for binary operations
-    ## - Child nodes for groups and unary operations
-    ## - Name and arguments for identifiers and function calls
+    ## - For ekValue: stores a literal value.
+    ## - For binary operations (ekAdd, ekSub, etc.): stores left/right operand expressions.
+    ## - For groups and unary operations: stores child nodes.
+    ## - For identifiers and function calls: stores name and arguments.
     position*: Position ## Original source location
-    case kind*: NodeKind
-    of nkValue:
-      value*: Value ## Value for literals
-    of nkAdd, nkSub, nkMul, nkDiv, nkMod, nkPow:
-      left*: AstNode ## Left operand of binary operation
-      right*: AstNode ## Right operand of binary operation
-    of nkGroup:
-      child*: AstNode ## Expression inside parentheses
-    of nkNeg:
-      operand*: AstNode ## Operand for unary negation
-    of nkIdent:
+    case kind*: ExpressionKind
+    of ekValue:
+      value*: Value ## Literal value
+    of ekAdd, ekSub, ekMul, ekDiv, ekMod, ekPow, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe, ekAnd, ekOr:
+      left*: Expression  ## Left operand of binary operation
+      right*: Expression ## Right operand of binary operation
+    of ekGroup:
+      child*: Expression ## Expression inside parentheses
+    of ekNeg:
+      operand*: Expression ## Operand for unary negation
+    of ekIdent:
       name*: string ## Identifier name
-    of nkAssign:
+    of ekAssign:
       ident*: string ## Target identifier for assignment
-      expr*: AstNode ## Assigned value expression
-    of nkFuncCall:
+      expr*: Expression ## Assigned expression
+      isLocal*: bool ## Flag indicating if the assignment is to a local variable
+    of ekFuncCall:
       fun*: string ## Function name to call
-      args*: seq[AstNode] ## Arguments for function call
-    of nkFuncInvoke:
-      callee*: Value ## Function reference
-      arguments*: seq[AstNode] ## Arguments for function invocation
-    of nkBlock:
-      expressions*: seq[AstNode] ## Sequence of statements in block
-    of nkFunc:
-      body*: AstNode ## Function body expression
+      args*: seq[Expression] ## Arguments for the function call
+    of ekFuncInvoke:
+      callee*: Value ## Function reference (value of type function)
+      arguments*: seq[Expression] ## Arguments for the invocation
+    of ekBlock:
+      expressions*: seq[Expression] ## Sequence of statements in the block
+    of ekFunc:
+      body*: Expression ## Function body expression
       params*: seq[string] ## Function parameter names
-    of nkVector:
-      values*: seq[AstNode] ## Vector literal values
+    of ekVector:
+      values*: seq[Expression] ## Elements of the vector literal
+    of ekIf:
+      branches*: seq[tuple[condition: Expression, thenBranch: Expression]] ## if/elif branches
+      elseBranch*: Expression ## Else branch expression
 
   Environment* = ref object
     values*: Table[string, Value]
@@ -186,54 +250,66 @@ proc `$`*(value: Value): string =
     "<function>"
   of vkVector:
     "[" & value.values.mapIt($it).join(", ") & "]"
+  of vkBool:
+    $value.bValue
 
-proc stringify(node: AstNode, indent: int): string =
+proc stringify(node: Expression, indent: int): string =
   ## Helper for AST string representation (internal use)
   let indentation = " ".repeat(indent)
   case node.kind
-  of nkValue:
+  of ekValue:
     result = indentation & "value: " & $node.value & "\n"
-  of nkAdd, nkSub, nkMul, nkDiv, nkMod, nkPow:
+  of eKAdd, eKSub, eKMul, eKDiv, eKMod, eKPow, eKEq, eKNe, eKLt, eKLe, eKGt, eKGe, eKAnd, eKOr:
     let kindStr = toLowerAscii($node.kind).substr(2)
     result = indentation & kindStr & ":\n"
     result.add(indentation & "  left:\n")
     result.add(node.left.stringify(indent + 4))
     result.add("\n" & indentation & "  right:\n")
     result.add(node.right.stringify(indent + 4))
-  of nkGroup:
+  of eKGroup:
     result = indentation & "group:\n"
     result.add(node.child.stringify(indent + 2))
-  of nkNeg:
+  of eKNeg:
     result = indentation & "neg:\n"
     result.add(node.operand.stringify(indent + 2))
-  of nkIdent:
+  of eKIdent:
     result = indentation & "ident: " & node.name & "\n"
-  of nkAssign:
+  of eKAssign:
     result = indentation & "assign: " & node.ident & "\n"
     result.add(node.expr.stringify(indent + 2))
-  of nkFuncCall:
+  of eKFuncCall:
     result = indentation & "func: " & node.fun & "\n"
     for arg in node.args:
       result.add(arg.stringify(indent + 2))
-  of nkBlock:
+  of eKBlock:
     result = indentation & "block:\n"
     for expr in node.expressions:
       result.add(expr.stringify(indent + 2))
-  of nkFunc:
+  of eKFunc:
     result = indentation & "function:\n"
     result.add(indentation & "  params: " & $node.params & "\n")
     result.add(node.body.stringify(indent + 2))
-  of nkVector:
+  of eKVector:
     result = indentation & "vector:\n"
     for val in node.values:
       result.add(val.stringify(indent + 2))
-  of nkFuncInvoke:
+  of eKFuncInvoke:
     result = indentation & "invoke:\n"
     result.add(indentation & "  callee: " & $node.callee & "\n")
     for arg in node.arguments:
       result.add(arg.stringify(indent + 2))
+  of eKIf:
+    result = indentation & "if:\n"
+    for branch in node.branches:
+      result.add(indentation & "  condition:\n")
+      result.add(branch.condition.stringify(indent + 4))
+      result.add("\n" & indentation & "  then:\n")
+      result.add(branch.thenBranch.stringify(indent + 4))
+    if node.elseBranch != nil:
+      result.add("\n" & indentation & "else:\n")
+      result.add(node.elseBranch.stringify(indent + 2))
 
-proc `$`*(node: AstNode): string =
+proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
   if node.isNil:
     return "nil"
@@ -242,6 +318,7 @@ proc `$`*(node: AstNode): string =
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
   case token.kind
+  # Operators
   of tkAdd:
     "'+'"
   of tkSub:
@@ -250,6 +327,31 @@ proc `$`*(token: Token): string =
     "'*'"
   of tkDiv:
     "'/'"
+  of tkPow:
+    "'^'"
+  of tkMod:
+    "'%'"
+  of tkAssign:
+    "'='"
+  # Boolean operators
+  of tkAnd:
+    "'&'"  ## Logical AND operator
+  of tkNot:
+    "'!'"  ## Logical NOT operator
+  # Comparison operators
+  of tkEq:
+    "'=='"
+  of tkNe:
+    "'!='"
+  of tkLt:
+    "'<'"
+  of tkLe:
+    "'<='"
+  of tkGt:
+    "'>'"
+  of tkGe:
+    "'>='"
+  # Structural tokens
   of tkLPar:
     "'('"
   of tkRPar:
@@ -264,20 +366,29 @@ proc `$`*(token: Token): string =
     "']'"
   of tkLine:
     "'|'"
-  of tkMod:
-    "'%'"
-  of tkPow:
-    "'^'"
-  of tkComma:
-    "','"
-  of tkAssign:
-    "'='"
-  of tkNewline:
-    "'\\n'"
+  # Literals and identifiers
+  of tkValue:
+    "'" & $token.value & "'"
   of tkIdent:
     "'" & token.name & "'"
-  of tkNum:
-    "'" & $token.value & "'"
+  # Keywords
+  of tkIf:
+    "if"
+  of tkElse:
+    "else"
+  of tkElif:
+    "elif"
+  of tkEndIf:
+    "endif"
+  of tkReturn:
+    "return"
+  of tkLocal:
+    "local"
+  # Control tokens
+  of tkComma:
+    "','"
+  of tkNewline:
+    "'\\n'"
   of tkEoe:
     "EOF"
 

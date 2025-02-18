@@ -9,7 +9,7 @@
 ## Implements error-resilient tokenization with precise error
 ## location reporting.
 
-import std/strutils
+import std/[strutils, tables]
 
 import types, logging
 
@@ -18,160 +18,210 @@ type Lexer* = object ## State container for lexical analysis process
   current: int ## Current parsing position in the string
   line, col: int ## Current line and column position
   curlyStack: seq[Position] ## Stack of curly brace positions
+  ifStack: seq[Position] ## Stack of if positions
+
+type IncompleteInputError* = object of BMathError ## Raised when input is incomplete
 
 proc newLexer*(source: string): Lexer =
   ## Initializes a new lexer with the given mathematical expression
   Lexer(source: source, current: 0, line: 1, col: 1)
 
-proc next*(lexer: var Lexer): Token =
-  ## Advances to the next token and returns it
-  ## 
-  ## Returns:
-  ##   Token with either parsed value or error information
+const KEYWORDS: Table[string, TokenKind] = {
+  "if": tkIf,
+  "else": tkElse,
+  "elif": tkElif,
+  "endif": tkEndIf,
+  "return": tkReturn,
+  "local": tkLocal,
+}.toTable
 
-  template current(): char =
-    lexer.source[lexer.current]
-
-  template atEnd(): bool =
-    lexer.current >= lexer.source.len
-
-  template isEmpty(): bool =
-    not atEnd and current in {' ', '\r', '\t'}
-
-  template isDigit(): bool =
-    not atEnd and current in {'0' .. '9'}
-
-  template isAlpha(): bool =
-    not atEnd and current in {'a' .. 'z', 'A' .. 'Z', '_'}
-
-  template isE(): bool =
-    not atEnd and current in {'e', 'E'}
-
-  template next() =
+proc parseNumber*(lexer: var Lexer, start: int): Token =
+  ## Parses a number literal (int or float) starting at `start`
+  let startCol = lexer.col
+  var isFloat = false
+  while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'0' .. '9'}):
     lexer.current.inc
     lexer.col.inc
-
-  template markError(msg: string) =
-    raise newBMathError(
-      msg, Position(line: lexer.line, column: lexer.col - (lexer.current - start))
-    )
-
-  template makeToken(k: TokenKind): Token =
-    let len = lexer.current - start + 1
-    Token(
-      kind: k,
-      position: Position(line: lexer.line, column: lexer.col - (lexer.current - start)),
-    )
-
-  while not atEnd:
-    # Skip whitespace characters
-    if isEmpty:
-      next()
-      continue
-
-    if current() == '\n':
-      next()
-      lexer.line += 1
-      lexer.col = 1
-      # On curly mode, skip EOE on newline
-      if lexer.curlyStack.len == 0:
-        return
-          Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
-      # Marker of end of sub-expression on block mode
-      return
-        Token(kind: tkNewline, position: Position(line: lexer.line, column: lexer.col))
-
-    if current() == '#':
-      while not atEnd and current() != '\n':
-        next()
-      continue
-
-    let start = lexer.current
-
-    # Number parsing
-    if isDigit or current == '.':
-      var isFloat = false
-      # Consume number parts
-      while not atEnd and isDigit:
-        next()
-      if not atEnd and current == '.':
-        isFloat = true
-        next()
-        while not atEnd and isDigit:
-          next()
-      if isE:
-        isFloat = true
-        next()
-        if not atEnd and current in {'+', '-'}:
-          next()
-        while not atEnd and isDigit:
-          next()
-
-      let numStr = lexer.source[start ..< lexer.current]
-      try:
-        let value =
-          if isFloat:
-            Value(kind: vkFloat, fValue: parseFloat(numStr))
-          else:
-            Value(kind: vkInt, iValue: parseInt(numStr))
-        return Token(
-          kind: tkNum,
-          position: Position(line: lexer.line, column: lexer.col - numStr.len),
-          value: value,
-        )
-      except:
-        markError("Invalid number format '" & numStr & "' is not a valid number")
-
-    if isAlpha:
-      while isAlpha or isDigit:
-        next()
-      let ident = lexer.source[start ..< lexer.current]
-      return Token(
-        kind: tkIdent,
-        position: Position(line: lexer.line, column: lexer.col - ident.len),
-        name: ident,
-      )
-
-    # Handle operators/parentheses
-    defer:
-      next()
-    case current
-    of '+':
-      return makeToken(tkAdd)
-    of '-':
-      return makeToken(tkSub)
-    of '*':
-      return makeToken(tkMul)
-    of '/':
-      return makeToken(tkDiv)
-    of '^':
-      return makeToken(tkPow)
-    of '%':
-      return makeToken(tkMod)
-    of '(':
-      return makeToken(tkLPar)
-    of ')':
-      return makeToken(tkRPar)
-    of '=':
-      return makeToken(tkAssign)
-    of ',':
-      return makeToken(tkComma)
-    of '{':
-      lexer.curlyStack.add(Position(line: lexer.line, column: lexer.col))
-      return makeToken(tkLCurly)
-    of '}':
-      discard lexer.curlyStack.pop
-      return makeToken(tkRCurly)
-    of '[':
-      return makeToken(tkLSquare)
-    of ']':
-      return makeToken(tkRSquare)
-    of '|':
-      return makeToken(tkLine)
+  if lexer.current < lexer.source.len and lexer.source[lexer.current] == '.':
+    isFloat = true
+    lexer.current.inc
+    lexer.col.inc
+    while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'0' .. '9'}):
+      lexer.current.inc
+      lexer.col.inc
+  if lexer.current < lexer.source.len and (lexer.source[lexer.current] == 'e' or lexer.source[lexer.current] == 'E'):
+    isFloat = true
+    lexer.current.inc
+    lexer.col.inc
+    if lexer.current < lexer.source.len and lexer.source[lexer.current] in {'+', '-'}:
+      lexer.current.inc
+      lexer.col.inc
+    while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'0' .. '9'}):
+      lexer.current.inc
+      lexer.col.inc
+  let numStr = lexer.source[start ..< lexer.current]
+  try:
+    let value = if isFloat:
+      Value(kind: vkFloat, fValue: parseFloat(numStr))
     else:
-      markError("Unexpected character '" & $current & "'")
+      Value(kind: vkInt, iValue: parseInt(numStr))
+    return Token(
+      kind: tkValue,
+      position: Position(line: lexer.line, column: startCol),
+      value: value,
+    )
+  except:
+    raise newBMathError("Invalid number format '" & numStr & "' is not a valid number",
+                        Position(line: lexer.line, column: startCol))
 
-  # Return EOF marker when done
+proc parseIdentifier*(lexer: var Lexer, start: int): Token =
+  ## Parses an identifier starting at `start`
+  let startCol = lexer.col
+  while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'a'..'z', 'A'..'Z', '_'} or
+                                                 lexer.source[lexer.current] in {'0'..'9'}):
+    lexer.current.inc
+    lexer.col.inc
+  let ident = lexer.source[start ..< lexer.current]
+  if ident == "true":
+    return Token(
+      kind: tkValue,
+      position: Position(line: lexer.line, column: startCol),
+      value: Value(kind: vkBool, bValue: true),
+    )
+  elif ident == "false":
+    return Token(
+      kind: tkValue,
+      position: Position(line: lexer.line, column: startCol),
+      value: Value(kind: vkBool, bValue: false),
+    )
+  if KEYWORDS.hasKey(ident):
+    if KEYWORDS[ident] == tkIf:
+      lexer.ifStack.add(Position(line: lexer.line, column: startCol))
+    elif KEYWORDS[ident] == tkEndIf:
+      if lexer.ifStack.len > 0:
+        discard lexer.ifStack.pop
+      else:
+        raise newBMathError("Unmatched 'endif'", Position(line: lexer.line, column: startCol))
+    return Token(
+      kind: KEYWORDS[ident],
+      position: Position(line: lexer.line, column: startCol),
+    )
+  return Token(
+    kind: tkIdent,
+    position: Position(line: lexer.line, column: startCol),
+    name: ident,
+  )
+
+proc parseSymbol*(lexer: var Lexer): Token =
+  ## Parses operator or punctuation symbols
+  let startCol = lexer.col
+  var kind: TokenKind
+  case lexer.source[lexer.current]
+  of '+':
+    kind = tkAdd
+  of '-':
+    kind = tkSub
+  of '*':
+    kind = tkMul
+  of '/':
+    kind = tkDiv
+  of '^':
+    kind = tkPow
+  of '%':
+    kind = tkMod
+  of '=':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+      kind = tkEq
+      lexer.current.inc
+      lexer.col.inc
+    else:
+      kind = tkAssign
+  of '!':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+      kind = tkNe
+      lexer.current.inc
+      lexer.col.inc
+    else:
+      kind = tkNot
+  of '<':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+      kind = tkLe
+      lexer.current.inc
+      lexer.col.inc
+    else:
+      kind = tkLt
+  of '>':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+      kind = tkGe
+      lexer.current.inc
+      lexer.col.inc
+    else:
+      kind = tkGt
+  of '&':
+    kind = tkAnd
+  of '|':
+    kind = tkLine
+  of '(':
+    kind = tkLPar
+  of ')':
+    kind = tkRPar
+  of ',':
+    kind = tkComma
+  of '{':
+    lexer.curlyStack.add(Position(line: lexer.line, column: lexer.col))
+    kind = tkLCurly
+  of '}':
+    if lexer.curlyStack.len > 0:
+      discard lexer.curlyStack.pop
+    else:
+      raise newBMathError("Unmatched '}'", Position(line: lexer.line, column: lexer.col))
+    kind = tkRCurly
+  of '[':
+    kind = tkLSquare
+  of ']':
+    kind = tkRSquare
+  else:
+    raise newBMathError("Unexpected character '" & $(lexer.source[lexer.current]) & "'",
+                        Position(line: lexer.line, column: lexer.col))
+  lexer.current.inc
+  lexer.col.inc
+  return Token(kind: kind, position: Position(line: lexer.line, column: startCol))
+
+proc next*(lexer: var Lexer): Token =
+  ## Advances to the next token by delegating to one of the specialized procs
+  while lexer.current < lexer.source.len:
+    # Skip whitespace, updating column
+    if lexer.source[lexer.current] in {' ', '\r', '\t'}:
+      lexer.current.inc
+      lexer.col.inc
+      continue
+    # Handle newline: update line/column counters and emit either an EOE or newline token.
+    if lexer.source[lexer.current] == '\n':
+      lexer.current.inc
+      lexer.line.inc
+      lexer.col = 1
+      if lexer.curlyStack.len == 0 and lexer.ifStack.len == 0:
+        return Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
+      else:
+        return Token(kind: tkNewline, position: Position(line: lexer.line, column: lexer.col))
+    # Skip comments
+    if lexer.source[lexer.current] == '#':
+      while lexer.current < lexer.source.len and lexer.source[lexer.current] != '\n':
+        lexer.current.inc
+        lexer.col.inc
+      continue
+    let start = lexer.current
+    # Check for number: digit or a dot with a digit following (as in '.5')
+    if lexer.source[lexer.current] in {'0'..'9'} or
+       (lexer.source[lexer.current] == '.' and lexer.current + 1 < lexer.source.len and
+        lexer.source[lexer.current+1] in {'0'..'9'}):
+      return parseNumber(lexer, start)
+    # Check for identifiers
+    if lexer.source[lexer.current] in {'a'..'z', 'A'..'Z', '_'}:
+      return parseIdentifier(lexer, start)
+    # Otherwise, parse as symbol/operator
+    return parseSymbol(lexer)
+  # End of input
   return Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
 
 proc atEnd*(lexer: Lexer): bool {.inline.} =
@@ -185,6 +235,9 @@ proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
     if token.kind == tkEoe:
       if lexer.curlyStack.len > 0:
         let last = lexer.curlyStack.pop
-        raise newBMathError("Unmatched '{' at " & $last, last)
+        raise (ref IncompleteInputError)(msg: "Unmatched '{' at " & $last, position: last)
+      if lexer.ifStack.len > 0:
+        let last = lexer.ifStack.pop
+        raise (ref IncompleteInputError)(msg: "Unmatched 'if' at " & $last, position: last)
       break
     result.add(token)

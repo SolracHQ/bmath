@@ -1,18 +1,22 @@
 # bmath (bm)
 
-A lightweight command-line tool for evaluating mathematical expressions with REPL support, file input handling, and immediate execution. Designed for quick calculations and batch processing.
+A lightweight command-line tool for evaluating mathematical expressions. bmath now supports advanced language constructs including conditional expressions (if/elif/else), local variables, vector operations, recursive functions, and inline lambda invocations. For full details on the language design and semantics, please refer to the [Formal Design Document](docs/design.md).
 
 ## Features
 
 - Interactive REPL with persistent variable storage
-- File-based batch processing
-- Direct expression evaluation
-- Support for variables and functions
-- Basic arithmetic (+, -, *, /, ^, %)
-- Math functions: pow, sqrt, floor, ceil, round
-- Type promotion (int/float)
-- Error handling with source positioning
+- File-based batch processing and direct expression evaluation
+- Enhanced expression language:
+  - Basic arithmetic and math functions (pow, sqrt, floor, ceil, round)
+  - Variables, inline lambda expressions, and function closures
+  - Conditional expressions with if/elif/else/endif
+  - Advanced scoping with local variable declarations
+  - Vectors with element-wise arithmetic, dot product, and utility functions (nth, first, last)
+  - Logical operators with short-circuit evaluation
+  - Recursive functions for complex calculations
+- Type promotion (int/float) and contextual error handling with source positioning
 
+For a thorough demonstration of these capabilities, see the [example file](examples/example.bm).
 
 ## Installation
 
@@ -21,7 +25,8 @@ git clone https://github.com/solrachq/bmath
 cd bmath
 nimble build -d:release
 ```
-Binary will be created in `bin/bm`
+
+The binary is created in `bin/bm`.
 
 ## Usage
 
@@ -58,35 +63,21 @@ pi = 3.1415
 
 ## Syntax Examples
 
+bmath supports a rich syntax. Examples include:
 
-Basic Operations:
-```
-  2 + 3 * 4      # Order of operations
-  (5 - 2)^3      # Parentheses grouping
-  17 % 4         # Modulo operation
-```
+- **Basic Operations**  
+  2 + 3 * 4  
+  (5 - 2)^3  
+  17 % 4
 
-Variables:
-```
-  radius = 7.5
-  2 * pi * radius
-```
+- **Variables and Functions**  
+  radius = 7.5  
+  2 * pi * radius  
+  pow(2, 8)  
+  floor(4.8)  
+  round(3.1415)
 
-Functions:
-```
-  pow(2, 8)      # 256
-  floor(4.8)     # 4
-  round(3.1415)  # 3
-```
-
-For more information please refer to [example](examples/example.bm)
-
-## Error Handling
-Shows contextual error messages with source positions:
-
-```text
-21:44:33.089 [RUNTIME ERROR] (line: 1, column: 3): Division by zero
-```
+For more detailed examples, see the [example file](examples/example.bm).
 
 ## Development
 
@@ -94,10 +85,10 @@ Shows contextual error messages with source positions:
 ```bash
 nimble build             # Debug build
 nimble build -d:release  # Optimized release
-nimble test              # For run tests
+nimble test              # Run tests
 ```
 
-### Architecture
+### Architecture Overview
 
 1. CLI Argument Parsing
 2. Lexical Analysis (lexer.nim)
@@ -105,6 +96,10 @@ nimble test              # For run tests
 4. AST Evaluation (interpreter.nim)
 5. Result Output
 
+## Changelog
+
+For a complete history of updates and feature additions, please review the [Changelog](changelog).
 
 ## License
-MIT License - See [LICENSE](LICENSE) file for details
+
+MIT License - See [LICENSE](LICENSE) for details.

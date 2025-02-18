@@ -10,6 +10,7 @@
 
 import lexer, parser, interpreter, logging, types
 export types
+export IncompleteInputError
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter
@@ -21,15 +22,21 @@ proc newEngine*(replMode: bool = false): Engine =
   result.interpreter = newInterpreter()
   result.replMode = replMode
 
-iterator run*(engine: Engine, expression: string): LabeledValue =
-  ## Executes expression while maintaining interpreter state
-  debug("Running expression: ", expression)
-  var lexer = newLexer(expression)
+iterator run*(engine: Engine, source: string): LabeledValue =
+  ## Executes source while maintaining interpreter state
+  debug("Running source: ", source)
+  var lexer = newLexer(source)
 
   while not lexer.atEnd:
     debug("Starting lexing process")
-    let tokens = wrapError("LEXING", fatal = not engine.replMode):
+    
+    let tokens = try:
       lexer.tokenizeExpression()
+    except IncompleteInputError as e:
+      raise e
+    except BMathError as e:
+      wrapError("LEXING", fatal = not engine.replMode): raise e
+        
 
     debug("Tokens: ", tokens)
     if tokens.len == 0:

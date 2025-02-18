@@ -1,12 +1,34 @@
 # Changelog
 
+## Version 0.4.0
+- Added support for comparison operators (==, !=, <, <=, >, >=).
+- Implemented conditional expressions (if, else, elif, endif).
+- Added support for boolean literals (true, false).
+- Implemented logical operators (&, |) with short-circuit evaluation.
+- Added support for recursive functions and examples.
+- Added local keyword to declare variables in the current scope.
+
 ## Version 0.3.0
 - Added support for vectors and operations over vectors.
 - Enabled native functions (host language functions) to access interpreter capabilities.
+- Core library add the following native functions:
+  - `vec(size, generator)` - Creates a vector of `size` elements using the `generator` function.
+  - `dot(a, b)` - Calculates the dot product of vectors `a` and `b`.
+  - `nth(a, index)` - Returns the element at `index` in vector `a`.
+  - `first(a)` - Returns the first element of vector `a`.
+  - `last(a)` - Returns the last element of vector `a`.
 
 ## Version 0.2.0
 - Introduced lambda expressions (user-defined functions) and environments.
+- Functions are first-class citizens and can be assigned to variables.
 
 ## Version 0.1.0
 - Implemented core arithmetic operations (+, -, *, /, ^).
 - Added support for native function calls.
+- core library consist on:
+  - `exit()` - Exits the program.
+  - `pow(a, b)` - Raises `a` to the power of `b`.
+  - `sqrt(a)` - Returns the square root of `a`.
+  - `floor(a)` - Returns the floor of `a`.
+  - `ceil(a)` - Returns the ceiling of `a`.
+  - `round(a)` - Rounds `a` to the nearest integer.
