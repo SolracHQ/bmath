@@ -68,3 +68,42 @@ suite "Interpreter tests":
     ## Calling an undefined variable should raise an error.
     expect BMathError:
       discard evalString("undefinedVar + 10")
+
+  test "Local keyword isolation in nested scopes":
+    ## Outer assignment and inner block with a local copy.
+    ## The inner 'local a' should not affect the outer 'a'.
+    let res = evalString("""a = 10
+                                  {
+                                    local a = a
+                                    a = a + 5
+                                    a  # inner block returns 15, but outer 'a' remains 10
+                                  }
+                                  a""")
+    check res.iValue == 10
+
+  test "If expression evaluation with elif and error on missing else branch":
+    ## A proper if-elif-else expression.
+    let res = evalString("""a = 10
+                                  if (a == 10) 1 elif (a == 5) 2 else 3 endif""")
+    check res.iValue == 1
+    ## If condition fails and no else branch is provided, an error is expected.
+    expect BMathError:
+      discard evalString("""if (2 > 3) 100 endif""")
+
+  test "Complex if-else with nested local scopes":
+    ## Combines if-elif structure with a nested block that uses local variables.
+    ## Outer 'a' is set to 20; inner block computes a temp value without modifying 'a'.
+    let res = evalString("""a = 20
+                                  if (a > 15) {
+                                    local temp = a
+                                    temp = temp - 5
+                                    temp  # returns 15 from inner block
+                                  } elif (a == 10) 10 else 0 endif""")
+    check res.iValue == 15
+
+  test "Comparison and boolean operations expanded":
+    ## Combining comparisons with boolean logic.
+    let res = evalString("""(5 == 5) & ((3 < 4) | (2 > 10))""")
+    check res.bValue
+    let res2 = evalString("""(5 != 5) | ((10 > 2) & (1 == 1))""")
+    check res2.bValue
