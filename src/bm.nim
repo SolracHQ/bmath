@@ -10,7 +10,52 @@
 ## 3. Execute through engine.run()
 ## 4. Output result
 
+import std/terminal
 import cli, engine
+
+proc handleHelp() =
+  echo HELP
+
+proc handleExpression(expr: string) =
+  let engine = newEngine()
+  for value in engine.run(expr):
+    echo value
+
+proc handleFile(filePath: string) =
+  let engine = newEngine()
+  let content = readFile(filePath)
+  for result in engine.run(content):
+    echo result
+
+proc handleRepl() =
+  let engine = newEngine(replMode = true)
+  var input: string
+  var incompleteMode = false
+  let isatty = stdin.isatty
+  while true:
+    if not isatty: discard # not interactive
+    elif not incompleteMode:
+      stdout.write "bm> "
+    else:
+      stdout.write "... "
+    try:
+      if incompleteMode:
+        input.add "\n"
+        input &= stdin.readLine()
+      else:
+        input = stdin.readLine()
+      for result in engine.run(input):
+        if isatty:
+          echo "==> ", result
+        else:
+          echo result
+      incompleteMode = false
+    except IncompleteInputError:
+      incompleteMode = true
+      continue
+    except BMathError as e: discard # error already handled
+    except IOError as e:
+      quit() # EOF reached or Ctrl+C
 
 proc main() =
   let args =
@@ -23,40 +68,13 @@ proc main() =
 
   case args.kind
   of akHelp:
-    echo HELP
+    handleHelp()
   of akExpression:
-    let engine = newEngine()
-    for value in engine.run(args.expr):
-      echo value
+    handleExpression(args.expr)
   of akFile:
-    let engine = newEngine()
-    let content = readFile(args.filePath)
-    for result in engine.run(content):
-      echo result
+    handleFile(args.filePath)
   of akRepl:
-    let engine = newEngine(replMode = true)
-    var input: string
-    var incompleteMode = false
-    while true:
-      if not incompleteMode:
-        stdout.write "bm> "
-      else:
-        stdout.write "... "
-      try:
-        if incompleteMode:
-          input.add "\n"
-          input &= stdin.readLine()
-        else:
-          input = stdin.readLine()
-        for result in engine.run(input):
-          echo "=> ", result
-        incompleteMode = false
-      except IncompleteInputError:
-        incompleteMode = true
-        continue
-      # already handled by engine
-      except:
-        echo "Unexpected error: ", getCurrentExceptionMsg()
+    handleRepl()
 
 when isMainModule:
   main()

@@ -20,8 +20,6 @@ type Lexer* = object ## State container for lexical analysis process
   curlyStack: seq[Position] ## Stack of curly brace positions
   ifStack: seq[Position] ## Stack of if positions
 
-type IncompleteInputError* = object of BMathError ## Raised when input is incomplete
-
 proc newLexer*(source: string): Lexer =
   ## Initializes a new lexer with the given mathematical expression
   Lexer(source: source, current: 0, line: 1, col: 1)

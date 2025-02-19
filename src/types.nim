@@ -233,6 +233,8 @@ type
     context*: string ## Additional error context/message
     source: string ## Source code snippet for context
 
+  IncompleteInputError* = object of BMathError ## Raised when input is incomplete
+
 proc `$`*(pos: Position): string =
   ## Returns human-readable string representation of source position
   $pos.line & ":" & $pos.column
