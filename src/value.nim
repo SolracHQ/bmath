@@ -3,30 +3,7 @@
 
 import std/[math, sequtils]
 import fusion/matching
-import types, logging
-
-proc newValue*[T](n: T): Value =
-  ## Create a new Value object from a number
-  when T is SomeInteger:
-    result = Value(kind: vkInt, iValue: n.int)
-  elif T is SomeFloat:
-    result = Value(kind: vkFloat, fValue: n.float)
-  elif T is bool:
-    result = Value(kind: vkBool, bValue: n.bool)
-  elif T is seq[Value]:
-    result = Value(kind: vkVector, values: n)
-  else:
-    {.error: "Unsupported type for Value"}
-
-proc isZero(a: Value): bool =
-  ## Check if a value is zero
-  case a.kind
-  of vkInt:
-    result = a.iValue == 0
-  of vkFloat:
-    result = a.fValue == 0.0
-  else:
-    discard
+import types/[value, errors, expression]
 
 proc `+`*(a, b: Value): Value =
   ## Add two values together
@@ -45,7 +22,8 @@ proc `+`*(a, b: Value): Value =
     result = newValue(a.fValue + b.fValue)
   of (vkVector, vkVector):
     if a.values.len != b.values.len:
-      raise newException(BMathError, "Vector addition requires vectors of the same length")
+      raise
+        newException(BMathError, "Vector addition requires vectors of the same length")
     var values: seq[Value] = newSeqOfCap[Value](a.values.len)
     for i in 0 ..< a.values.len:
       values.add(a.values[i] + b.values[i])
@@ -70,7 +48,9 @@ proc `-`*(a, b: Value): Value =
     result = newValue(a.fValue - b.fValue)
   of (vkVector, vkVector):
     if a.values.len != b.values.len:
-      raise newException(BMathError, "Vector subtraction requires vectors of the same length")
+      raise newException(
+        BMathError, "Vector subtraction requires vectors of the same length"
+      )
     var values: seq[Value] = newSeqOfCap[Value](a.values.len)
     for i in 0 ..< a.values.len:
       values.add(a.values[i] - b.values[i])
@@ -90,7 +70,9 @@ proc `-`*(a: Value): Value =
   of vkNativeFunc, vkFunction:
     raise newException(BMathError, "Cannot negate a function")
   of vkBool:
-    raise newException(BMathError, "Cannot negate a boolean using '-' for not operation use '!'")
+    raise newException(
+      BMathError, "Cannot negate a boolean using '-' for not operation use '!'"
+    )
 
 proc `*`*(a, b: Value): Value =
   ## Multiply two values
@@ -131,9 +113,6 @@ proc dotProduct*(a, b: Value): Value =
 proc `/`*(a, b: Value): Value =
   ## Divide two values
   ## The division is always a float
-  ## If the divisor is zero, a `BMathError` is raised
-  if b.isZero:
-    raise newException(BMathError, "Division by zero")
 
   let aVal =
     case a.kind
@@ -340,48 +319,38 @@ proc `%`*(a, b: Value): Value =
   ## If values ar3e floats will be rounded to integers
   ## If the divisor is zero, a `BMathError` is raised
   ## The remainder is always an integer
-  if b.isZero:
-    raise newException(BMathError, "Modulus by zero")
-  case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue mod b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(a.iValue mod b.round.iValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.round.iValue mod b.iValue)
-  of (vkFloat, vkFloat):
-    result = newValue(a.round.iValue mod b.round.iValue)
-  else:
-    raise newException(BMathError, "'%' operands are not numbers")
+  try:
+    case (a.kind, b.kind)
+    of (vkInt, vkInt):
+      result = newValue(a.iValue mod b.iValue)
+    of (vkInt, vkFloat):
+      result = newValue(a.iValue mod b.round.iValue)
+    of (vkFloat, vkInt):
+      result = newValue(a.round.iValue mod b.iValue)
+    of (vkFloat, vkFloat):
+      result = newValue(a.round.iValue mod b.round.iValue)
+    else:
+      raise newException(BMathError, "'%' operands are not numbers")
+  except DivByZeroDefect:
+    raise newException(BMathError, "Division by zero")
 
-proc createVector*(values: openArray[Expression], evaluator: proc(node: Expression): Value): Value =
+proc createVector*(
+    values: openArray[Expression], evaluator: proc(node: Expression): Value
+): Value =
   # values should contain exactly 2 values (length and function or value to be repeated)
   if values.len != 2:
     raise newException(BMathError, "Vector should have exactly 2 values")
   let size = evaluator(values[0])
   if size.kind != vkInt:
     raise newException(BMathError, "Vector length should be an integer")
-  let value = evaluator(values[1])
-  # check if value is a function that receives 1 argument
-  case value.kind
-  of vkFunction:
-    if value.params.len != 1:
-      raise newException(BMathError, "Vector value should be a function that receives 1 argument")
-  of vkNativeFunc:
-    if value.nativeFunc.argc != 1:
-      raise newException(BMathError, "Vector value should be a function that receives 1 argument")
-  else:
-    if value.kind != vkInt and value.kind != vkFloat and value.kind != vkVector:
-      raise newException(BMathError, "Vector value should be a number, a vector, or a function")
   var elems = newSeqOfCap[Value](size.iValue)
   for i in 0 ..< size.iValue:
-    if value.kind == vkFunction or value.kind == vkNativeFunc:
-      let funcInvoke = Expression(kind: ekFuncInvoke, callee: value,
-                                  arguments: @[Expression(kind: ekValue, value: newValue(i))])
-      debug "Evaluating function with argument: ", i
-      elems.add(evaluator(funcInvoke))
-    else:
-      elems.add(value)
+    let funcInvoke = Expression(
+      kind: ekFuncInvoke,
+      fun: values[1],
+      arguments: @[Expression(kind: ekInt, iValue: i)],
+    )
+    elems.add(evaluator(funcInvoke))
   result = newValue(elems)
 
 proc nth*(vector: Value, index: Value): Value =

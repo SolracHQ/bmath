@@ -111,8 +111,8 @@ mixedVector = vectorOne + floatVector             # [2.5, 4.5, 6.5]
 # [17] Fibonacci Sequence Generation Using Vectors
 # Use a lambda generator that updates internal state to produce Fibonacci numbers.
 fibonacciGenerator = {
-  num1 = 0
-  num2 = 1
+  local num1 = 0
+  local num2 = 1
   |_| {
     temp = num2
     num2 = num1 + num2
@@ -157,7 +157,9 @@ tenthFibonacciRecursive = recursiveFibonacci(10)  # Expected: 55
 # Directly use lambdas in function calls. For example, creating a vector with an inline lambda.
 inlineLambdaVector = vec(5, |i| i + 1)  # Expected: [1, 2, 3, 4, 5]
 
+directlyInvoked = (|x| x * 2)(5)  # Directly invokes a lambda with an argument (result: 10)
+
 # [20] Error-Resilient Feature Demonstration
-# This example intentionally causes an error (division by zero) to demonstrate error handling.
-errorExample = 10 / 0   # Intentional error: division by zero.
+# This example intentionally causes an error 
+# errorExample = [1, 2] + [3, 4, 5]  # This will raise an error due to vector size mismatch
 # following expressions will not be evaluated due to the error above

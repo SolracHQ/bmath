@@ -11,7 +11,7 @@
 
 import std/[strutils, tables]
 
-import types, logging
+import ../types/[position, token, errors]
 
 type Lexer* = object ## State container for lexical analysis process
   source: string ## Input string being processed
@@ -32,6 +32,10 @@ const KEYWORDS: Table[string, TokenKind] = {
   "return": tkReturn,
   "local": tkLocal,
 }.toTable
+
+proc atEnd*(lexer: Lexer): bool {.inline.} =
+  ## Checks if the lexer has reached the end of the input
+  lexer.current >= lexer.source.len
 
 proc parseNumber*(lexer: var Lexer, start: int): Token =
   ## Parses a number literal (int or float) starting at `start`
@@ -59,15 +63,10 @@ proc parseNumber*(lexer: var Lexer, start: int): Token =
       lexer.col.inc
   let numStr = lexer.source[start ..< lexer.current]
   try:
-    let value = if isFloat:
-      Value(kind: vkFloat, fValue: parseFloat(numStr))
+    return if isFloat:
+      Token(kind: tkFloat, fValue: parseFloat(numStr))
     else:
-      Value(kind: vkInt, iValue: parseInt(numStr))
-    return Token(
-      kind: tkValue,
-      position: Position(line: lexer.line, column: startCol),
-      value: value,
-    )
+      Token(kind: tkInt, iValue: parseInt(numStr))
   except:
     raise newBMathError("Invalid number format '" & numStr & "' is not a valid number",
                         Position(line: lexer.line, column: startCol))
@@ -80,33 +79,32 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
     lexer.current.inc
     lexer.col.inc
   let ident = lexer.source[start ..< lexer.current]
+  let position = Position(line: lexer.line, column: startCol)
   if ident == "true":
     return Token(
-      kind: tkValue,
-      position: Position(line: lexer.line, column: startCol),
-      value: Value(kind: vkBool, bValue: true),
+      kind: tkTrue,
+      position: position,
     )
   elif ident == "false":
     return Token(
-      kind: tkValue,
-      position: Position(line: lexer.line, column: startCol),
-      value: Value(kind: vkBool, bValue: false),
+      kind: tkFalse,
+      position: position,
     )
   if KEYWORDS.hasKey(ident):
     if KEYWORDS[ident] == tkIf:
-      lexer.ifStack.add(Position(line: lexer.line, column: startCol))
+      lexer.ifStack.add(position)
     elif KEYWORDS[ident] == tkEndIf:
       if lexer.ifStack.len > 0:
         discard lexer.ifStack.pop
       else:
-        raise newBMathError("Unmatched 'endif'", Position(line: lexer.line, column: startCol))
+        raise newBMathError("Unmatched 'endif'", position)
     return Token(
       kind: KEYWORDS[ident],
-      position: Position(line: lexer.line, column: startCol),
+      position: position,
     )
   return Token(
     kind: tkIdent,
-    position: Position(line: lexer.line, column: startCol),
+    position: position,
     name: ident,
   )
 
@@ -221,10 +219,6 @@ proc next*(lexer: var Lexer): Token =
     return parseSymbol(lexer)
   # End of input
   return Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
-
-proc atEnd*(lexer: Lexer): bool {.inline.} =
-  ## Checks if the lexer has reached the end of the input
-  lexer.current >= lexer.source.len
 
 proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
   ## Collects all tokens until end of input

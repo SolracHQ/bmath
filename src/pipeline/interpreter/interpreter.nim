@@ -7,7 +7,7 @@
 ## - Type promotion (int/float) during operations
 
 import std/[sequtils]
-import types, value, logging, environment
+import ../../types/[value, errors, expression], ../../value, environment
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
@@ -32,21 +32,29 @@ proc evalAssign*(
 template emptyLabeled(val: Value): LabeledValue =
   LabeledValue(value: val)
 
-proc applyFunction*(interpreter: Interpreter, funValue: Value, 
-                      args: seq[Expression], env: Environment, pos: Position): LabeledValue =
+proc applyFunction*(
+    interpreter: Interpreter,
+    funValue: Value,
+    args: seq[Expression],
+    env: Environment,
+    pos: Position,
+): LabeledValue =
   ## Dispatches a function value (native or user-defined) with the given arguments
   if funValue.kind == vkNativeFunc:
     let native = funValue.nativeFunc
     if args.len != native.argc:
-      raise newBMathError("Function expects " & $(native.argc) &
-                             " arguments, got " & $(args.len), pos)
+      raise newBMathError(
+        "Function expects " & $(native.argc) & " arguments, got " & $(args.len), pos
+      )
     let evaluator = proc(node: Expression): Value =
       interpreter.eval(node, env).value
     return native.fun(args, evaluator).emptyLabeled
   elif funValue.kind == vkFunction:
     if args.len != funValue.params.len:
-      raise newBMathError("Function expects " & $(funValue.params.len) &
-                             " arguments, got " & $(args.len), pos)
+      raise newBMathError(
+        "Function expects " & $(funValue.params.len) & " arguments, got " & $(args.len),
+        pos,
+      )
     let funcEnv = newEnv(parent = funValue.env)
     for i, param in funValue.params.pairs:
       funcEnv[param, true] = interpreter.eval(args[i], env).value
@@ -54,16 +62,11 @@ proc applyFunction*(interpreter: Interpreter, funValue: Value,
   else:
     raise newBMathError("Provided value is not callable", pos)
 
-proc evalFuncCall*(interpreter: Interpreter, node: Expression, env: Environment): LabeledValue =
-  ## Evaluates a function call when the function is looked up via its identifier.
-  if not env.hasKey(node.fun):
-    raise newBMathError("Undefined function: " & node.fun, node.position)
-  let funValue = env[node.fun]
-  return applyFunction(interpreter, funValue, node.args, env, node.position)
-
-proc evalFunInvoke*(interpreter: Interpreter, node: Expression, env: Environment): LabeledValue =
+proc evalFunInvoke*(
+    interpreter: Interpreter, node: Expression, env: Environment
+): LabeledValue =
   ## Evaluates a function invocation when the callee is already computed.
-  let callee = node.callee
+  let callee = interpreter.eval(node.fun, env).value
   if callee.kind != vkFunction and callee.kind != vkNativeFunc:
     raise newBMathError("Value is not a function", node.position)
   return applyFunction(interpreter, callee, node.arguments, env, node.position)
@@ -80,8 +83,7 @@ proc evalBlock*(
 
 proc evalFunc*(interpreter: Interpreter, node: Expression, env: Environment): Value =
   ## Evaluates a function definition.
-  let funcEnv = newEnv(parent = env)
-  return Value(kind: vkFunction, body: node.body, env: funcEnv, params: node.params)
+  return Value(kind: vkFunction, body: node.body, env: env, params: node.params)
 
 proc eval*(
     interpreter: Interpreter, node: Expression, environment: Environment = nil
@@ -90,11 +92,23 @@ proc eval*(
   ## Uses helper procs for multi-line expressions.
   assert node != nil, "Node is nil"
   let env = if environment == nil: interpreter.env else: environment
-  template binOp(node, op: untyped): LabeledValue = LabeledValue(value: op(interpreter.eval(node.left, env).value, interpreter.eval(node.right, env).value))
+  template binOp(node, op: untyped): LabeledValue =
+    LabeledValue(
+      value: op(
+        interpreter.eval(node.left, env).value, interpreter.eval(node.right, env).value
+      )
+    )
+
   try:
     case node.kind
-    of ekValue:
-      return LabeledValue(value: node.value)
+    of ekInt:
+      return LabeledValue(value: Value(kind: vkInt, iValue: node.iValue))
+    of ekFloat:
+      return LabeledValue(value: Value(kind: vkFloat, fValue: node.fValue))
+    of ekTrue:
+      return LabeledValue(value: Value(kind: vkBool, bValue: true))
+    of ekFalse:
+      return LabeledValue(value: Value(kind: vkBool, bValue: false))
     of ekAdd:
       return binOp(node, `+`)
     of ekSub:
@@ -119,23 +133,21 @@ proc eval*(
       return binOp(node, `>=`)
     of ekLe:
       return binOp(node, `<=`)
-    of ekAnd: return binOp(node, `and`)
-    of ekOr: return binOp(node, `or`)
+    of ekAnd:
+      return binOp(node, `and`)
+    of ekOr:
+      return binOp(node, `or`)
     of ekVector:
       return
         Value(
           kind: vkVector, values: node.values.mapIt(interpreter.eval(it, env).value)
         ).emptyLabeled
-    of ekGroup:
-      return LabeledValue(value: interpreter.eval(node.child, env).value)
     of ekNeg:
       return LabeledValue(value: -interpreter.eval(node.operand, env).value)
     of ekAssign:
       return evalAssign(interpreter, node, env)
     of ekIdent:
       return LabeledValue(value: env[node.name])
-    of ekFuncCall:
-      return evalFuncCall(interpreter, node, env)
     of ekBlock:
       return evalBlock(interpreter, node, env)
     of ekFunc:
@@ -146,10 +158,15 @@ proc eval*(
       for branch in node.branches:
         let condition = interpreter.eval(branch.condition, env).value
         if condition.kind != vkBool:
-          raise newBMathError("Expected boolean condition, got " & $condition.kind, branch.condition.position)
+          raise newBMathError(
+            "Expected boolean condition, got " & $condition.kind,
+            branch.condition.position,
+          )
         if condition.bValue:
-          return interpreter.eval(branch.thenBranch, env)
+          return interpreter.eval(branch.then, env)
       return interpreter.eval(node.elseBranch, env)
+    of ekError:
+      raise newBMathError(node.message, node.position)
   except BMathError as e:
     e.position = node.position
     raise e

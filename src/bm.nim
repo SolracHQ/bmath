@@ -9,9 +9,8 @@
 ## 2. Read input (file or direct expression)
 ## 3. Execute through engine.run()
 ## 4. Output result
-
 import std/terminal
-import cli, engine
+import cli, engine, types/[errors, value]
 
 proc handleHelp() =
   echo HELP

@@ -31,9 +31,11 @@ power -> unary ("^" unary)*
 
 unary -> ("-")? primary
 
-primary -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN
+primary -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation
 
-function -> "|" ( IDENTIFIER )? ( "," IDENTIFIER )* "|" expression
+functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" | "(" expression ")" "(" ( expression ("," expression)* )? ")"
+
+function -> "|" ( ( IDENTIFIER ) ( "," IDENTIFIER )* )? "|" expression
 
 vector -> "[" ( expression ("," expression)* )? "]"
 ```
