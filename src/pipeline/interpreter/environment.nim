@@ -56,17 +56,18 @@ let global = Environment(
 )
 
 proc newEnv*(parent: Environment = nil): Environment =
-  if parent == nil: return global
+  if parent == nil:
+    return global
   new(result)
   result.parent = parent
 
 proc `[]`*(env: Environment, name: string): Value =
-  if env == nil:
-    raise newException(BMathError, "Variable '" & name & "' is not defined")
-  elif name in env.values:
-    return env.values[name]
-  else:
-    return env.parent[name]
+  var currentEnv = env
+  while currentEnv != nil:
+    if name in currentEnv.values:
+      return currentEnv.values[name]
+    currentEnv = currentEnv.parent
+  raise newException(BMathError, "Variable '" & name & "' is not defined")
 
 proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
   if env == nil:

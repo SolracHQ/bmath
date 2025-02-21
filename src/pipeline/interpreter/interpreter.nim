@@ -7,14 +7,16 @@
 ## - Type promotion (int/float) during operations
 
 import std/[sequtils]
-import ../../types/[value, errors, expression], ../../value, environment
+import
+  ../../types/[value, errors, expression], ../../value, environment, ../parser/optimizer
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
+  optimizer: Optimizer
 
-proc newInterpreter*(): Interpreter =
+proc newInterpreter*(optimizer: Optimizer): Interpreter =
   ## Initializes a new interpreter with an empty environment
-  result = Interpreter()
+  result = Interpreter(optimizer: optimizer)
   result.env = newEnv()
 
 proc eval*(
@@ -47,7 +49,8 @@ proc applyFunction*(
         "Function expects " & $(native.argc) & " arguments, got " & $(args.len), pos
       )
     let evaluator = proc(node: Expression): Value =
-      interpreter.eval(node, env).value
+      let optimized = interpreter.optimizer.optimize(node)
+      interpreter.eval(optimized, env).value
     return native.fun(args, evaluator).emptyLabeled
   elif funValue.kind == vkFunction:
     if args.len != funValue.params.len:

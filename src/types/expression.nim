@@ -173,6 +173,8 @@ proc newCondition*(
 proc stringify(node: Expression, indent: int): string =
   ## Helper for AST string representation (internal use)
   let indentation = " ".repeat(indent)
+  if node.isNil:
+    return indentation & "nil\n"
   case node.kind
   of ekInt:
     result = indentation & "int: " & $node.iValue & "\n"
@@ -197,6 +199,7 @@ proc stringify(node: Expression, indent: int): string =
     result = indentation & "ident: " & node.name & "\n"
   of eKAssign:
     result = indentation & "assign: " & node.ident & "\n"
+    result.add("\n" & indentation & "  isLocal: " & $node.isLocal & "\n")
     result.add(node.expr.stringify(indent + 2))
   of eKBlock:
     result = indentation & "block:\n"
@@ -233,4 +236,83 @@ proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
   if node.isNil:
     return "nil"
-  node.stringify(0)
+  for line in node.stringify(0).splitLines:
+    if line.len > 0:
+      result.add(line)
+      result.add("\n")
+  result = result.strip
+
+proc `==`*(a, b: Expression): bool =
+  ## Compares two AST nodes for equality
+  if a.isNil and b.isNil:
+    return true
+  elif a.isNil or b.isNil:
+    return false
+  elif a.position != b.position:
+    return false
+  elif a.kind != b.kind:
+    return false
+  if a.kind != b.kind:
+    return false
+  case a.kind
+  of ekInt:
+    return a.iValue == b.iValue
+  of ekFloat:
+    return a.fValue == b.fValue
+  of ekTrue, ekFalse:
+    return true
+  of ekAdd, ekSub, ekMul, ekDiv, ekPow, ekMod, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
+      ekAnd, ekOr:
+    return a.left == b.left and a.right == b.right
+  of ekNeg:
+    return a.operand == b.operand
+  of ekIdent:
+    return a.name == b.name
+  of ekAssign:
+    return a.ident == b.ident and a.expr == b.expr and a.isLocal == b.isLocal
+  of ekFuncInvoke:
+    if not (a.fun == b.fun):
+      return false
+    if a.arguments.len != b.arguments.len:
+      return false
+    for i in 0 ..< a.arguments.len:
+      if not (a.arguments[i] == b.arguments[i]):
+        return false
+    return true
+  of ekBlock:
+    if a.expressions.len != b.expressions.len:
+      return false
+    for i in 0 ..< a.expressions.len:
+      if not (a.expressions[i] == b.expressions[i]):
+        return false
+    return true
+  of ekFunc:
+    if a.params.len != b.params.len:
+      return false
+    for i in 0 ..< a.params.len:
+      if a.params[i] != b.params[i]:
+        return false
+    return a.body == b.body
+  of ekVector:
+    if a.values.len != b.values.len:
+      return false
+    for i in 0 ..< a.values.len:
+      if not (a.values[i] == b.values[i]):
+        return false
+    return true
+  of ekIf:
+    if a.branches.len != b.branches.len:
+      return false
+    for i in 0 ..< a.branches.len:
+      if not (a.branches[i].condition == b.branches[i].condition):
+        return false
+      if not (a.branches[i].then == b.branches[i].then):
+        return false
+    if a.elseBranch == nil and b.elseBranch == nil:
+      return true
+    elif a.elseBranch != nil and b.elseBranch != nil:
+      return a.elseBranch == b.elseBranch
+    else:
+      return false
+  of ekError:
+    return a.message == b.message

@@ -25,13 +25,13 @@ type Engine* = ref object ## Stateful evaluation engine maintaining interpreter 
 proc newEngine*(replMode: bool = false): Engine =
   ## Creates a new evaluation engine with fresh state
   new(result)
-  result.interpreter = newInterpreter()
   result.optimizer = newOptimizer()
+  result.interpreter = newInterpreter(result.optimizer)
   result.replMode = replMode
 
 iterator run*(engine: Engine, source: string): LabeledValue =
   ## Executes source while maintaining interpreter state
-  debug("Running source: ", source)
+  # debug("Running source: ", source)
   var lexer = newLexer(source)
 
   while not lexer.atEnd:
@@ -52,10 +52,14 @@ iterator run*(engine: Engine, source: string): LabeledValue =
     debug("AST: \n", ast)
 
     debug("Starting optimization process")
-    ast = wrapError("OPTIMIZATION", fatal = not engine.replMode):
+    let optimized_ast = wrapError("OPTIMIZATION", fatal = not engine.replMode):
       engine.optimizer.optimize(ast)
-    debug("Optimized AST: \n", ast)
+
+    if optimized_ast == ast:
+      debug("No optimizations applied")
+    else:
+      debug("Optimized AST: \n", optimized_ast)
 
     debug("Starting evaluation")
     wrapError("RUNTIME", fatal = not engine.replMode):
-      yield engine.interpreter.eval(ast)
+      yield engine.interpreter.eval(optimized_ast)
