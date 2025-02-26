@@ -16,7 +16,28 @@ A lightweight command-line tool for evaluating mathematical expressions. bmath n
   - Recursive functions for complex calculations
 - Type promotion (int/float) and contextual error handling with source positioning
 
-For a thorough demonstration of these capabilities, see the [example file](examples/example.bm).
+## Example Files
+
+- **[vector_examples.bm](examples/vector_examples.bm)**  
+  demonstrates vector creation, element-wise arithmetic, dot product calculations, and higher-order functions like map, filter, and reduce.
+
+- **[numeric_examples.bm](examples/numeric_examples.bm)**  
+  showcases integer and floating-point literals, scientific notation, and combining numeric expressions.
+
+- **[function_examples.bm](examples/function_examples.bm)**  
+  contains examples of basic function definitions, higher-order functions, function closures, recursion, and inline lambda invocations.
+
+- **[recursive_examples.bm](examples/recursive_examples.bm)**  
+  provides recursive implementations for calculating factorials and fibonacci numbers.
+
+- **[arithmetic_examples.bm](examples/arithmetic_examples.bm)**  
+  highlights basic arithmetic operations such as addition, subtraction, multiplication, division, exponentiation, modulus, and complex arithmetic expressions using core math functions.
+
+- **[advanced_core_functions.bm](examples/advanced_core_functions.bm)**  
+  introduces advanced math functions including trigonometric (sin, cos, tan), logarithmic, and exponential functions along with combined expressions.
+
+- **[comparison_examples.bm](examples/comparison_examples.bm)**  
+  explains equality, inequality, relational comparisons, chained conditions, and the usage of logical operators.
 
 ## Installation
 
