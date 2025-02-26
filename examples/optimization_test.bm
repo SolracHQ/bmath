@@ -1,0 +1,36 @@
+# Test Case 1: Basic Arithmetic & Constant Folding
+x = 3 + 4 * 2          # Expected optimized constant: 11
+y = (2 ^ 3) + 1        # Expected optimized constant: 9
+
+# Test Case 2: Block Scoping and Local Variables
+a = 10
+{
+  local a = a + 1       # Inner local variable shadows outer 'a'
+  b = a * 2             # b is computed using inner 'a'
+}
+c = a                   # Outer 'a' remains 10
+
+# Test Case 3: Vector Optimization and Element-wise Operations
+vector1 = [1, 2, 3]
+vector2 = vec(3, |i| i * i)  # Expected: [0, 1, 4]
+dotProduct = dot(vector1, vector2) # Expected dot product: 1*0 + 2*1 + 3*4 = 14
+
+# Test Case 4: Closure and Side Effects in Lambdas
+counter = 0
+inc = || counter = counter + 1
+inc()
+inc()
+resultCounter = counter   # Expected: 2
+
+# Test Case 5: Recursive Function Optimization (Factorial)
+fact = |n| if (n == 0) 1 else n * fact(n - 1) endif
+fact5 = fact(5)           # Expected: 120
+
+# Test Case 6: Boolean Short-Circuit Optimization
+shortCircuitAnd = false & !(10 / 0 == 0)  # Should directly return false without error
+shortCircuitOr  = true | (10 / 0 == 0)    # Should directly return true without error
+
+# Test Case 7: Vector Lambda with External State Modification
+a = 0
+resultVec = vec(5, |_| a = a + 2)          # Expected: [2, 4, 6, 8, 10]
+finalA = a                                 # Expected: 10
