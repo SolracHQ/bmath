@@ -131,11 +131,10 @@ directIfTrue = if (5 > 3) 100 else 50 endif       # Evaluates to 100 (if express
 directIfFalse = if (5 < 3) 100 else 50 endif      # Evaluates to 50
 
 # Boolean expressions using if with logical operators and short-circuit evaluation.
-errorDivision = |value| (10 / value == value)
 # The '&' operator short-circuits if the left operand is false.
-andShortCircuit = false & errorDivision(0)    # Evaluates to false without error
+andShortCircuit = false & 10/0   # Evaluates to false without error
 # The '|' operator short-circuits if the left operand is true.
-orShortCircuit = true | errorDivision(0)       # Evaluates to true without error
+orShortCircuit = true | 10/0      # Evaluates to true without error
 
 # Recursive Factorial Function
 factorialFunction = |n| if (n == 0) 1 

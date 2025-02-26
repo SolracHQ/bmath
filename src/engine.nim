@@ -13,9 +13,7 @@ import
   pipeline/parser/[parser, optimizer],
   pipeline/interpreter/interpreter,
   logging,
-  types/[value, errors]
-when defined(debug):
-  import types/expression
+  types/[value, errors, expression]
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter
@@ -26,7 +24,7 @@ proc newEngine*(replMode: bool = false): Engine =
   ## Creates a new evaluation engine with fresh state
   new(result)
   result.optimizer = newOptimizer()
-  result.interpreter = newInterpreter(result.optimizer)
+  result.interpreter = newInterpreter()
   result.replMode = replMode
 
 iterator run*(engine: Engine, source: string): LabeledValue =
@@ -54,6 +52,9 @@ iterator run*(engine: Engine, source: string): LabeledValue =
     debug("Starting optimization process")
     let optimized_ast = wrapError("OPTIMIZATION", fatal = not engine.replMode):
       engine.optimizer.optimize(ast)
+
+    when defined(printAst):
+      echo optimized_ast
 
     if optimized_ast == ast:
       debug("No optimizations applied")

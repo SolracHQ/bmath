@@ -168,7 +168,7 @@ proc parseUnary(parser: var Parser): Expression =
     of ekFalse:
       return newBoolExpr(pos, true)
     else:
-      return newNegExpr(pos, operand)
+      return newNotExpr(pos, operand)
   else:
     return parser.parsePrimary()
 

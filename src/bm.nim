@@ -32,7 +32,8 @@ proc handleRepl() =
   var incompleteMode = false
   let isatty = stdin.isatty
   while true:
-    if not isatty: discard # not interactive
+    if not isatty:
+      discard # not interactive
     elif not incompleteMode:
       stdout.write "bm> "
     else:
@@ -52,7 +53,9 @@ proc handleRepl() =
     except IncompleteInputError:
       incompleteMode = true
       continue
-    except BMathError as e: discard # error already handled
+    except BMathError as e:
+      discard
+    # error already handled
     except IOError as e:
       quit() # EOF reached or Ctrl+C
 

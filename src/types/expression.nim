@@ -1,4 +1,4 @@
-import std/strutils
+import std/[strutils, sequtils]
 
 import position
 
@@ -38,6 +38,7 @@ type
     # Logical operations
     ekAnd ## Logical AND operation (left & right)
     ekOr ## Logical OR operation (left | right)
+    ekNot ## Logical NOT operation (!operand)
 
     # Identifiers and assignments
     ekIdent ## Identifier reference
@@ -81,7 +82,7 @@ type
         ekAnd, ekOr:
       left*: Expression ## Left operand of binary operation
       right*: Expression ## Right operand of binary operation
-    of ekNeg:
+    of ekNeg, ekNot:
       operand*: Expression ## Operand for unary negation
     of ekIdent:
       name*: string ## Identifier name
@@ -107,6 +108,22 @@ type
       message*: string ## Error message
     of ekTrue, ekFalse:
       discard ## Kind is enough to determine the value
+
+proc newLiteralExpr*[T](pos: Position, value: T): Expression =
+  ## Creates a new literal expression based on the type of value.
+  when T is int:
+    result = newIntExpr(pos, value)
+  elif T is float:
+    result = newFloatExpr(pos, value)
+  elif T is bool:
+    result = newBoolExpr(pos, value)
+  elif T is seq[Expression]:
+    result = newVectorExpr(pos, value)
+  else:
+    raise newException(ValueError, "Invalid type for literal expression")
+
+proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
+  result = Expression(kind: ekNot, position: pos, operand: operand)
 
 proc newIntExpr*(pos: Position, value: int): Expression {.inline.} =
   result = Expression(kind: ekInt, position: pos, iValue: value)
@@ -147,6 +164,11 @@ proc newFuncCallExpr*(
   result = Expression(
     kind: ekFuncInvoke, position: pos, fun: newIdentExpr(pos, funName), arguments: args
   )
+
+proc newFuncInvokeExpr*(
+    pos: Position, fun: Expression, args: seq[Expression]
+): Expression {.inline.} =
+  result = Expression(kind: ekFuncInvoke, position: pos, fun: fun, arguments: args)
 
 proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.inline.} =
   result = Expression(kind: ekBlock, position: pos, expressions: expressions)
@@ -194,6 +216,9 @@ proc stringify(node: Expression, indent: int): string =
     result.add(node.right.stringify(indent + 4))
   of eKNeg:
     result = indentation & "neg:\n"
+    result.add(node.operand.stringify(indent + 2))
+  of eKNot:
+    result = indentation & "not:\n"
     result.add(node.operand.stringify(indent + 2))
   of eKIdent:
     result = indentation & "ident: " & node.name & "\n"
@@ -266,6 +291,8 @@ proc `==`*(a, b: Expression): bool =
     return a.left == b.left and a.right == b.right
   of ekNeg:
     return a.operand == b.operand
+  of ekNot:
+    return a.operand == b.operand
   of ekIdent:
     return a.name == b.name
   of ekAssign:
@@ -316,3 +343,74 @@ proc `==`*(a, b: Expression): bool =
       return false
   of ekError:
     return a.message == b.message
+
+proc asSource*(expr: Expression): string =
+  ## Returns a string representation of the expression in source code format
+  case expr.kind
+  of ekInt:
+    return $expr.iValue
+  of ekFloat:
+    return $expr.fValue
+  of ekTrue:
+    return "true"
+  of ekFalse:
+    return "false"
+  of ekAdd:
+    return asSource(expr.left) & " + " & asSource(expr.right)
+  of ekSub:
+    return asSource(expr.left) & " - " & asSource(expr.right)
+  of ekMul:
+    return asSource(expr.left) & " * " & asSource(expr.right)
+  of ekDiv:
+    return asSource(expr.left) & " / " & asSource(expr.right)
+  of ekPow:
+    return asSource(expr.left) & " ^ " & asSource(expr.right)
+  of ekMod:
+    return asSource(expr.left) & " % " & asSource(expr.right)
+  of ekEq:
+    return asSource(expr.left) & " == " & asSource(expr.right)
+  of ekNe:
+    return asSource(expr.left) & " != " & asSource(expr.right)
+  of ekLt:
+    return asSource(expr.left) & " < " & asSource(expr.right)
+  of ekLe:
+    return asSource(expr.left) & " <= " & asSource(expr.right)
+  of ekGt:
+    return asSource(expr.left) & " > " & asSource(expr.right)
+  of ekGe:
+    return asSource(expr.left) & " >= " & asSource(expr.right)
+  of ekAnd:
+    return asSource(expr.left) & " & " & asSource(expr.right)
+  of ekOr:
+    return asSource(expr.left) & " | " & asSource(expr.right)
+  of ekNot:
+    return "!" & asSource(expr.operand)
+  of ekNeg:
+    return "-" & asSource(expr.operand)
+  of ekIdent:
+    return expr.name
+  of ekAssign:
+    return expr.ident & " = " & asSource(expr.expr)
+  of ekFuncInvoke:
+    return
+      asSource(expr.fun) & "(" & expr.arguments.mapIt(asSource(it)).join(", ") & ")"
+  of ekBlock:
+    return "{" & expr.expressions.mapIt(asSource(it)).join("\n") & "}"
+  of ekFunc:
+    return "|" & expr.params.join(", ") & "| " & asSource(expr.body)
+  of ekVector:
+    return "[" & expr.values.mapIt(asSource(it)).join(", ") & "]"
+  of ekIf:
+    var src = ""
+    if expr.branches.len > 0:
+      src.add(
+        "if (" & asSource(expr.branches[0].condition) & ") " &
+          asSource(expr.branches[0].then)
+      )
+      for branch in expr.branches[1 .. ^1]:
+        src.add(" elif (" & asSource(branch.condition) & ") " & asSource(branch.then))
+    if expr.elseBranch != nil:
+      src.add(" else " & asSource(expr.elseBranch))
+    return src
+  of ekError:
+    return "error: " & expr.message

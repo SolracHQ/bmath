@@ -93,7 +93,7 @@ proc `$`*(value: Value): string =
   of vkNativeFunc:
     "<native func>"
   of vkFunction:
-    "<function>"
+    "|" & value.params.join(", ") & "| " & value.body.asSource
   of vkVector:
     "[" & value.values.mapIt($it).join(", ") & "]"
   of vkBool:

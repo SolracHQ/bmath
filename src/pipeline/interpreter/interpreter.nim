@@ -7,16 +7,14 @@
 ## - Type promotion (int/float) during operations
 
 import std/[sequtils]
-import
-  ../../types/[value, errors, expression], ../../value, environment, ../parser/optimizer
+import ../../types/[value, errors, expression, position], ../../[value], environment
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
-  optimizer: Optimizer
 
-proc newInterpreter*(optimizer: Optimizer): Interpreter =
+proc newInterpreter*(): Interpreter =
   ## Initializes a new interpreter with an empty environment
-  result = Interpreter(optimizer: optimizer)
+  result = Interpreter()
   result.env = newEnv()
 
 proc eval*(
@@ -49,10 +47,12 @@ proc applyFunction*(
         "Function expects " & $(native.argc) & " arguments, got " & $(args.len), pos
       )
     let evaluator = proc(node: Expression): Value =
-      let optimized = interpreter.optimizer.optimize(node)
-      interpreter.eval(optimized, env).value
+      interpreter.eval(node, env).value
     return native.fun(args, evaluator).emptyLabeled
   elif funValue.kind == vkFunction:
+    #debug funValue
+    #debug "args: ", args
+    #debug interpreter.eval(newIdentExpr(newPosition(0, 0), "factorialFunction"), env).value
     if args.len != funValue.params.len:
       raise newBMathError(
         "Function expects " & $(funValue.params.len) & " arguments, got " & $(args.len),
@@ -147,6 +147,8 @@ proc eval*(
         ).emptyLabeled
     of ekNeg:
       return LabeledValue(value: -interpreter.eval(node.operand, env).value)
+    of ekNot:
+      return LabeledValue(value: not interpreter.eval(node.operand, env).value)
     of ekAssign:
       return evalAssign(interpreter, node, env)
     of ekIdent:
