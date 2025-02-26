@@ -4,7 +4,7 @@
 New core functions are now available:
 - `map(vector, lambda)` – Applies a function to each element in a vector.
 - `filter(vector, lambda)` – Returns a new vector with elements that satisfy the lambda condition.
-- `reduce(vector, lambda, initial)` – Combines vector elements into a single value using the lambda function.
+- `reduce(vector, lambda)` – Combines vector elements into a single value using the lambda function.
 - `sum(vector)` – Calculates the total of all elements in a vector.
 - `all(vector, lambda)` – Checks if all elements match the lambda condition.
 - `any(vector, lambda)` – Verifies if at least one element meets the lambda condition.
