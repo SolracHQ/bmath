@@ -1,0 +1,39 @@
+# Numeric Examples in Math CLI Language
+# =====================================
+# This file demonstrates the use of numeric literals in the math CLI language.
+# It includes examples of integer literals, floating-point literals, and scientific notation.
+
+# [1] Integer Literals
+integerLiteral = 42              # An integer literal
+negativeInteger = -7             # A negative integer literal
+zeroInteger = 0                   # Zero as an integer
+
+# [2] Floating-Point Literals
+piConstant = 3.1415              # A floating-point literal representing pi
+eulerNumber = 2.71828             # A floating-point literal representing Euler's number
+smallFloat = 1.6e-6               # A small floating-point number in scientific notation
+
+# [3] Scientific Notation
+avogadroNumber = 6.022e23        # Avogadro's number in scientific notation
+largeFloat = 1.0e10               # A large floating-point number
+tinyFloat = 1.0e-10               # A very small floating-point number
+
+# [4] Combining Literals in Expressions
+combinedResult = integerLiteral + piConstant  # Adding integer and float: 42 + 3.1415 = 45.1415
+scientificSum = avogadroNumber + smallFloat    # Adding large and small float: 6.022e23 + 1.6e-6 ≈ 6.022e23
+
+# [5] Using Literals in Functions
+# Example: Using pow function with literals
+squaredPi = pow(piConstant, 2)  # Squaring pi: (3.1415)^2 ≈ 9.86902225
+cubedInteger = pow(integerLiteral, 3)  # Cubing the integer: 42^3 = 74088
+
+# [6] Displaying Results
+# The following expressions can be used to display results in the CLI.
+displayInteger = integerLiteral
+displayFloat = piConstant
+displayScientific = avogadroNumber
+
+# Expected Outputs:
+# displayInteger should output: 42
+# displayFloat should output: 3.1415
+# displayScientific should output: 6.022e23

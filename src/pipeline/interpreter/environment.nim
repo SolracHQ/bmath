@@ -1,10 +1,12 @@
 import std/[sets, tables, macros]
-import ../../types/[value, errors, expression], ../../value
+import value
+import ../../types/[value, errors, expression]
 
 const CORE_NAMES* = toHashSet(
   [
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
-    "last",
+    "last", "sin", "cos", "tan", "log", "exp", "len", "map", "filter", "reduce", "sum",
+    "any", "all",
   ]
 )
 
@@ -41,16 +43,28 @@ let global = Environment(
   values: toTable(
     {
       "exit": native(quit()),
-      "pow": native(`^`(a, b)),
-      "sqrt": native(sqrt(a)),
-      "floor": native(floor(a)),
-      "ceil": native(ceil(a)),
-      "round": native(round(a)),
-      "dot": native(dotProduct(a, b)),
-      "nth": native(nth(a, b)),
-      "first": native(first(a)),
-      "last": native(last(a)),
+      "pow": native(`^`(number, number)),
+      "sqrt": native(sqrt(number)),
+      "floor": native(floor(number)),
+      "ceil": native(ceil(number)),
+      "round": native(round(number)),
+      "dot": native(dotProduct(vector, vector)),
+      "nth": native(nth(vector, number)),
+      "first": native(first(vector)),
+      "last": native(last(vector)),
       "vec": newValue(NativeFunc(argc: 2, fun: createVector)),
+      "map": newValue(NativeFunc(argc: 2, fun: map)),
+      "filter": newValue(NativeFunc(argc: 2, fun: filter)),
+      "reduce": newValue(NativeFunc(argc: 2, fun: reduce)),
+      "sin": native(sin(number)),
+      "cos": native(cos(number)),
+      "tan": native(tan(number)),
+      "log": native(log(number, base)),
+      "exp": native(exp(number)),
+      "len": native(len(vector)),
+      "sum": native(sum(vector)),
+      "any": native(any(vector)),
+      "all": native(all(vector)),
     }
   ),
 )

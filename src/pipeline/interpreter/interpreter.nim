@@ -7,7 +7,7 @@
 ## - Type promotion (int/float) during operations
 
 import std/[sequtils]
-import ../../types/[value, errors, expression, position], ../../[value], environment
+import ../../types/[value, errors, expression, position], value, environment
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment

@@ -54,7 +54,7 @@ iterator run*(engine: Engine, source: string): LabeledValue =
       engine.optimizer.optimize(ast)
 
     when defined(printAst):
-      echo optimized_ast
+      stderr.writeLine optimized_ast
 
     if optimized_ast == ast:
       debug("No optimizations applied")

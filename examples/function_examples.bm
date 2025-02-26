@@ -1,0 +1,45 @@
+# Function Examples in Math CLI Language
+# =======================================
+# This file illustrates the use of functions in the math CLI language.
+# It includes examples of defining functions, calling them, and using higher-order functions.
+
+# [1] Basic Function Definition and Invocation
+# Define a simple function that adds two numbers.
+addFunction = |x, y| x + y
+resultAdd = addFunction(5, 3)  # Expected: 8
+
+# [2] Higher-Order Functions
+# Define a higher-order function that takes a function and a number, and applies the function to the number.
+applyFunction = |fn, num| fn(num)
+squareFunction = |x| x ^ 2
+resultSquare = applyFunction(squareFunction, 5)  # Expected: 25 (5^2)
+
+# [3] Function Returning Another Function
+# Define a function that returns another function for adding a specific number.
+makeAdder = |increment| |x| x + increment
+addFive = makeAdder(5)
+resultAddFive = addFive(10)  # Expected: 15 (10 + 5)
+
+# [4] Recursive Function Example
+# Define a recursive function to calculate the factorial of a number.
+factorialFunction = |n| if (n == 0) 1 
+  else n * factorialFunction(n - 1) 
+  endif
+factorialOfFive = factorialFunction(5)  # Expected: 120
+
+# [5] Using Functions as First-Class Citizens
+# Define a function that takes another function as an argument and applies it to a list of numbers.
+applyToList = |fn, list| vec(len(list), |i| fn(nth(list, i)))
+numbers = [1, 2, 3, 4]
+squaredNumbers = applyToList(squareFunction, numbers)  # Expected: [1, 4, 9, 16]
+
+# [6] Inline Lambda Invocation
+# Directly use a lambda to compute the cube of a number.
+cubeResult = (|x| x ^ 3)(3)  # Expected: 27
+
+# [7] Function Composition
+# Define two functions and compose them.
+doubleFunction = |x| x * 2
+addThreeFunction = |x| x + 3
+composeFunctions = |x| addThreeFunction(doubleFunction(x))
+resultCompose = composeFunctions(4)  # Expected: 11 ((4 * 2) + 3)

@@ -1,0 +1,29 @@
+# Recursive Function Examples
+# ============================
+# This file contains examples of recursive functions in the math CLI language.
+# Each example is explained with expected outputs.
+
+# [1] Recursive Factorial Function
+# This function calculates the factorial of a number using recursion.
+factorialFunction = |n| if (n == 0) 1 
+  else n * factorialFunction(n - 1) 
+  endif
+
+# Example usage:
+factorialOfFive = factorialFunction(5)  # Expected: 120
+factorialOfZero = factorialFunction(0)   # Expected: 1
+
+# [2] Recursive Fibonacci Function
+# This function generates Fibonacci numbers using recursion.
+recursiveFibonacci = |n| {
+  if (n <= 1)
+    n
+  else
+    recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2)
+  endif
+}
+
+# Example usage:
+tenthFibonacciRecursive = recursiveFibonacci(10)  # Expected: 55
+fifthFibonacciRecursive = recursiveFibonacci(5)    # Expected: 5
+firstFibonacciRecursive = recursiveFibonacci(1)     # Expected: 1
