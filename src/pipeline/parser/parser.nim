@@ -6,8 +6,8 @@
 ## - Parenthesis grouping
 ## - Syntax error detection
 ## - Abstract syntax tree construction
-
-import types, logging, value
+import fusion/matching
+import ../../types/[expression, errors, token]
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse
@@ -54,41 +54,32 @@ template `match`(parser: var Parser, kind: set[TokenKind]): bool =
   else:
     false
 
-template constantFolding(
-    op: untyped, l: Expression, r: Expression, pos: Position, nk: ExpressionKind
-): Expression =
-  ## Helper template for constant folding
-  try:
-    if l.kind == ekValue and r.kind == ekValue:
-      let val = op(l.value, r.value)
-      Expression(kind: ekValue, value: val, position: pos)
-    else:
-      Expression(kind: nk, left: l, r: right, position: pos)
-  except BMathError as e:
-    e.position = pos
-    raise e
-
 proc newParser(tokens: seq[Token]): Parser {.inline.} =
   ## Creates new parser from token sequence
   Parser(tokens: tokens, current: 0)
 
 proc parseExpression(parser: var Parser): Expression {.inline.}
 
-proc parseGroup(parser: var Parser): Expression =
-  ## Parses grouped expressions: (expression) and constant folding for groups
+proc parseGroupOrFuncInvoke(parser: var Parser): Expression =
+  ## Parses grouped expressions: (expression) and, if immediately followed by '(',
+  ## parses function invocations on the grouped expression.
   let pos = parser.previous().position
   let expr = parser.parseExpression()
   if not parser.match({tkRpar}):
-    raise newBMathError("Expected ')'", parser.previous().position)
-  # Constant folding for groups: if the expression is a number, return it directly
-  if expr.kind == ekValue:
-    return expr
-  return Expression(kind: ekGroup, child: expr, position: pos)
-
-proc parseNumber(parser: var Parser): Expression =
-  ## Parses numeric literals
-  let token = parser.previous()
-  return Expression(kind: ekValue, value: token.value, position: token.position)
+    raise newBMathError("Expected ')'", pos)
+  if parser.match({tkLpar}):
+    var args: seq[Expression] = @[]
+    while true:
+      if parser.match({tkRpar}):
+        break
+      args.add(parser.parseExpression())
+      if parser.match({tkRpar}):
+        break
+      if not parser.match({tkComma}):
+        raise newBMathError("Expected ','", parser.previous().position)
+    result = Expression(kind: ekFuncInvoke, position: pos, fun: expr, arguments: args)
+  else:
+    result = expr
 
 proc parseIdentifierOrFuncCall(parser: var Parser): Expression =
   ## Parses identifiers and distinguishes between variable references and function calls.
@@ -101,11 +92,9 @@ proc parseIdentifierOrFuncCall(parser: var Parser): Expression =
         break
       if not parser.match({tkComma}):
         raise newBMathError("Expected ','", parser.previous().position)
-    return Expression(
-      kind: ekFuncCall, fun: token.name, args: args, position: token.position
-    )
+    return newFuncCallExpr(token.position, token.name, args)
   else:
-    return Expression(kind: ekIdent, name: token.name, position: token.position)
+    return newIdentExpr(token.position, token.name)
 
 proc parseFunction(parser: var Parser): Expression =
   ## Parses function definitions with parameters and body.
@@ -119,7 +108,7 @@ proc parseFunction(parser: var Parser): Expression =
       break
     if not parser.match({tkComma}):
       raise newBMathError("Expected ','", parser.previous().position)
-  return Expression(kind: ekFunc, params: params, body: parser.parseExpression())
+  return newFuncExpr(parser.previous().position, params, parser.parseExpression())
 
 proc parseVector(parser: var Parser): Expression =
   ## Parses vector literals
@@ -131,14 +120,21 @@ proc parseVector(parser: var Parser): Expression =
       break
     if not parser.match({tkComma}):
       raise newBMathError("Expected ','", parser.previous().position)
-  return Expression(kind: ekVector, values: values, position: pos)
+  return newVectorExpr(pos, values)
 
 proc parsePrimary(parser: var Parser): Expression =
   ## Parses primary expressions: numbers, groups, identifiers, and function definitions.
+  let token = parser.peek()
   if parser.match({tkLpar}):
-    return parser.parseGroup()
-  elif parser.match({tkValue}):
-    return parser.parseNumber()
+    return parser.parseGroupOrFuncInvoke()
+  elif parser.match({tkInt}):
+    return newIntExpr(token.position, token.iValue)
+  elif parser.match({tkFloat}):
+    return newFloatExpr(token.position, token.fValue)
+  elif parser.match({tkTrue}):
+    return newBoolExpr(token.position, true)
+  elif parser.match({tkFalse}):
+    return newBoolExpr(token.position, false)
   elif parser.match({tkIdent}):
     return parser.parseIdentifierOrFuncCall()
   elif parser.match({tkLine}):
@@ -155,9 +151,24 @@ proc parseUnary(parser: var Parser): Expression =
     let pos = parser.previous().position
     let operand = parser.parseUnary()
     # Unary constant folding: if the operand is a number, return its negation directly
-    if operand.kind == ekValue:
-      return Expression(kind: ekValue, value: -operand.value, position: pos)
-    return Expression(kind: ekNeg, operand: operand, position: pos)
+    case operand.kind
+    of ekInt:
+      return newIntExpr(pos, -operand.iValue)
+    of ekFloat:
+      return newFloatExpr(pos, -operand.fValue)
+    else:
+      return newNegExpr(pos, operand)
+  if parser.match({tkNot}):
+    let pos = parser.previous().position
+    let operand = parser.parseUnary()
+    # Unary constant folding: if the operand is a boolean, return its negation directly
+    case operand.kind
+    of ekTrue:
+      return newBoolExpr(pos, false)
+    of ekFalse:
+      return newBoolExpr(pos, true)
+    else:
+      return newNotExpr(pos, operand)
   else:
     return parser.parsePrimary()
 
@@ -168,7 +179,7 @@ proc parsePower(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseUnary()
     # power constant folding: if both operands are numbers, return the result directly
-    result = constantFolding(`^`, result, right, prev.position, ekPow)
+    result = newBinaryExpr(prev.position, ekPow, result, right)
   return result
 
 proc parseFactor(parser: var Parser): Expression =
@@ -180,13 +191,13 @@ proc parseFactor(parser: var Parser): Expression =
     case prev.kind
     of tkMul:
       # multiplication constant folding: if both operands are numbers, return the result directly
-      result = constantFolding(`*`, result, right, prev.position, ekMul)
+      result = newBinaryExpr(prev.position, ekMul, result, right)
     of tkDiv:
       # division constant folding: if both operands are numbers, return the result directly
-      result = constantFolding(`/`, result, right, prev.position, ekDiv)
+      result = newBinaryExpr(prev.position, ekDiv, result, right)
     of tkMod:
       # modulus constant folding: if both operands are numbers, return the result directly
-      result = constantFolding(`%`, result, right, prev.position, ekMod)
+      result = newBinaryExpr(prev.position, ekMod, result, right)
     else:
       discard # Should never happen, is unreachable
 
@@ -199,10 +210,10 @@ proc parseTerm(parser: var Parser): Expression =
     case prev.kind
     of tkSub:
       # subtraction constant folding: if both operands are numbers, return the result directly
-      result = constantFolding(`-`, result, right, prev.position, ekSub)
+      result = newBinaryExpr(prev.position, ekSub, result, right)
     else:
       # addition constant folding: if both operands are numbers, return the result directly
-      result = constantFolding(`+`, result, right, prev.position, ekAdd)
+      result = newBinaryExpr(prev.position, ekAdd, result, right)
 
 proc parseComparison(parser: var Parser): Expression =
   ## Parses < <= > >= comparisons
@@ -212,13 +223,13 @@ proc parseComparison(parser: var Parser): Expression =
     let right = parser.parseTerm()
     case prev.kind
     of tkLt:
-      result = constantFolding(`<`, result, right, prev.position, ekLt)
+      result = newBinaryExpr(prev.position, ekLt, result, right)
     of tkLe:
-      result = constantFolding(`<=`, result, right, prev.position, ekLe)
+      result = newBinaryExpr(prev.position, ekLe, result, right)
     of tkGt:
-      result = constantFolding(`>`, result, right, prev.position, ekGt)
+      result = newBinaryExpr(prev.position, ekGt, result, right)
     of tkGe:
-      result = constantFolding(`>=`, result, right, prev.position, ekGe)
+      result = newBinaryExpr(prev.position, ekGe, result, right)
     else:
       discard # Should never happen, is unreachable
 
@@ -230,9 +241,9 @@ proc parseEquality(parser: var Parser): Expression =
     let right = parser.parseComparison()
     case prev.kind
     of tkEq:
-      result = constantFolding(`==`, result, right, prev.position, ekEq)
+      result = newBinaryExpr(prev.position, ekEq, result, right)
     of tkNe:
-      result = constantFolding(`!=`, result, right, prev.position, ekNe)
+      result = newBinaryExpr(prev.position, ekNe, result, right)
     else:
       discard # Should never happen, is unreachable
 
@@ -244,9 +255,9 @@ proc parseBoolean(parser: var Parser): Expression =
     let right = parser.parseEquality()
     case prev.kind
     of tkAnd:
-      result = constantFolding(`and`, result, right, prev.position, ekAnd)
+      result = newBinaryExpr(prev.position, ekAnd, result, right)
     of tkLine:
-      result = constantFolding(`or`, result, right, prev.position, ekOr)
+      result = newBinaryExpr(prev.position, ekOr, result, right)
     else:
       discard # Should never happen, is unreachable
 
@@ -255,17 +266,18 @@ proc parseAssignment(parser: var Parser): Expression =
   if parser.match({tkIdent, tkLocal}):
     let local = parser.previous().kind == tkLocal
     if local and not parser.match({tkIdent}):
-      raise newBMathError("Expected identifier after 'local'", parser.previous().position)
+      raise
+        newBMathError("Expected identifier after 'local'", parser.previous().position)
     let name = parser.previous()
     if parser.match({tkAssign}):
       let value = parser.parseExpression()
-      return Expression(
-        kind: ekAssign, ident: name.name, expr: value, isLocal: local, position: name.position
-      )
-    elif not local: 
+      return newAssignExpr(name.position, name.name, value, local)
+    elif not local:
       parser.back()
     else:
-      raise newBMathError("Expected '=' after local '" & name.name & "'", parser.previous().position)
+      raise newBMathError(
+        "Expected '=' after local '" & name.name & "'", parser.previous().position
+      )
   return parser.parseBoolean()
 
 proc parseBlock(parser: var Parser): Expression =
@@ -291,7 +303,7 @@ proc parseBlock(parser: var Parser): Expression =
       break
   if expressions.len == 0:
     raise newBMathError("Blocks must contain at least one expression", pos)
-  return Expression(kind: ekBlock, expressions: expressions, position: pos)
+  return newBlockExpr(pos, expressions)
 
 proc parseIf(parser: var Parser): Expression =
   ## Parses if-elif-else-endif expressions
@@ -301,7 +313,7 @@ proc parseIf(parser: var Parser): Expression =
 
   let pos = parser.previous().position
   cleanUpNewlines()
-  var branches: seq[tuple[condition: Expression, thenBranch: Expression]] = @[]
+  var branches: seq[Condition] = @[]
   var elseBranch: Expression
   # Check ( after if
   if not parser.match({tkLpar}):
@@ -312,7 +324,7 @@ proc parseIf(parser: var Parser): Expression =
   if not parser.match({tkRpar}):
     raise newBMathError("Expected ')' after condition", parser.previous().position)
   cleanUpNewlines()
-  branches.add((condition: condition, thenBranch: parser.parseExpression()))
+  branches.add(newCondition(condition, parser.parseExpression()))
 
   # Parse elif conditions
   while parser.match({tkElif}):
@@ -324,7 +336,7 @@ proc parseIf(parser: var Parser): Expression =
     if not parser.match({tkRpar}):
       raise newBMathError("Expected ')' after condition", parser.previous().position)
     cleanUpNewlines()
-    branches.add((condition: condition, thenBranch: parser.parseExpression()))
+    branches.add(newCondition(condition, parser.parseExpression()))
 
   # Parse else branch, else is always required
   cleanUpNewlines()
@@ -338,8 +350,7 @@ proc parseIf(parser: var Parser): Expression =
   if not parser.match({tkEndIf}):
     raise
       newBMathError("Expected 'endif' after if-elif-else", parser.previous().position)
-  result =
-    Expression(kind: ekIf, branches: branches, elseBranch: elseBranch, position: pos)
+  result = newIfExpr(pos, branches, elseBranch)
 
 proc parseExpression(parser: var Parser): Expression {.inline.} =
   if parser.match({tkLCurly}):

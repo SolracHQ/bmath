@@ -1,0 +1,56 @@
+# New Functions Examples in Math CLI Language
+# ============================================
+# This file introduces new functions recently added to the math CLI language.
+# Each function is demonstrated with examples and expected results.
+
+# [1] Sine Function
+# The sine function computes the sine of an angle given in radians.
+angleInRadians = 1.0                     # Example angle
+sineResult = sin(angleInRadians)          # Expected: ~0.8415
+
+# [2] Cosine Function
+# The cosine function computes the cosine of an angle given in radians.
+cosineResult = cos(angleInRadians)        # Expected: ~0.5403
+
+# [3] Tangent Function
+# The tangent function computes the tangent of an angle given in radians.
+tangentResult = tan(angleInRadians)       # Expected: ~1.5574
+
+# [4] Logarithm Function
+# The log function computes the logarithm of a number with respect to a given base.
+numberForLog = 100                         # Example number
+baseForLog = 10                            # Base 10
+logResult = log(numberForLog, baseForLog) # Expected: 2.0
+
+# [5] Exponential Function
+# The exp function computes the exponential of a given number (e^x).
+exponentialInput = 2                       # Example input
+expResult = exp(exponentialInput)          # Expected: ~7.3891
+
+# [6] Combined Trigonometric Functions
+# Demonstrating the use of multiple trigonometric functions together.
+angle = 0.5                                # Example angle
+combinedResult = sin(angle) + cos(angle)  # Expected: ~1.1547
+
+# [7] Logarithm with Different Bases
+# Using the log function with a different base.
+numberForLog2 = 256                        # Example number
+baseForLog2 = 2                            # Base 2
+logResultBase2 = log(numberForLog2, baseForLog2) # Expected: 8.0
+
+# [8] Exponential Growth Example
+# Demonstrating exponential growth using the exp function.
+growthRate = 0.05                          # Example growth rate
+time = 10                                  # Example time period
+growthResult = exp(growthRate * time)     # Expected: ~1.6487 (e^(0.05*10))
+
+# [9] Sine and Cosine Relationship
+# Demonstrating the relationship between sine and cosine.
+sineValue = sin(angleInRadians)            # Sine of the angle
+cosineValue = cos(angleInRadians)          # Cosine of the angle
+relationshipCheck = sineValue^2 + cosineValue^2 # Expected: ~1 (Pythagorean identity)
+
+# [10] Using Logarithm for Scaling
+# Demonstrating the use of logarithm for scaling values.
+valueToScale = 1000                        # Example value
+scaledValue = log(valueToScale, 10)        # Expected: 3.0 (log base 10 of 1000)

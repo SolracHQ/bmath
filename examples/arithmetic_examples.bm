@@ -1,0 +1,78 @@
+# Arithmetic Examples in Math CLI Language
+# ==========================================
+# This file showcases basic arithmetic operations such as addition, subtraction,
+# multiplication, division, exponentiation, and modulus. Each operation is explained
+# with examples and expected results.
+
+# [1] Addition
+additionExample = 5 + 3                     # Adding two numbers
+# Expected result: 8
+
+# [2] Subtraction
+subtractionExample = 10 - 4                  # Subtracting one number from another
+# Expected result: 6
+
+# [3] Multiplication
+multiplicationExample = 7 * 6                 # Multiplying two numbers
+# Expected result: 42
+
+# [4] Division
+divisionExample = 20 / 5                      # Dividing one number by another
+# Expected result: 4.0
+
+# [5] Exponentiation
+exponentiationExample = 2 ^ 3                 # Raising a number to a power
+# Expected result: 8
+
+# [6] Modulus
+modulusExample = 29 % 5                       # Finding the remainder of a division
+# Expected result: 4
+
+# [7] Combined Operations
+combinedExample = (5 + 3) * (10 - 2) / 2     # Combining multiple operations
+# Expected result: 32.0
+
+# [8] Edge Cases
+# Division by zero should raise an exception.
+# Uncommenting the following line will cause an error.
+# divisionByZeroExample = 10 / 0              # This will raise an exception
+
+# [9] Using Variables in Arithmetic
+a = 15
+b = 4
+variableExample = a - b                       # Using variables in arithmetic
+# Expected result: 11
+
+# [10] Chained Assignments
+chainAssignedA = chainAssignedB = 5           # Chain assignment
+additionChain = chainAssignedA + chainAssignedB  # Adding two chained variables
+# Expected result: 10
+
+# [11] Arithmetic with Scientific Notation
+sciNotationExample = 1e3 + 2e2                # Adding numbers in scientific notation
+# Expected result: 1200.0
+
+# [12] Complex Arithmetic Expression
+complexExpression = (3 + 2) * (4 - 1) ^ 2    # A more complex arithmetic expression
+# Expected result: 45.0
+
+# [13] Using core Functions
+# Example of using the pow function for exponentiation
+powExample = pow(3, 4)                       # 3 raised to the power of 4
+# Expected result: 81
+
+# Example of using the sqrt function
+sqrtExample = sqrt(16)                       # Square root of 16
+# Expected result: 4.0
+
+# Example of using the round function
+roundExample = round(3.6)                     # Rounding a number
+# Expected result: 4
+
+# Example of using the floor function
+floorExample = floor(3.9)                     # Floor of a number
+# Expected result: 3
+
+# Example of using the ceil function
+ceilExample = ceil(3.1)                       # Ceiling of a number
+# Expected result: 4

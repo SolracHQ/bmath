@@ -1,14 +1,14 @@
 ## logging.nim
 
 import std/[times, strformat]
-import types
+import types/[errors]
 
-proc logError*(error: ref BMathError) =
+proc logError*(error: ref BMathError, context: string) =
   ## Central error logging with context
   let timeStamp = now().format("HH:mm:ss'.'fff")
   const RED = "\x1b[31m"
   const RESET = "\x1b[0m"
-  stderr.writeLine fmt"{timeStamp} [{error.context} {RED}ERROR{RESET}] {error.position}: {error.msg}"
+  stderr.writeLine fmt"{timeStamp} [{context} {RED}ERROR{RESET}] {error.position}: {error.msg}"
   #when defined(debug): stderr.writeLine error.getStackTrace
 
 when defined(debug):
@@ -26,12 +26,8 @@ when defined(debug):
     debugInternal(args.join(" "))
 
 else:
-  template debug*(_: varargs[untyped]) =
+  template debug*(_: varargs[untyped, `$`]) =
     discard
-
-template newBMathError*(message: string, pos: Position): ref BMathError =
-  ## Creates a new BMathError with given position and message
-  (ref BMathError)(position: pos, msg: message)
 
 template wrapError*(ctx: string, fatal: bool = true, body: untyped): untyped =
   ## Unified error handling context wrapper
@@ -48,10 +44,7 @@ template wrapError*(ctx: string, fatal: bool = true, body: untyped): untyped =
     body
   except IncompleteInputError as e: raise e
   except BMathError as e:
-    e.context = ctx
-    when defined(expression):
-      e.source = expression
-    logError(e)
+    logError(e, ctx)
     if fatal:
       quit(1)
     else:

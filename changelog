@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 0.5.0
+New core functions are now available:
+- `map(vector, lambda)` – Applies a function to each element in a vector.
+- `filter(vector, lambda)` – Returns a new vector with elements that satisfy the lambda condition.
+- `reduce(vector, lambda, initial)` – Combines vector elements into a single value using the lambda function.
+- `sum(vector)` – Calculates the total of all elements in a vector.
+- `all(vector, lambda)` – Checks if all elements match the lambda condition.
+- `any(vector, lambda)` – Verifies if at least one element meets the lambda condition.
+
+Additionally:
+- Enhanced performance with an optimization mechanism to reduce redundant computations.
+- Updated core library documentation with comprehensive usage guidelines.
+- Refactored the interpreter for clearer error messages and easier debugging.
+- Improved documentation examples for smoother feature adoption.
+
 ## Version 0.4.0
 - Added support for comparison operators (==, !=, <, <=, >, >=).
 - Implemented conditional expressions (if, else, elif, endif).

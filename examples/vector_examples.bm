@@ -1,0 +1,84 @@
+# Vector Operations Examples
+# ===========================
+# This file demonstrates various vector operations in the math CLI language.
+# Examples include vector creation, element-wise arithmetic, dot product calculations,
+# and using the higher-order functions all, any, and sum.
+
+# [1] Vector Creation
+# Creating a vector of integers.
+integerVector = [1, 2, 3, 4, 5]  # A simple vector of integers.
+
+# Creating a vector of floats.
+floatVector = [1.1, 2.2, 3.3]     # A vector of floating-point numbers.
+
+# Creating a vector using a lambda function.
+# This creates a vector of length 5 where each element is the index plus 1.
+indexVector = vec(5, |i| i + 1)    # Expected: [1, 2, 3, 4, 5]
+
+# [2] Element-wise Arithmetic Operations
+# Element-wise addition of two vectors.
+vectorA = [1, 2, 3]
+vectorB = [4, 5, 6]
+vectorAddition = vectorA + vectorB  # Expected: [5, 7, 9]
+
+# Element-wise subtraction of two vectors.
+vectorSubtraction = vectorB - vectorA  # Expected: [3, 3, 3]
+
+# Scalar multiplication of a vector.
+scalarMultiplication = 2 * vectorA  # Expected: [2, 4, 6]
+
+# [3] Dot Product Calculation
+# Calculating the dot product of two vectors.
+# The dot product of [1, 2, 3] and [4, 5, 6] is 1*4 + 2*5 + 3*6 = 32.
+dotProductResult = dot(vectorA, vectorB)  # Expected: 32
+
+# [4] Mixing Integer and Float Vectors
+# Mixing integer and float vectors promotes results to float.
+mixedVector = vectorA + floatVector  # Expected: [2.1, 4.2, 6.3]
+
+# [5] Vector Length and Accessing Elements
+# Accessing elements using the nth function.
+firstElement = first(integerVector)  # Expected: 1
+lastElement = last(integerVector)     # Expected: 5
+thirdElement = nth(integerVector, 2)  # Expected: 3 (0-based index)
+
+# [6] Vector Size and Error Handling
+# Attempting to add vectors of different sizes will raise an error.
+# Uncommenting the following line will cause an error due to size mismatch.
+# errorExample = [1, 2] + [3, 4, 5]  # This will raise an error due to vector size mismatch.
+
+# [7] Higher-Order Functions Examples
+
+# Using map to double each element of integerVector.
+doubledVector = map(integerVector, |x| x * 2)  # Expected: [2, 4, 6, 8, 10]
+
+# Using filter to select only even numbers from integerVector.
+evenVector = filter(integerVector, |x| (x % 2) == 0)  # Expected: [2, 4]
+
+# Using reduce to sum all elements of integerVector.
+reduceSum = reduce(integerVector, |a, b| a + b)  # Expected: 15
+
+# [8] Examples for 'all', 'any', and 'sum'
+
+# Using sum to compute the total of a vector of values.
+totalSum = sum(integerVector)  # Expected: 15
+
+# Creating a boolean vector
+booleanVector1 = [true, true, true]
+booleanVector2 = [true, false, true]
+
+# Using all to check if all elements in booleanVector1 are true.
+allTrue1 = all(booleanVector1)  # Expected: true
+
+# Using all to check if all elements in booleanVector2 are true.
+allTrue2 = all(booleanVector2)  # Expected: false
+
+# Using any to check if any element in booleanVector1 is true.
+anyTrue1 = any(booleanVector1)  # Expected: true
+
+# Using any to check if any element in booleanVector2 is true.
+anyTrue2 = any(booleanVector2)  # Expected: true
+
+# Using any with a vector where all elements are false.
+booleanVector3 = [false, false, false]
+anyTrue3 = any(booleanVector3)  # Expected: false

@@ -1,13 +1,12 @@
 # Package
 
-version       = "0.4.0"
-author        = "solrac"
-description   = "Simple Math CLI utility"
-license       = "MIT"
-srcDir        = "src"
-bin           = @["bm"]
-binDir        = "bin"
-
+version = "0.4.0"
+author = "solrac"
+description = "Simple Math CLI utility"
+license = "MIT"
+srcDir = "src"
+bin = @["bm"]
+binDir = "bin"
 
 # Dependencies
 

@@ -1,0 +1,55 @@
+# Comparison Operators Examples
+# =====================================
+# This file provides examples of equality and comparison operators in the math CLI language.
+
+# [1] Equality Check
+equalityTest = (5 + 3) == 8                 # Expected: true
+inequalityTest = 10 != 5                     # Expected: true
+
+# [2] Less Than Comparison
+lessThanTest = 3 < 7                         # Expected: true
+lessThanFalse = 10 < 2                       # Expected: false
+
+# [3] Greater Than Comparison
+greaterThanTest = 10 > 2                     # Expected: true
+greaterThanFalse = 5 > 8                     # Expected: false
+
+# [4] Less Than or Equal Comparison
+lessOrEqualTest = 4 <= 4                     # Expected: true
+lessOrEqualFalse = 5 <= 3                    # Expected: false
+
+# [5] Greater Than or Equal Comparison
+greaterOrEqualTest = 5 >= 2                  # Expected: true
+greaterOrEqualFalse = 3 >= 4                  # Expected: false
+
+# [6] Chained Comparisons
+chainedComparison = (5 < 10) & (10 > 5)      # Expected: true (both conditions are true)
+chainedComparisonFalse = (5 < 10) & (10 < 5) # Expected: false (second condition is false)
+
+# [7] Using Comparisons in Conditional Expressions
+conditionalResult = if (5 > 3) 0 else 1 endif  # Expected: 0
+conditionalResultFalse = if (5 < 3) 0 else 1 endif  # Expected: 1
+
+# [8] Combining Comparisons with Logical Operators
+andCondition = (5 > 3) & (3 < 5)             # Expected: true
+orCondition = (5 < 3) | (3 < 5)               # Expected: true
+
+# [9] Comparison with Variables
+a = 10
+b = 20
+comparisonWithVariables = a < b              # Expected: true
+comparisonWithVariablesFalse = a > b         # Expected: false
+
+# [10] Edge Cases
+edgeCaseEquality = (0 == 0)                  # Expected: true
+edgeCaseInequality = (0 != 1)                # Expected: true
+edgeCaseLessThan = (-1 < 0)                  # Expected: true
+edgeCaseGreaterThan = (1 > 0)                 # Expected: true
+
+# [11] Using Comparison Results in Further Calculations
+result = if (5 > 3) 100 else 50 endif        # Expected: 100
+resultFalse = if (5 < 3) 100 else 50 endif   # Expected: 50
+
+# [12] Demonstrating Type Promotion in Comparisons
+intComparison = (5 == 5.0)                    # Expected: true (int and float comparison)
+floatComparison = (5.0 != 5)                  # Expected: false (float and int comparison)

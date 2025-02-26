@@ -1,4 +1,9 @@
-import unittest, ../src/[interpreter, lexer, parser, types], math
+import unittest, math
+import ../src/pipeline/interpreter/interpreter
+import ../src/pipeline/parser/parser
+import ../src/pipeline/lexer
+import ../src/types/value
+import ../src/types/errors
 
 proc evalString(s: string): Value =
   var interp = newInterpreter()
@@ -72,19 +77,23 @@ suite "Interpreter tests":
   test "Local keyword isolation in nested scopes":
     ## Outer assignment and inner block with a local copy.
     ## The inner 'local a' should not affect the outer 'a'.
-    let res = evalString("""a = 10
+    let res = evalString(
+      """a = 10
                                   {
                                     local a = a
                                     a = a + 5
                                     a  # inner block returns 15, but outer 'a' remains 10
                                   }
-                                  a""")
+                                  a"""
+    )
     check res.iValue == 10
 
   test "If expression evaluation with elif and error on missing else branch":
     ## A proper if-elif-else expression.
-    let res = evalString("""a = 10
-                                  if (a == 10) 1 elif (a == 5) 2 else 3 endif""")
+    let res = evalString(
+      """a = 10
+                                  if (a == 10) 1 elif (a == 5) 2 else 3 endif"""
+    )
     check res.iValue == 1
     ## If condition fails and no else branch is provided, an error is expected.
     expect BMathError:
@@ -93,12 +102,14 @@ suite "Interpreter tests":
   test "Complex if-else with nested local scopes":
     ## Combines if-elif structure with a nested block that uses local variables.
     ## Outer 'a' is set to 20; inner block computes a temp value without modifying 'a'.
-    let res = evalString("""a = 20
+    let res = evalString(
+      """a = 20
                                   if (a > 15) {
                                     local temp = a
                                     temp = temp - 5
                                     temp  # returns 15 from inner block
-                                  } elif (a == 10) 10 else 0 endif""")
+                                  } elif (a == 10) 10 else 0 endif"""
+    )
     check res.iValue == 15
 
   test "Comparison and boolean operations expanded":
