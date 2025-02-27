@@ -11,7 +11,6 @@ type
     vvkInt
     vvkFloat
     vvkBool
-    vvkVector
     vvkFunction
     vvkUnoptimized
 
@@ -23,8 +22,6 @@ type
       fValue: float
     of vvkBool:
       bValue: bool
-    of vvkVector:
-      values: seq[Expression]
     of vvkFunction:
       body: Expression
       params: seq[string]
@@ -46,8 +43,6 @@ proc newVirtualValue[T](value: T): VirtualValue =
     result = VirtualValue(kind: vvkFloat, fValue: value)
   elif T is bool:
     result = VirtualValue(kind: vvkBool, bValue: value)
-  elif T is seq[VirtualValue]:
-    result = VirtualValue(kind: vvkVector, values: value)
   else:
     raise newException(ValueError, "Invalid type for virtual value")
 
@@ -159,8 +154,6 @@ proc VirtualValueToExpr(
     return newLiteralExpr(default.position, value.fValue)
   of vvkBool:
     return newBoolExpr(default.position, value.bValue)
-  of vvkVector:
-    return newVectorExpr(default.position, value.values)
   of vvkFunction:
     return newFuncExpr(default.position, value.params, value.body)
   else:

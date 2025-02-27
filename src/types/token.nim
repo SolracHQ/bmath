@@ -1,6 +1,6 @@
 import position
 
-type 
+type
   TokenKind* = enum
     ## Lexical token categories produced by the lexer.
     ## 
@@ -18,6 +18,7 @@ type
     tkPow ## Exponentiation operator '^'
     tkMod ## Modulus operator '%'
     tkAssign ## Assignment operator '='
+    tkChain ## Chained function call operator '->'
 
     # Boolean operators
     tkAnd ## Logical AND operator '&'
@@ -76,7 +77,8 @@ type
       fValue*: float ## Floating-point value for tkFloat tokens
     of tkIdent:
       name*: string ## Identifier name for tkIdent tokens
-    else: discard
+    else:
+      discard
 
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
@@ -96,11 +98,13 @@ proc `$`*(token: Token): string =
     "'%'"
   of tkAssign:
     "'='"
+  of tkChain:
+    "'->'"
   # Boolean operators
   of tkAnd:
-    "'&'"  ## Logical AND operator
+    "'&'" ## Logical AND operator
   of tkNot:
-    "'!'"  ## Logical NOT operator
+    "'!'" ## Logical NOT operator
   # Comparison operators
   of tkEq:
     "'=='"

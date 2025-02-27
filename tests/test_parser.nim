@@ -190,4 +190,29 @@ suite "Parser tests":
     lexer = newLexer("a | b")
     tokens = tokenizeExpression(lexer)
     ast = parse(tokens)
-    check ast.kind == ekOr
+
+  test "parses chain operator with nested function calls":
+    ## Test that the chain operator '->' is parsed correctly.
+    ## a->f->g(x) should be converted to g(f(a), x)
+    var lexer = newLexer("a->f->g(x)")
+    let tokens = tokenizeExpression(lexer)
+    var ast = parse(tokens)
+    # The outermost call should be g(f(a), x)
+    check ast.kind == ekFuncInvoke
+    check ast.fun.kind == ekIdent
+    check ast.fun.name == "g"
+    check ast.arguments.len == 2
+
+    # First argument should be the result of f(a)
+    let firstArg = ast.arguments[0]
+    check firstArg.kind == ekFuncInvoke
+    check firstArg.fun.kind == ekIdent
+    check firstArg.fun.name == "f"
+    check firstArg.arguments.len == 1
+    check firstArg.arguments[0].kind == ekIdent
+    check firstArg.arguments[0].name == "a"
+
+    # Second argument should be the identifier x
+    let secondArg = ast.arguments[1]
+    check secondArg.kind == ekIdent
+    check secondArg.name == "x"

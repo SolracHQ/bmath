@@ -1,60 +1,71 @@
 # Formal Design Document for Math CLI Language
 
 ## Overview
-This document formally defines the syntax and semantics of a math CLI language focused on pure mathematical expressions. 
-Every source line is an expression, except for block expressions, which group multiple expressions enclosed in curly braces (`{ }`) and evaluate to the value of their last expression. 
-Unlike many languages, the language omits constructs strings, or a nil value. Functions are defined inline, and lambda expressions can have optional arguments. 
-If parameters are provided, they are listed as identifiers separated by commas between pipes; an expression must always follow the closing pipe.
+This document formally defines the syntax and semantics of a math CLI language focused on pure mathematical expressions. Every source line is an expression, except for block expressions, which group multiple expressions enclosed in curly braces (`{ }`) and evaluate to the value of their last expression. Unlike many languages, the language omits constructs such as strings or a nil value. Functions are defined inline, and lambda expressions can have optional arguments. If parameters are provided, they are listed as identifiers separated by commas between pipes; an expression must always follow the closing pipe.
+
+The language now also supports chaining function calls using the arrow operator (->) as syntactic sugar. In addition, a new lazy-evaluated data type, seq, is introduced alongside the traditional vec type.
 
 ## Formal Syntax
 
 The grammar is informally defined as follows:
 
 ```
-expression -> ( assignation | block | if_expression )
+expression       -> ( assignation | block | if_expression | chain_expression )
 
-block -> "{" (expression)* "}"
+chain_expression -> simple_expression ( "->" functionInvocation )*
+simple_expression-> ( assignation | block | if_expression | boolean )
 
-assignation -> ( "local" )? ( IDENTIFIER "=" )? ( IDENTIFIER "=" )* boolean
+block            -> "{" (expression)* "}"
 
-if_expression -> "if(" expression ")" expression ( "elif(" expression ")" expression )* "else" expression "endif"
+assignation      -> ( "local" )? ( IDENTIFIER "=" )? ( IDENTIFIER "=" )* boolean
 
-boolean -> comparison ( ("&" | "|") comparison )*
+if_expression    -> "if(" expression ")" expression ( "elif(" expression ")" expression )* "else" expression "endif"
 
-comparison -> term ( ("==" | "!=" | "<" | "<=" | ">" | ">=") term )* 
+boolean          -> comparison ( ("&" | "|") comparison )*
 
-term -> factor ( ("+" | "-") factor )*
+comparison       -> term ( ("==" | "!=" | "<" | "<=" | ">" | ">=") term )* 
 
-factor -> power ( ("*" | "/") power )*
+term             -> factor ( ("+" | "-") factor )*
 
-power -> unary ("^" unary)*
+factor           -> power ( ("*" | "/") power )*
 
-unary -> ("-")? primary
+power            -> unary ("^" unary)*
 
-primary -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation
+unary            -> ("-")? primary
 
-functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" | "(" expression ")" "(" ( expression ("," expression)* )? ")"
+primary          -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation
 
-function -> "|" ( ( IDENTIFIER ) ( "," IDENTIFIER )* )? "|" expression
+functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" 
+           | "(" expression ")" "(" ( expression ("," expression)* )? ")"
 
-vector -> "[" ( expression ("," expression)* )? "]"
+function         -> "|" ( ( IDENTIFIER ) ( "," IDENTIFIER )* )? "|" expression
+
+vector           -> "[" ( expression ("," expression)* )? "]"
 ```
 
-### If Expression details
-- The if expression is a conditional expression that evaluates to the value of the first expression that matches the condition.
-- The if expression can have multiple elif clauses, each with a condition and an expression.
-- The else clause is mandatory and is evaluated if none of the conditions match.
-- The endif keyword marks the end of the if expression.
+### Syntax Sugar: Arrow Operator for Chained Function Calls
+
+Expressions using the arrow operator are transformed as follows: given an expression of the form  
+  A -> f(arg1, arg2, …)  
+it is rewritten to:  
+  f(A, arg1, arg2, …)
+
+For chained calls, such as:  
+  A -> f -> g(arg1)  
+the transformation produces:  
+  g(f(A), arg1)
+
+We choose the arrow operator over the dot notation for clarity.
 
 ## Expression Semantics and Line Structure
 
-- Every line in the source (outside of a block) is treated as a standalone expression.  
+- Every line in the source (outside of a block) is treated as a standalone expression.
 - Block expressions, denoted by curly braces, consist of multiple expressions. All expressions are evaluated, but only the result of the last expression is produced as the block’s value.
 
 ## Variable Scoping and Assignment
 
-- **Assignment:** Variables are assigned using `=`.  
-- **Scope Behavior:**  
+- **Assignment:** Variables are assigned using `=`.
+- **Scope Behavior:**
   - If an assignment targets a variable already declared in an outer scope, the inner assignment modifies the outer variable; shadowing does not occur. For example:
   ```
   a = 8
@@ -71,7 +82,7 @@ vector -> "[" ( expression ("," expression)* )? "]"
   }
   b  // error: variable 'b' does not exist in the outer scope.
   ```
-  - local keyword can be used to declare a variable as local:
+  - The local keyword can be used to declare a variable as local:
   ```
   a = 8
   {
@@ -112,7 +123,7 @@ vector -> "[" ( expression ("," expression)* )? "]"
   ```
 
 - **Closure Uniqueness:**
-  Since functions capture reference to the variable and not a copy, all functions that reference the same variable will observe the same changes:
+  Since functions capture references to variables rather than copies, all functions referencing the same variable will observe the same changes:
   ```
   a = 1
   inc = || a = a + 1
@@ -132,9 +143,19 @@ vector -> "[" ( expression ("," expression)* )? "]"
 
 ## Language Decisions
 
-- Every source line outside of blocks is an expression.  
-- Block expressions use newline separation without semicolons, and they evaluate to the result of their last expression.  
-- Variable assignments in inner scopes modify outer variables if they exist; otherwise, they are local to the block, specific local keyword can be used to declare a variable as local.  
-- Functions capture and manipulate variable references rather than static values. 
-
+- Every source line outside of blocks is an expression.
+- Block expressions use newline separation without semicolons, and they evaluate to the result of their last expression.
+- Variable assignments in inner scopes modify outer variables if they exist; otherwise, they are local to the block. The specific local keyword can be used to declare a variable as local.
+- Functions capture and manipulate variable references rather than static values.
+  
+Additional Notes:
+- Syntactic Sugar for Chained Function Calls: The arrow operator (->) allows an expression on its left to be seamlessly passed as the first argument into a function call on its right. For example,  
+  ```
+  [1, 2, 3, 4] -> filter(|n| n % 2 == 0) -> map(|n| n^2) -> sum()
+  ```  
+  is equivalent to:  
+  ```
+  sum(map(filter([1, 2, 3, 4], |n| n % 2 == 0), |n| n^2))
+  ```
+- Lazy seq Data Type: A new lazy-evaluated sequence type is available via the constructor seq(size, generator), similar to vec. Operations such as map and filter now return a seq. To convert a seq to a vec, use the collect(seq) function.
 

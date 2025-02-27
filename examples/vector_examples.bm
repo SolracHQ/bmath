@@ -56,7 +56,7 @@ doubledVector = map(integerVector, |x| x * 2)  # Expected: [2, 4, 6, 8, 10]
 evenVector = filter(integerVector, |x| (x % 2) == 0)  # Expected: [2, 4]
 
 # Using reduce to sum all elements of integerVector.
-reduceSum = reduce(integerVector, |a, b| a + b)  # Expected: 15
+reduceSum = reduce(integerVector, 0, |a, b| a + b)  # Expected: 15
 
 # [8] Examples for 'all', 'any', and 'sum'
 
@@ -82,3 +82,7 @@ anyTrue2 = any(booleanVector2)  # Expected: true
 # Using any with a vector where all elements are false.
 booleanVector3 = [false, false, false]
 anyTrue3 = any(booleanVector3)  # Expected: false
+
+# [9] Chaining Operations '->'
+# Chaining operations using the '->' operator.
+chainedResult = integerVector -> map(|x| x * 2) -> filter(|x| (x % 4) == 0) -> collect  # Expected: [4, 8]

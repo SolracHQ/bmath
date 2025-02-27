@@ -6,7 +6,7 @@ const CORE_NAMES* = toHashSet(
   [
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
     "last", "sin", "cos", "tan", "log", "exp", "len", "map", "filter", "reduce", "sum",
-    "any", "all",
+    "any", "all", "collect", "seq", "skip", "hasNext", "next",
   ]
 )
 
@@ -53,9 +53,11 @@ let global = Environment(
       "first": native(first(vector)),
       "last": native(last(vector)),
       "vec": newValue(NativeFunc(argc: 2, fun: createVector)),
+      "seq": newValue(NativeFunc(argc: 2, fun: createSeq)),
       "map": newValue(NativeFunc(argc: 2, fun: map)),
       "filter": newValue(NativeFunc(argc: 2, fun: filter)),
-      "reduce": newValue(NativeFunc(argc: 2, fun: reduce)),
+      "reduce": newValue(NativeFunc(argc: 3, fun: reduce)),
+      "collect": native(collect(sequence)),
       "sin": native(sin(number)),
       "cos": native(cos(number)),
       "tan": native(tan(number)),
@@ -65,6 +67,9 @@ let global = Environment(
       "sum": native(sum(vector)),
       "any": native(any(vector)),
       "all": native(all(vector)),
+      "skip": native(skip(sequence, number)),
+      "hasNext": native(hasNext(sequence)),
+      "next": native(next(sequence)),
     }
   ),
 )
