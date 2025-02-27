@@ -19,6 +19,7 @@ type Lexer* = object ## State container for lexical analysis process
   line, col: int ## Current line and column position
   curlyStack: seq[Position] ## Stack of curly brace positions
   ifStack: seq[Position] ## Stack of if positions
+  skipNewline: bool ## Flag to skip newline tokens
 
 proc newLexer*(source: string): Lexer =
   ## Initializes a new lexer with the given mathematical expression
@@ -41,55 +42,59 @@ proc parseNumber*(lexer: var Lexer, start: int): Token =
   ## Parses a number literal (int or float) starting at `start`
   let startCol = lexer.col
   var isFloat = false
-  while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'0' .. '9'}):
+  while lexer.current < lexer.source.len and
+      (lexer.source[lexer.current] in {'0' .. '9'}):
     lexer.current.inc
     lexer.col.inc
   if lexer.current < lexer.source.len and lexer.source[lexer.current] == '.':
     isFloat = true
     lexer.current.inc
     lexer.col.inc
-    while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'0' .. '9'}):
+    while lexer.current < lexer.source.len and
+        (lexer.source[lexer.current] in {'0' .. '9'}):
       lexer.current.inc
       lexer.col.inc
-  if lexer.current < lexer.source.len and (lexer.source[lexer.current] == 'e' or lexer.source[lexer.current] == 'E'):
+  if lexer.current < lexer.source.len and
+      (lexer.source[lexer.current] == 'e' or lexer.source[lexer.current] == 'E'):
     isFloat = true
     lexer.current.inc
     lexer.col.inc
     if lexer.current < lexer.source.len and lexer.source[lexer.current] in {'+', '-'}:
       lexer.current.inc
       lexer.col.inc
-    while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'0' .. '9'}):
+    while lexer.current < lexer.source.len and
+        (lexer.source[lexer.current] in {'0' .. '9'}):
       lexer.current.inc
       lexer.col.inc
   let numStr = lexer.source[start ..< lexer.current]
   try:
-    return if isFloat:
-      Token(kind: tkFloat, fValue: parseFloat(numStr))
-    else:
-      Token(kind: tkInt, iValue: parseInt(numStr))
+    return
+      if isFloat:
+        Token(kind: tkFloat, fValue: parseFloat(numStr))
+      else:
+        Token(kind: tkInt, iValue: parseInt(numStr))
   except:
-    raise newBMathError("Invalid number format '" & numStr & "' is not a valid number",
-                        Position(line: lexer.line, column: startCol))
+    raise newBMathError(
+      "Invalid number format '" & numStr & "' is not a valid number",
+      Position(line: lexer.line, column: startCol),
+    )
 
 proc parseIdentifier*(lexer: var Lexer, start: int): Token =
   ## Parses an identifier starting at `start`
   let startCol = lexer.col
-  while lexer.current < lexer.source.len and (lexer.source[lexer.current] in {'a'..'z', 'A'..'Z', '_'} or
-                                                 lexer.source[lexer.current] in {'0'..'9'}):
+  while lexer.current < lexer.source.len and (
+    lexer.source[lexer.current] in {'a' .. 'z', 'A' .. 'Z', '_'} or
+    lexer.source[lexer.current] in {'0' .. '9'}
+  )
+  :
     lexer.current.inc
     lexer.col.inc
   let ident = lexer.source[start ..< lexer.current]
   let position = Position(line: lexer.line, column: startCol)
   if ident == "true":
-    return Token(
-      kind: tkTrue,
-      position: position,
-    )
+    return Token(kind: tkTrue, position: position)
   elif ident == "false":
-    return Token(
-      kind: tkFalse,
-      position: position,
-    )
+    return Token(kind: tkFalse, position: position)
   if KEYWORDS.hasKey(ident):
     if KEYWORDS[ident] == tkIf:
       lexer.ifStack.add(position)
@@ -98,15 +103,8 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
         discard lexer.ifStack.pop
       else:
         raise newBMathError("Unmatched 'endif'", position)
-    return Token(
-      kind: KEYWORDS[ident],
-      position: position,
-    )
-  return Token(
-    kind: tkIdent,
-    position: position,
-    name: ident,
-  )
+    return Token(kind: KEYWORDS[ident], position: position)
+  return Token(kind: tkIdent, position: position, name: ident)
 
 proc parseSymbol*(lexer: var Lexer): Token =
   ## Parses operator or punctuation symbols
@@ -116,7 +114,12 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of '+':
     kind = tkAdd
   of '-':
-    kind = tkSub
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current + 1] == '>':
+      kind = tkChain
+      lexer.current.inc
+      lexer.col.inc
+    else:
+      kind = tkSub
   of '*':
     kind = tkMul
   of '/':
@@ -126,28 +129,28 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of '%':
     kind = tkMod
   of '=':
-    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current + 1] == '=':
       kind = tkEq
       lexer.current.inc
       lexer.col.inc
     else:
       kind = tkAssign
   of '!':
-    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current + 1] == '=':
       kind = tkNe
       lexer.current.inc
       lexer.col.inc
     else:
       kind = tkNot
   of '<':
-    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current + 1] == '=':
       kind = tkLe
       lexer.current.inc
       lexer.col.inc
     else:
       kind = tkLt
   of '>':
-    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current+1] == '=':
+    if lexer.current + 1 < lexer.source.len and lexer.source[lexer.current + 1] == '=':
       kind = tkGe
       lexer.current.inc
       lexer.col.inc
@@ -170,15 +173,18 @@ proc parseSymbol*(lexer: var Lexer): Token =
     if lexer.curlyStack.len > 0:
       discard lexer.curlyStack.pop
     else:
-      raise newBMathError("Unmatched '}'", Position(line: lexer.line, column: lexer.col))
+      raise
+        newBMathError("Unmatched '}'", Position(line: lexer.line, column: lexer.col))
     kind = tkRCurly
   of '[':
     kind = tkLSquare
   of ']':
     kind = tkRSquare
   else:
-    raise newBMathError("Unexpected character '" & $(lexer.source[lexer.current]) & "'",
-                        Position(line: lexer.line, column: lexer.col))
+    raise newBMathError(
+      "Unexpected character '" & $(lexer.source[lexer.current]) & "'",
+      Position(line: lexer.line, column: lexer.col),
+    )
   lexer.current.inc
   lexer.col.inc
   return Token(kind: kind, position: Position(line: lexer.line, column: startCol))
@@ -191,15 +197,27 @@ proc next*(lexer: var Lexer): Token =
       lexer.current.inc
       lexer.col.inc
       continue
+    if lexer.source[lexer.current] == '\\':
+      # activate skipNewline
+      lexer.skipNewline = true
+      lexer.current.inc
+      lexer.col.inc
+      continue
     # Handle newline: update line/column counters and emit either an EOE or newline token.
     if lexer.source[lexer.current] == '\n':
       lexer.current.inc
       lexer.line.inc
       lexer.col = 1
+      if lexer.skipNewline:
+        lexer.skipNewline = false
+        continue
       if lexer.curlyStack.len == 0 and lexer.ifStack.len == 0:
-        return Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
+        return
+          Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
       else:
-        return Token(kind: tkNewline, position: Position(line: lexer.line, column: lexer.col))
+        return Token(
+          kind: tkNewline, position: Position(line: lexer.line, column: lexer.col)
+        )
     # Skip comments
     if lexer.source[lexer.current] == '#':
       while lexer.current < lexer.source.len and lexer.source[lexer.current] != '\n':
@@ -208,12 +226,13 @@ proc next*(lexer: var Lexer): Token =
       continue
     let start = lexer.current
     # Check for number: digit or a dot with a digit following (as in '.5')
-    if lexer.source[lexer.current] in {'0'..'9'} or
-       (lexer.source[lexer.current] == '.' and lexer.current + 1 < lexer.source.len and
-        lexer.source[lexer.current+1] in {'0'..'9'}):
+    if lexer.source[lexer.current] in {'0' .. '9'} or (
+      lexer.source[lexer.current] == '.' and lexer.current + 1 < lexer.source.len and
+      lexer.source[lexer.current + 1] in {'0' .. '9'}
+    ):
       return parseNumber(lexer, start)
     # Check for identifiers
-    if lexer.source[lexer.current] in {'a'..'z', 'A'..'Z', '_'}:
+    if lexer.source[lexer.current] in {'a' .. 'z', 'A' .. 'Z', '_'}:
       return parseIdentifier(lexer, start)
     # Otherwise, parse as symbol/operator
     return parseSymbol(lexer)
@@ -227,9 +246,11 @@ proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
     if token.kind == tkEoe:
       if lexer.curlyStack.len > 0:
         let last = lexer.curlyStack.pop
-        raise (ref IncompleteInputError)(msg: "Unmatched '{' at " & $last, position: last)
+        raise
+          (ref IncompleteInputError)(msg: "Unmatched '{' at " & $last, position: last)
       if lexer.ifStack.len > 0:
         let last = lexer.ifStack.pop
-        raise (ref IncompleteInputError)(msg: "Unmatched 'if' at " & $last, position: last)
+        raise
+          (ref IncompleteInputError)(msg: "Unmatched 'if' at " & $last, position: last)
       break
     result.add(token)

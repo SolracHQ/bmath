@@ -14,10 +14,11 @@ type
     ## Discriminator for runtime value types stored in `Value` objects.
     vkInt ## Integer value stored in `iValue` field
     vkFloat ## Floating-point value stored in `fValue` field
+    vkBool ## Boolean value stored in `bValue` field
     vkNativeFunc ## Native function stored in `nativeFunc` field
     vkFunction ## User-defined function
     vkVector ## Vector value
-    vkBool ## Boolean value
+    vkSeq ## Sequence value, lazily evaluated
 
   Value* = object
     ## Variant type representing runtime numeric values with type tracking.
@@ -26,16 +27,32 @@ type
       iValue*: int ## Integer storage when kind is `vkInt`
     of vkFloat:
       fValue*: float ## Float storage when kind is `vkFloat`
-    of vkNativeFunc:
-      nativeFunc*: NativeFunc
-    of vkFunction:
-      body*: Expression
-      env*: Environment
-      params*: seq[string]
-    of vkVector:
-      values*: seq[Value]
     of vkBool:
-      bValue*: bool
+      bValue*: bool ## Boolean storage when kind is `vkBool`
+    of vkNativeFunc:
+      nativeFunc*: NativeFunc ## Native function storage when kind is `vkNativeFunc`
+    of vkFunction:
+      body*: Expression ## User-defined function body
+      env*: Environment ## Environment for variable bindings
+      params*: seq[string] ## Parameter names for the function
+    of vkVector:
+      values*: seq[Value] ## Vector storage when kind is `vkVector`
+    of vkSeq:
+      generator*: Generator ## Function to generate sequence values
+      transformers*: seq[Transformer] ## Functions to transform sequence values
+
+  TransformerKind* = enum
+    ## Discriminator for runtime transformer types stored in `Transformer` objects.
+    tkMap ## Map transformer
+    tkFilter ## Filter transformer
+
+  Transformer* = object
+    kind*: TransformerKind ## Type of transformer
+    fun*: proc(x: Value): Value ## Function to transform each item in a sequence.
+
+  Generator* = object
+    atEnd*: proc(): bool ## Function to check if the sequence is exhausted.
+    next*: proc(peek: bool = false): Value ## Function to generate sequence values.
 
   LabeledValue* = object
     label*: string
@@ -83,6 +100,17 @@ proc newValue*(body: Expression, env: Environment, params: seq[string]): Value =
   ## Creates a new Value object wrapping a user-defined function.
   result = Value(kind: vkFunction, body: body, env: env, params: params)
 
+proc `$`*(kind: ValueKind): string =
+  ## Returns string representation of value kind
+  case kind
+  of vkInt: "int"
+  of vkFloat: "float"
+  of vkBool: "bool"
+  of vkNativeFunc: "native func"
+  of vkFunction: "function"
+  of vkVector: "vector"
+  of vkSeq: "seq"
+
 proc `$`*(value: Value): string =
   ## Returns string representation of numeric value
   case value.kind
@@ -90,14 +118,16 @@ proc `$`*(value: Value): string =
     $value.iValue
   of vkFloat:
     $value.fValue
+  of vkBool:
+    $value.bValue
   of vkNativeFunc:
     "<native func>"
   of vkFunction:
     "|" & value.params.join(", ") & "| " & value.body.asSource
   of vkVector:
     "[" & value.values.mapIt($it).join(", ") & "]"
-  of vkBool:
-    $value.bValue
+  of vkSeq:
+    "<seq>"
 
 proc `$`*(val: LabeledValue): string =
   if val.label != "":

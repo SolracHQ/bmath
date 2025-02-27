@@ -354,11 +354,23 @@ proc parseIf(parser: var Parser): Expression =
 
 proc parseExpression(parser: var Parser): Expression {.inline.} =
   if parser.match({tkLCurly}):
-    return parser.parseBlock()
+    result = parser.parseBlock()
   elif parser.match({tkIf}):
-    return parser.parseIf()
+    result = parser.parseIf()
   else:
-    return parser.parseAssignment()
+    result = parser.parseAssignment()
+  while parser.match({tkChain}):
+    # parse chain operator
+    let prev = parser.previous()
+    let right = parser.parsePrimary()
+    if right.kind != ekFuncInvoke and right.kind != ekIdent:
+      raise newBMathError(
+        "Expected function call after '->' but got '" & $right.kind & "'", prev.position
+      )
+    if right.kind == ekFuncInvoke:
+      result = newFuncInvokeExpr(prev.position, right.fun, @[result] & right.arguments)
+    else:
+      result = newFuncInvokeExpr(prev.position, right, @[result])
 
 proc parse*(tokens: seq[Token]): Expression =
   var parser = newParser(tokens)

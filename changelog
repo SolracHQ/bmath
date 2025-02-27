@@ -1,5 +1,25 @@
 # Changelog
 
+## Version 0.6.0
+- Introduced the arrow operator (`->`) as syntactic sugar for chained function calls. Expressions like  
+  ```
+  A -> f(arg1, arg2)
+  ```  
+  are transformed to  
+  ```
+  f(A, arg1, arg2)
+  ```  
+  and support chaining such as  
+  ```
+  A -> f -> g(arg)
+  ```  
+  which becomes  
+  ```
+  g(f(A), arg)
+  ```
+
+- Added a new lazy-evaluated sequence data type (`seq`). This type extends vector functionality by allowing operations like `map` and `filter` to return a sequence, and includes a `collect(seq)` function to convert a sequence into a vector.
+
 ## Version 0.5.0
 New core functions are now available:
 - `map(vector, lambda)` – Applies a function to each element in a vector.
