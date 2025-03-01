@@ -11,11 +11,13 @@ WITH_BINARY="bin/bm_with"
 WITHOUT_BINARY="bin/bm_without"
 rm -f "$OUT_WITH" "$OUT_WITHOUT" "$OUT_AST_WITH" "$OUT_AST_WITHOUT" "$WITH_BINARY" "$WITHOUT_BINARY"
 
+COMPILATION_FLAGS="-d:printAst -d:release"
+
 # Compiles with optimizations
-nimble build -d:release -d:printAst
+nimble build $COMPILATION_FLAGS
 mv "$DEFAULT_BINARY" "$WITH_BINARY"
 # Compiles without optimizations
-nimble build -d:release -d:disableBMathOpt -d:printAst
+nimble build $COMPILATION_FLAGS -d:disableBMathOpt
 mv "$DEFAULT_BINARY" "$WITHOUT_BINARY"
 
 # Process every file in the examples folder

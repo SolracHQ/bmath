@@ -54,6 +54,11 @@ template `match`(parser: var Parser, kind: set[TokenKind]): bool =
   else:
     false
 
+template cleanUpNewlines(parser: var Parser) =
+  ## Consumes newlines in token stream
+  while parser.match({tkNewline}):
+    discard
+
 proc newParser(tokens: seq[Token]): Parser {.inline.} =
   ## Creates new parser from token sequence
   Parser(tokens: tokens, current: 0)
@@ -64,7 +69,9 @@ proc parseGroupOrFuncInvoke(parser: var Parser): Expression =
   ## Parses grouped expressions: (expression) and, if immediately followed by '(',
   ## parses function invocations on the grouped expression.
   let pos = parser.previous().position
+  parser.cleanUpNewlines()
   let expr = parser.parseExpression()
+  parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
     raise newBMathError("Expected ')'", pos)
   if parser.match({tkLpar}):
@@ -87,7 +94,9 @@ proc parseIdentifierOrFuncCall(parser: var Parser): Expression =
   if parser.match({tkLpar}):
     var args: seq[Expression] = @[]
     while not parser.match({tkRpar}):
+      parser.cleanUpNewlines()
       args.add(parser.parseExpression())
+      parser.cleanUpNewlines()
       if parser.match({tkRpar}):
         break
       if not parser.match({tkComma}):
@@ -103,7 +112,10 @@ proc parseFunction(parser: var Parser): Expression =
     if parser.match({tkIdent}):
       params.add(parser.previous().name)
     else:
-      raise newBMathError("Expected identifier", parser.previous().position)
+      raise newBMathError(
+        "Expected identifier but got '" & $parser.previous().kind & "'",
+        parser.previous().position,
+      )
     if parser.match({tkLine}):
       break
     if not parser.match({tkComma}):
@@ -112,10 +124,16 @@ proc parseFunction(parser: var Parser): Expression =
 
 proc parseVector(parser: var Parser): Expression =
   ## Parses vector literals
+  template cleanUpNewlines() =
+    while parser.match({tkNewline}):
+      discard
+
   let pos = parser.previous().position
   var values: seq[Expression] = @[]
   while not parser.match({tkRSquare}):
+    parser.cleanUpNewlines()
     values.add(parser.parseExpression())
+    parser.cleanUpNewlines()
     if parser.match({tkRSquare}):
       break
     if not parser.match({tkComma}):
@@ -347,9 +365,6 @@ proc parseIf(parser: var Parser): Expression =
   cleanUpNewlines()
   elseBranch = parser.parseExpression()
   cleanUpNewlines()
-  if not parser.match({tkEndIf}):
-    raise
-      newBMathError("Expected 'endif' after if-elif-else", parser.previous().position)
   result = newIfExpr(pos, branches, elseBranch)
 
 proc parseExpression(parser: var Parser): Expression {.inline.} =

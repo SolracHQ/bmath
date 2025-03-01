@@ -6,8 +6,7 @@
 # [1] Recursive Factorial Function
 # This function calculates the factorial of a number using recursion.
 factorialFunction = |n| if (n == 0) 1 
-  else n * factorialFunction(n - 1) 
-  endif
+  else n * factorialFunction(n - 1)
 
 # Example usage:
 factorialOfFive = factorialFunction(5)  # Expected: 120
@@ -18,9 +17,9 @@ factorialOfZero = factorialFunction(0)   # Expected: 1
 recursiveFibonacci = |n| {
   if (n <= 1)
     n
-  else
+  else (
     recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2)
-  endif
+  )  
 }
 
 # Example usage:

@@ -1,9 +1,14 @@
---nimcache:".cache"
+--nimcache:
+  ".cache"
 
 when not defined(debug):
-  --opt:size
+  --opt:
+    speed
 else:
-  --debugger:on
-  --lineDir:on 
-  --debuginfo 
-  --debugger:native
+  --debugger:
+    on
+  --lineDir:
+    on
+  --debuginfo
+  --debugger:
+    native

@@ -13,12 +13,23 @@ import std/[strutils, tables]
 
 import ../types/[position, token, errors]
 
+type
+  StackableKind* = enum
+    ## Discriminator for stackable elements
+    skCurly ## Curly brace
+    skSquare ## Square bracket
+    skParen ## Parenthesis
+    skIf ## If statement
+
+  StackableElement* = object
+    kind: StackableKind ## Type of stackable element
+    position: Position ## Position of the element in the source
+
 type Lexer* = object ## State container for lexical analysis process
   source: string ## Input string being processed
   current: int ## Current parsing position in the string
   line, col: int ## Current line and column position
-  curlyStack: seq[Position] ## Stack of curly brace positions
-  ifStack: seq[Position] ## Stack of if positions
+  stack: seq[StackableElement] ## Stack for nested structures
   skipNewline: bool ## Flag to skip newline tokens
 
 proc newLexer*(source: string): Lexer =
@@ -29,9 +40,9 @@ const KEYWORDS: Table[string, TokenKind] = {
   "if": tkIf,
   "else": tkElse,
   "elif": tkElif,
-  "endif": tkEndIf,
-  "return": tkReturn,
   "local": tkLocal,
+  "true": tkTrue,
+  "false": tkFalse,
 }.toTable
 
 proc atEnd*(lexer: Lexer): bool {.inline.} =
@@ -91,20 +102,21 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
     lexer.col.inc
   let ident = lexer.source[start ..< lexer.current]
   let position = Position(line: lexer.line, column: startCol)
-  if ident == "true":
-    return Token(kind: tkTrue, position: position)
-  elif ident == "false":
-    return Token(kind: tkFalse, position: position)
+  result = Token(kind: tkIdent, position: position, name: ident)
   if KEYWORDS.hasKey(ident):
-    if KEYWORDS[ident] == tkIf:
-      lexer.ifStack.add(position)
-    elif KEYWORDS[ident] == tkEndIf:
-      if lexer.ifStack.len > 0:
-        discard lexer.ifStack.pop
-      else:
-        raise newBMathError("Unmatched 'endif'", position)
-    return Token(kind: KEYWORDS[ident], position: position)
-  return Token(kind: tkIdent, position: position, name: ident)
+    result = Token(kind: KEYWORDS[ident], position: position)
+  if result.kind == tkIf:
+    lexer.stack.add(
+      StackableElement(
+        kind: skIf, position: Position(line: lexer.line, column: lexer.col)
+      )
+    )
+  elif result.kind == tkElse:
+    if lexer.stack.len == 0:
+      raise newBMathError("Unexpected 'else' at " & $position, position)
+    let last = lexer.stack.pop
+    if last.kind != skIf:
+      raise newBMathError("Unexpected 'else' at " & $position, position)
 
 proc parseSymbol*(lexer: var Lexer): Token =
   ## Parses operator or punctuation symbols
@@ -161,25 +173,62 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of '|':
     kind = tkLine
   of '(':
+    lexer.stack.add(
+      StackableElement(
+        kind: skParen, position: Position(line: lexer.line, column: lexer.col)
+      )
+    )
     kind = tkLPar
   of ')':
-    kind = tkRPar
+    if lexer.stack.len != 0:
+      let stackable = lexer.stack.pop
+      if stackable.kind == skParen:
+        kind = tkRPar
+      else:
+        raise
+          newBMathError("Unmatched '(' at " & $stackable.position, stackable.position)
+    else:
+      raise
+        newBMathError("Unmatched ')'", Position(line: lexer.line, column: lexer.col))
   of ',':
     kind = tkComma
   of '{':
-    lexer.curlyStack.add(Position(line: lexer.line, column: lexer.col))
+    lexer.stack.add(
+      StackableElement(
+        kind: skCurly, position: Position(line: lexer.line, column: lexer.col)
+      )
+    )
     kind = tkLCurly
   of '}':
-    if lexer.curlyStack.len > 0:
-      discard lexer.curlyStack.pop
+    if lexer.stack.len != 0:
+      let stackable = lexer.stack.pop
+      if stackable.kind == skCurly:
+        kind = tkRCurly
+      else:
+        raise
+          newBMathError("Unmatched '{' at " & $stackable.position, stackable.position)
     else:
       raise
         newBMathError("Unmatched '}'", Position(line: lexer.line, column: lexer.col))
     kind = tkRCurly
   of '[':
+    lexer.stack.add(
+      StackableElement(
+        kind: skSquare, position: Position(line: lexer.line, column: lexer.col)
+      )
+    )
     kind = tkLSquare
   of ']':
-    kind = tkRSquare
+    if lexer.stack.len != 0:
+      let stackable = lexer.stack.pop
+      if stackable.kind == skSquare:
+        kind = tkRSquare
+      else:
+        raise
+          newBMathError("Unmatched '[' at " & $stackable.position, stackable.position)
+    else:
+      raise
+        newBMathError("Unmatched ']'", Position(line: lexer.line, column: lexer.col))
   else:
     raise newBMathError(
       "Unexpected character '" & $(lexer.source[lexer.current]) & "'",
@@ -211,7 +260,7 @@ proc next*(lexer: var Lexer): Token =
       if lexer.skipNewline:
         lexer.skipNewline = false
         continue
-      if lexer.curlyStack.len == 0 and lexer.ifStack.len == 0:
+      if lexer.stack.len == 0:
         return
           Token(kind: tkEoe, position: Position(line: lexer.line, column: lexer.col))
       else:
@@ -244,13 +293,24 @@ proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
   while true:
     let token = lexer.next()
     if token.kind == tkEoe:
-      if lexer.curlyStack.len > 0:
-        let last = lexer.curlyStack.pop
-        raise
-          (ref IncompleteInputError)(msg: "Unmatched '{' at " & $last, position: last)
-      if lexer.ifStack.len > 0:
-        let last = lexer.ifStack.pop
-        raise
-          (ref IncompleteInputError)(msg: "Unmatched 'if' at " & $last, position: last)
+      if lexer.stack.len > 0:
+        let last = lexer.stack.pop
+        case last.kind
+        of skCurly:
+          raise (ref IncompleteInputError)(
+            msg: "Unmatched '{' at " & $last.position, position: last.position
+          )
+        of skParen:
+          raise (ref IncompleteInputError)(
+            msg: "Unmatched '(' at " & $last.position, position: last.position
+          )
+        of skSquare:
+          raise (ref IncompleteInputError)(
+            msg: "Unmatched '[' at " & $last.position, position: last.position
+          )
+        of skIf:
+          raise (ref IncompleteInputError)(
+            msg: "Unmatched 'if' at " & $last.position, position: last.position
+          )
       break
     result.add(token)

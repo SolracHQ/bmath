@@ -15,11 +15,11 @@ expression       -> ( assignation | block | if_expression | chain_expression )
 chain_expression -> simple_expression ( "->" functionInvocation )*
 simple_expression-> ( assignation | block | if_expression | boolean )
 
-block            -> "{" (expression)* "}"
+block            -> "{" expression ( "\n" expression )* "}"
 
 assignation      -> ( "local" )? ( IDENTIFIER "=" )? ( IDENTIFIER "=" )* boolean
 
-if_expression    -> "if(" expression ")" expression ( "elif(" expression ")" expression )* "else" expression "endif"
+if_expression    -> "if(" expression ")" expression ( "elif(" expression ")" expression )* "else" expression
 
 boolean          -> comparison ( ("&" | "|") comparison )*
 

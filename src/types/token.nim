@@ -53,8 +53,6 @@ type
     tkIf ## If keyword
     tkElse ## Else keyword
     tkElif ## Elif keyword
-    tkEndIf ## EndIf keyword
-    tkReturn ## Return keyword
     tkLocal ## Local keyword
 
     # Control tokens
@@ -151,10 +149,6 @@ proc `$`*(token: Token): string =
     "else"
   of tkElif:
     "elif"
-  of tkEndIf:
-    "endif"
-  of tkReturn:
-    "return"
   of tkLocal:
     "local"
   # Control tokens

@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.6.1
+- Removed the requirement for the `endif` keyword in conditional expressions.
+- Enhanced the lexer and parser to allow more flexible use of newlines. Not only blocks, but group and vector literals now allow newlines.
+
 ## Version 0.6.0
 - Introduced the arrow operator (`->`) as syntactic sugar for chained function calls. Expressions like  
   ```

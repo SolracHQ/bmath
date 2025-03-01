@@ -17,29 +17,27 @@ proc newInterpreter*(): Interpreter =
   result = Interpreter()
   result.env = newEnv()
 
-proc eval*(
-  interpreter: Interpreter, node: Expression, environment: Environment = nil
-): LabeledValue
+proc evalValue(
+  interpreter: Interpreter, node: Expression, environment: Environment
+): Value
 
-proc evalAssign*(
-    interpreter: Interpreter, node: Expression, env: Environment
-): LabeledValue =
-  ## Evaluates an assignment node.
-  let val = interpreter.eval(node.expr, env).value
+proc evalAssign(interpreter: Interpreter, node: Expression, env: Environment): Value =
+  ## Evaluates an assignment node and returns its computed value.
+  let val = interpreter.evalValue(node.expr, env)
   env[node.ident, node.isLocal] = val
-  return LabeledValue(label: node.ident, value: val)
+  return val
 
 template emptyLabeled(val: Value): LabeledValue =
   LabeledValue(value: val)
 
-proc applyFunction*(
+proc applyFunction(
     interpreter: Interpreter,
     funValue: Value,
     args: seq[Expression],
     env: Environment,
     pos: Position,
-): LabeledValue =
-  ## Dispatches a function value (native or user-defined) with the given arguments
+): Value =
+  ## Dispatches a function value (native or user-defined) with the given arguments.
   if funValue.kind == vkNativeFunc:
     let native = funValue.nativeFunc
     if args.len != native.argc:
@@ -47,12 +45,9 @@ proc applyFunction*(
         "Function expects " & $(native.argc) & " arguments, got " & $(args.len), pos
       )
     let evaluator = proc(node: Expression): Value =
-      interpreter.eval(node, env).value
-    return native.fun(args, evaluator).emptyLabeled
+      interpreter.evalValue(node, env)
+    return native.fun(args, evaluator)
   elif funValue.kind == vkFunction:
-    #debug funValue
-    #debug "args: ", args
-    #debug interpreter.eval(newIdentExpr(newPosition(0, 0), "factorialFunction"), env).value
     if args.len != funValue.params.len:
       raise newBMathError(
         "Function expects " & $(funValue.params.len) & " arguments, got " & $(args.len),
@@ -60,58 +55,50 @@ proc applyFunction*(
       )
     let funcEnv = newEnv(parent = funValue.env)
     for i, param in funValue.params.pairs:
-      funcEnv[param, true] = interpreter.eval(args[i], env).value
-    return interpreter.eval(funValue.body, funcEnv)
+      funcEnv[param, true] = interpreter.evalValue(args[i], env)
+    return interpreter.evalValue(funValue.body, funcEnv)
   else:
     raise newBMathError("Provided value is not callable", pos)
 
-proc evalFunInvoke*(
+proc evalFunInvoke(
     interpreter: Interpreter, node: Expression, env: Environment
-): LabeledValue =
-  ## Evaluates a function invocation when the callee is already computed.
-  let callee = interpreter.eval(node.fun, env).value
+): Value =
+  ## Evaluates a function invocation when the callee has already been computed.
+  let callee = interpreter.evalValue(node.fun, env)
   if callee.kind != vkFunction and callee.kind != vkNativeFunc:
     raise newBMathError("Value is not a function", node.position)
   return applyFunction(interpreter, callee, node.arguments, env, node.position)
 
-proc evalBlock*(
-    interpreter: Interpreter, node: Expression, env: Environment
-): LabeledValue =
-  ## Evaluates a block of expressions.
+proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value =
+  ## Evaluates a block of expressions and returns the last computed value.
   var blockEnv = newEnv(parent = env)
-  var lastVal: LabeledValue
+  var lastVal: Value
   for expr in node.expressions:
-    lastVal = interpreter.eval(expr, blockEnv)
+    lastVal = interpreter.evalValue(expr, blockEnv)
   return lastVal
 
-proc evalFunc*(interpreter: Interpreter, node: Expression, env: Environment): Value =
+proc evalFunc(interpreter: Interpreter, node: Expression, env: Environment): Value =
   ## Evaluates a function definition.
   return Value(kind: vkFunction, body: node.body, env: env, params: node.params)
 
-proc eval*(
-    interpreter: Interpreter, node: Expression, environment: Environment = nil
-): LabeledValue =
-  ## Recursively evaluates an abstract syntax tree node.
-  ## Uses helper procs for multi-line expressions.
-  assert node != nil, "Node is nil"
+proc evalValue(
+    interpreter: Interpreter, node: Expression, environment: Environment
+): Value =
+  ## Recursively evaluates an AST node and returns a plain Value.
   let env = if environment == nil: interpreter.env else: environment
-  template binOp(node, op: untyped): LabeledValue =
-    LabeledValue(
-      value: op(
-        interpreter.eval(node.left, env).value, interpreter.eval(node.right, env).value
-      )
-    )
+  template binOp(node, op: untyped): Value =
+    op(interpreter.evalValue(node.left, env), interpreter.evalValue(node.right, env))
 
   try:
     case node.kind
     of ekInt:
-      return LabeledValue(value: Value(kind: vkInt, iValue: node.iValue))
+      return Value(kind: vkInt, iValue: node.iValue)
     of ekFloat:
-      return LabeledValue(value: Value(kind: vkFloat, fValue: node.fValue))
+      return Value(kind: vkFloat, fValue: node.fValue)
     of ekTrue:
-      return LabeledValue(value: Value(kind: vkBool, bValue: true))
+      return Value(kind: vkBool, bValue: true)
     of ekFalse:
-      return LabeledValue(value: Value(kind: vkBool, bValue: false))
+      return Value(kind: vkBool, bValue: false)
     of ekAdd:
       return binOp(node, `+`)
     of ekSub:
@@ -142,36 +129,45 @@ proc eval*(
       return binOp(node, `or`)
     of ekVector:
       return
-        Value(
-          kind: vkVector, values: node.values.mapIt(interpreter.eval(it, env).value)
-        ).emptyLabeled
+        Value(kind: vkVector, values: node.values.mapIt(interpreter.evalValue(it, env)))
     of ekNeg:
-      return LabeledValue(value: -interpreter.eval(node.operand, env).value)
+      return -interpreter.evalValue(node.operand, env)
     of ekNot:
-      return LabeledValue(value: not interpreter.eval(node.operand, env).value)
+      return not interpreter.evalValue(node.operand, env)
     of ekAssign:
       return evalAssign(interpreter, node, env)
     of ekIdent:
-      return LabeledValue(value: env[node.name])
+      return env[node.name]
     of ekBlock:
       return evalBlock(interpreter, node, env)
     of ekFunc:
-      return LabeledValue(value: evalFunc(interpreter, node, env))
+      return evalFunc(interpreter, node, env)
     of ekFuncInvoke:
       return evalFunInvoke(interpreter, node, env)
     of ekIf:
       for branch in node.branches:
-        let condition = interpreter.eval(branch.condition, env).value
+        let condition = interpreter.evalValue(branch.condition, env)
         if condition.kind != vkBool:
           raise newBMathError(
             "Expected boolean condition, got " & $condition.kind,
             branch.condition.position,
           )
         if condition.bValue:
-          return interpreter.eval(branch.then, env)
-      return interpreter.eval(node.elseBranch, env)
+          return interpreter.evalValue(branch.then, env)
+      return interpreter.evalValue(node.elseBranch, env)
     of ekError:
       raise newBMathError(node.message, node.position)
   except BMathError as e:
     e.position = node.position
     raise e
+
+proc eval*(
+    interpreter: Interpreter, node: Expression, environment: Environment = nil
+): LabeledValue =
+  ## Top-level evaluation returns a LabeledValue.
+  ## If the node is an assignment, the label is preserved.
+  let env = if environment == nil: interpreter.env else: environment
+  if node.kind == ekAssign:
+    return LabeledValue(label: node.ident, value: interpreter.evalValue(node, env))
+  else:
+    return emptyLabeled(interpreter.evalValue(node, env))

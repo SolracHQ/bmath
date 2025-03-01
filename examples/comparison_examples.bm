@@ -27,8 +27,8 @@ chainedComparison = (5 < 10) & (10 > 5)      # Expected: true (both conditions a
 chainedComparisonFalse = (5 < 10) & (10 < 5) # Expected: false (second condition is false)
 
 # [7] Using Comparisons in Conditional Expressions
-conditionalResult = if (5 > 3) 0 else 1 endif  # Expected: 0
-conditionalResultFalse = if (5 < 3) 0 else 1 endif  # Expected: 1
+conditionalResult = if (5 > 3) 0 else 1  # Expected: 0
+conditionalResultFalse = if (5 < 3) 0 else 1  # Expected: 1
 
 # [8] Combining Comparisons with Logical Operators
 andCondition = (5 > 3) & (3 < 5)             # Expected: true
@@ -47,8 +47,8 @@ edgeCaseLessThan = (-1 < 0)                  # Expected: true
 edgeCaseGreaterThan = (1 > 0)                 # Expected: true
 
 # [11] Using Comparison Results in Further Calculations
-result = if (5 > 3) 100 else 50 endif        # Expected: 100
-resultFalse = if (5 < 3) 100 else 50 endif   # Expected: 50
+result = if (5 > 3) 100 else 50        # Expected: 100
+resultFalse = if (5 < 3) 100 else 50   # Expected: 50
 
 # [12] Demonstrating Type Promotion in Comparisons
 intComparison = (5 == 5.0)                    # Expected: true (int and float comparison)
