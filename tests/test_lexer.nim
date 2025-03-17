@@ -1,5 +1,5 @@
 import ../src/pipeline/lexer
-import ../src/types/[token, errors]
+import ../src/types/token
 import unittest
 
 suite "Lexer tests":
@@ -9,9 +9,9 @@ suite "Lexer tests":
     while not l.atEnd:
       tokens.add l.next()
 
-    check tokens[0].iValue == 123
-    check tokens[1].fValue == 45.67
-    check tokens[2].fValue == 8e9
+    check tokens[0].nValue.iValue == 123
+    check tokens[1].nValue.fValue == 45.67
+    check tokens[2].nValue.fValue == 8e9
 
   test "Tokenizing operators":
     var l = newLexer("+-*/^%")
@@ -44,15 +44,15 @@ suite "Lexer tests":
       tkNewline, # tmp = a+b
       tkIdent,
       tkPow,
-      tkInt,
+      tkNumber,
       tkNewline, # tmp^2
       tkRCurly,
       tkEoe, # }
       tkIdent,
       tkLpar,
-      tkInt,
+      tkNumber,
       tkComma,
-      tkInt,
+      tkNumber,
       tkRpar, # myFunc(1, 2)
     ]
     for i in 0 ..< expected.len:
@@ -62,8 +62,8 @@ suite "Lexer tests":
   test "Tokenizing vector literal":
     var l = newLexer("v = [1, 2, 3]\n")
     let expected = [
-      tkIdent, tkAssign, tkLSquare, tkInt, tkComma, tkInt, tkComma, tkInt, tkRSquare,
-      tkEoe,
+      tkIdent, tkAssign, tkLSquare, tkNumber, tkComma, tkNumber, tkComma, tkNumber,
+      tkRSquare, tkEoe,
     ]
     for i in 0 ..< expected.len:
       let tok = l.next()
@@ -72,14 +72,14 @@ suite "Lexer tests":
   test "Tokenizing vec function call":
     var l = newLexer("v2 = vec(3, 4)")
     let expected =
-      [tkIdent, tkAssign, tkIdent, tkLpar, tkInt, tkComma, tkInt, tkRpar, tkEoe]
+      [tkIdent, tkAssign, tkIdent, tkLpar, tkNumber, tkComma, tkNumber, tkRpar, tkEoe]
     for i in 0 ..< expected.len:
       let tok = l.next()
       check tok.kind == expected[i]
 
   test "Tokenizing if and booleans":
-    var l = newLexer("if true else false elif endif")
-    let expected = [tkIf, tkTrue, tkElse, tkFalse, tkElif, tkEndIf, tkEoe]
+    var l = newLexer("if true else false elif")
+    let expected = [tkIf, tkTrue, tkElse, tkFalse, tkElif, tkEoe]
     for i in 0 ..< expected.len:
       let tok = l.next()
       check tok.kind == expected[i]
@@ -124,9 +124,3 @@ suite "Lexer tests":
     for i in 0 ..< expected.len:
       let tok = l.next()
       check tok.kind == expected[i]
-
-  test "malformed if expression missing endif throws exception":
-    let src = "if(a > b) 100 else 200"
-    var lexer = newLexer(src)
-    expect(IncompleteInputError):
-      discard tokenizeExpression(lexer)

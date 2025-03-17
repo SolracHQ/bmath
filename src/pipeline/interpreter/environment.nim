@@ -1,5 +1,5 @@
 import std/[sets, tables, macros]
-import value
+import corelib
 import ../../types/[value, errors, expression]
 
 const CORE_NAMES* = toHashSet(

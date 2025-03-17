@@ -81,9 +81,9 @@ proc parseNumber*(lexer: var Lexer, start: int): Token =
   try:
     return
       if isFloat:
-        Token(kind: tkFloat, fValue: parseFloat(numStr))
+        newToken(parseFloat(numStr), Position(line: lexer.line, column: startCol))
       else:
-        Token(kind: tkInt, iValue: parseInt(numStr))
+        newToken(parseInt(numStr), Position(line: lexer.line, column: startCol))
   except:
     raise newBMathError(
       "Invalid number format '" & numStr & "' is not a valid number",

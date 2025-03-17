@@ -7,7 +7,7 @@
 ## - Type promotion (int/float) during operations
 
 import std/[sequtils]
-import ../../types/[value, errors, expression, position], value, environment
+import ../../types/[value, errors, expression, position], corelib, environment
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
@@ -91,10 +91,8 @@ proc evalValue(
 
   try:
     case node.kind
-    of ekInt:
-      return Value(kind: vkInt, iValue: node.iValue)
-    of ekFloat:
-      return Value(kind: vkFloat, fValue: node.fValue)
+    of ekNumber:
+      return newValue(node.nValue)
     of ekTrue:
       return Value(kind: vkBool, bValue: true)
     of ekFalse:

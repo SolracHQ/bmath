@@ -21,17 +21,17 @@ suite "Parser tests":
     var ast = parse(tokens)
     # now we expect an addition node and not a folded literal
     check ast.kind == ekAdd
-    check ast.left.kind == ekInt
-    check ast.left.iValue == 2
-    check ast.right.kind == ekInt
-    check ast.right.iValue == 3
+    check ast.left.kind == ekNumber
+    check ast.left.nValue.iValue == 2
+    check ast.right.kind == ekNumber
+    check ast.right.nValue.iValue == 3
 
   test "unary negation with constant folding":
     var lexer = newLexer("-4")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == ekInt
-    check ast.iValue == -4
+    check ast.kind == ekNumber
+    check ast.nValue.iValue == -4
 
   test "unary negation without constant folding":
     var lexer = newLexer("-a")
@@ -46,8 +46,8 @@ suite "Parser tests":
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # groups now simply return the inner expression
-    check ast.kind == ekFloat
-    check ast.fValue == 5.8
+    check ast.kind == ekNumber
+    check ast.nValue.fValue == 5.8
 
   test "power operation without constant folding":
     var lexer = newLexer("2 ^ 3")
@@ -55,10 +55,10 @@ suite "Parser tests":
     var ast = parse(tokens)
     # expect a power node instead of a folded literal
     check ast.kind == ekPow
-    check ast.left.kind == ekInt
-    check ast.left.iValue == 2
-    check ast.right.kind == ekInt
-    check ast.right.iValue == 3
+    check ast.left.kind == ekNumber
+    check ast.left.nValue.iValue == 2
+    check ast.right.kind == ekNumber
+    check ast.right.nValue.iValue == 3
 
   test "multiplication without full constant folding":
     var lexer = newLexer("a * 3e0")
@@ -67,8 +67,8 @@ suite "Parser tests":
     check ast.kind == ekMul
     check ast.left.kind == ekIdent
     check ast.left.name == "a"
-    check ast.right.kind == ekFloat
-    check ast.right.fValue == 3.0
+    check ast.right.kind == ekNumber
+    check ast.right.nValue.fValue == 3.0
 
   test "lambda function definition with block":
     ## Test that a lambda function with a block is parsed correctly.
@@ -102,12 +102,12 @@ suite "Parser tests":
     check ast.ident == "v"
     check ast.expr.kind == ekVector
     check ast.expr.values.len == 3
-    check ast.expr.values[0].kind == ekInt
-    check ast.expr.values[0].iValue == 1
-    check ast.expr.values[1].kind == ekInt
-    check ast.expr.values[1].iValue == 2
-    check ast.expr.values[2].kind == ekInt
-    check ast.expr.values[2].iValue == 3
+    check ast.expr.values[0].kind == ekNumber
+    check ast.expr.values[0].nValue.iValue == 1
+    check ast.expr.values[1].kind == ekNumber
+    check ast.expr.values[1].nValue.iValue == 2
+    check ast.expr.values[2].kind == ekNumber
+    check ast.expr.values[2].nValue.iValue == 3
 
   test "vec function call parsing":
     var lexer = newLexer("v2 = vec(3, 4)")
@@ -120,23 +120,23 @@ suite "Parser tests":
     check ast.expr.fun.kind == ekIdent
     check ast.expr.fun.name == "vec"
     check ast.expr.arguments.len == 2
-    check ast.expr.arguments[0].kind == ekInt
-    check ast.expr.arguments[0].iValue == 3
-    check ast.expr.arguments[1].kind == ekInt
-    check ast.expr.arguments[1].iValue == 4
+    check ast.expr.arguments[0].kind == ekNumber
+    check ast.expr.arguments[0].nValue.iValue == 3
+    check ast.expr.arguments[1].kind == ekNumber
+    check ast.expr.arguments[1].nValue.iValue == 4
 
   test "parses well formed if expression with elif":
-    let src = "if(a == b) 1 elif(a != b) 2 else 3 endif"
+    let src = "if(a == b) 1 elif(a != b) 2 else 3"
     var lexer = newLexer(src)
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekIf
     check ast.branches.len == 2
-    check ast.elseBranch.kind == ekInt
-    check ast.elseBranch.iValue == 3
+    check ast.elseBranch.kind == ekNumber
+    check ast.elseBranch.nValue.iValue == 3
 
   test "parses well formed if expression without elif":
-    let src = "if(a < b) 10 else 20 endif"
+    let src = "if(a < b) 10 else 20"
     var lexer = newLexer(src)
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)

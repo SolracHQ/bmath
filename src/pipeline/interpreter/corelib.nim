@@ -1,9 +1,9 @@
-## value.nim
+## corelib.nim
 ## module to define the operations for the Value type
 
 import std/[math, sequtils]
 import fusion/matching
-import ../../types/[value, errors, expression]
+import ../../types/[value, errors, expression, number]
 
 proc `+`*(a, b: Value): Value =
   ## Add two values together
@@ -12,14 +12,8 @@ proc `+`*(a, b: Value): Value =
   ## - If one of the values is a float, the result is a float
   ## Raise a `BMathError` if the values are not numbers
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue + b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) + b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue + float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue + b.fValue)
+  of (vkNumber, vkNumber):
+    return newValue(a.nValue + b.nValue)
   of (vkVector, vkVector):
     if a.values.len != b.values.len:
       raise
@@ -27,11 +21,10 @@ proc `+`*(a, b: Value): Value =
     var values: seq[Value] = newSeqOfCap[Value](a.values.len)
     for i in 0 ..< a.values.len:
       values.add(a.values[i] + b.values[i])
-    result = newValue(values)
-  of (_, _):
+    return newValue(values)
+  of (@a, @b):
     raise newException(
-      BMathError,
-      "'+' operands are not numbers they are: " & $a.kind & " and " & $b.kind,
+      BMathError, "'+' operands are not numbers they are: " & $a & " and " & $b
     )
 
 proc `+=`*(a: var Value, b: Value) =
@@ -41,14 +34,8 @@ proc `+=`*(a: var Value, b: Value) =
 proc `-`*(a, b: Value): Value =
   ## Subtract two values using newValue
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue - b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) - b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue - float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue - b.fValue)
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue - b.nValue)
   of (vkVector, vkVector):
     if a.values.len != b.values.len:
       raise newException(
@@ -64,12 +51,10 @@ proc `-`*(a, b: Value): Value =
 proc `-`*(a: Value): Value =
   ## Negate a value
   case a.kind
-  of vkInt:
-    result = newValue(-a.iValue)
-  of vkFloat:
-    result = newValue(-a.fValue)
+  of vkNumber:
+    return newValue(-a.nValue)
   of vkVector:
-    result = newValue(a.values.mapIt(-it))
+    raise newException(BMathError, "Cannot negate a vector using '-' consider use map")
   of vkNativeFunc, vkFunction:
     raise newException(BMathError, "Cannot negate a function")
   of vkBool:
@@ -77,29 +62,37 @@ proc `-`*(a: Value): Value =
       BMathError, "Cannot negate a boolean using '-' for not operation use '!'"
     )
   of vkSeq:
-    raise newException(BMathError, "Cannot negate a sequence")
+    raise
+      newException(BMathError, "Cannot negate a sequence using '-' consider use map")
+
+proc dotProduct*(a, b: Value): Value
 
 proc `*`*(a, b: Value): Value =
   ## Multiply two values
   ## Promotion rules:
   ## - If both values are integers, the result is an integer
   ## - If one of the values is a float, the result is a float
+  ## - If one of the values is a vector and the other is a number, the result is the scalar product
   ## Raise a `BMathError` if the values are not numbers
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue * b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) * b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue * float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue * b.fValue)
-  of (vkFloat, vkVector), (vkInt, vkVector):
-    result = newValue(b.values.mapIt(a * it))
-  of (vkVector, vkFloat), (vkVector, vkInt):
-    result = newValue(a.values.mapIt(it * b))
-  of (_, _):
-    raise newException(BMathError, "'*' operands are not numbers")
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue * b.nValue)
+  of (vkVector, vkVector):
+    result = dotProduct(a, b)
+  of (vkVector, vkNumber):
+    var values: seq[Value] = newSeqOfCap[Value](a.values.len)
+    for i in 0 ..< a.values.len:
+      values.add(a.values[i] * b)
+    result = newValue(values)
+  of (vkNumber, vkVector):
+    var values: seq[Value] = newSeqOfCap[Value](b.values.len)
+    for i in 0 ..< b.values.len:
+      values.add(a * b.values[i])
+    result = newValue(values)
+  of (@a, @b):
+    raise newException(
+      BMathError, "'*' operands are not numbers they are: " & $a & " and " & $b
+    )
 
 proc `*=`*(a: var Value, b: Value) =
   ## Multiply a value by another value in place
@@ -118,29 +111,12 @@ proc dotProduct*(a, b: Value): Value =
 proc `/`*(a, b: Value): Value =
   ## Divide two values
   ## The division is always a float
-
-  let aVal =
-    case a.kind
-    of vkInt:
-      a.iValue.float
-    of vkFloat:
-      a.fValue
-    else:
-      raise newException(BMathError, "'/' left operand is not a number")
-
-  let bVal =
-    case b.kind
-    of vkInt:
-      b.iValue.float
-    of vkFloat:
-      b.fValue
-    else:
-      raise newException(BMathError, "'/' right operand is not a number")
-
-  if bVal == 0:
+  if a.kind != vkNumber or b.kind != vkNumber:
+    raise newException(BMathError, "'/' operands are not numbers")
+  const ZERO = newNumber(0)
+  if b.nValue == ZERO:
     raise newException(BMathError, "Division by zero")
-
-  result = newValue(aVal / bVal)
+  newValue(a.nValue / b.nValue)
 
 template `!=`*(a, b: Value): Value =
   ## Compare two values for inequality
@@ -149,27 +125,24 @@ template `!=`*(a, b: Value): Value =
 proc `not`*(a: Value): Value =
   ## Negate a boolean value
   if a.kind != vkBool:
-    raise newException(BMathError, "Cannot negate a non-boolean value")
+    raise newException(
+      BMathError,
+      "Cannot negate a non-boolean value, expected: bool but got: " & $a.kind,
+    )
   result = newValue(not a.bValue)
 
 proc `==`*(a, b: Value): Value =
   ## Compare two values for equality
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue == b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) == b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue == float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue == b.fValue)
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue == b.nValue)
   of (vkVector, vkVector):
     if a.values.len != b.values.len:
       result = newValue(false)
     else:
       var eq = true
       for i in 0 ..< a.values.len:
-        if (a.values[i] != b.values[i]).bvalue:
+        if (a.values[i] != b.values[i]).bValue:
           eq = false
           break
       result = newValue(eq)
@@ -179,56 +152,32 @@ proc `==`*(a, b: Value): Value =
 proc `<`*(a, b: Value): Value =
   ## Compare two values for less than
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue < b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) < b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue < float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue < b.fValue)
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue < b.nValue)
   else:
     raise newException(BMathError, "'<' operands are not numbers")
 
 proc `<=`*(a, b: Value): Value =
   ## Compare two values for less than or equal
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue <= b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) <= b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue <= float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue <= b.fValue)
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue <= b.nValue)
   else:
     raise newException(BMathError, "'<=' operands are not numbers")
 
 proc `>`*(a, b: Value): Value =
   ## Compare two values for greater than
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue > b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) > b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue > float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue > b.fValue)
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue > b.nValue)
   else:
     raise newException(BMathError, "'>' operands are not numbers")
 
 proc `>=`*(a, b: Value): Value =
   ## Compare two values for greater than or equal
   case (a.kind, b.kind)
-  of (vkInt, vkInt):
-    result = newValue(a.iValue >= b.iValue)
-  of (vkInt, vkFloat):
-    result = newValue(float(a.iValue) >= b.fValue)
-  of (vkFloat, vkInt):
-    result = newValue(a.fValue >= float(b.iValue))
-  of (vkFloat, vkFloat):
-    result = newValue(a.fValue >= b.fValue)
+  of (vkNumber, vkNumber):
+    result = newValue(a.nValue >= b.nValue)
   else:
     raise newException(BMathError, "'>=' operands are not numbers")
 
@@ -262,109 +211,70 @@ proc `^`*(a, b: Value): Value =
   ## Raise a value to the power of another value
   ## If both values are integers, the result is an integer
   ## Otherwise, the result is a float
-  case a.kind
-  of vkInt:
-    case b.kind
-    of vkInt:
-      result = newValue(a.iValue ^ b.iValue)
-    of vkFloat:
-      result = newValue(a.iValue.toFloat ^ b.fValue)
-    else:
-      discard
-  of vkFloat:
-    case b.kind
-    of vkInt:
-      result = newValue(a.fValue ^ b.iValue)
-    of vkFloat:
-      result = newValue(pow(a.fValue, b.fValue))
-    else:
-      discard
-  else:
-    discard
+  if a.kind != vkNumber or b.kind != vkNumber:
+    raise newException(BMathError, "'^' operands are not numbers")
+  return newValue(a.nValue ^ b.nValue)
 
 proc sqrt*(a: Value): Value =
   ## Compute the square root of a value
-  case a.kind
-  of vkInt:
-    result = newValue(sqrt(float(a.iValue)))
-  of vkFloat:
-    result = newValue(sqrt(a.fValue))
-  else:
-    discard
+  if a.kind != vkNumber:
+    raise newException(BMathError, "sqrt expects a number as argument")
+  if a.nValue < newNumber(0):
+    raise newException(BMathError, "Cannot compute square root of negative number")
+  result = newValue(sqrt(a.nValue))
 
 proc ceil*(a: Value): Value =
   ## Compute the ceiling of a value
-  case a.kind
-  of vkInt:
-    result = a
-  of vkFloat:
-    result = newValue(ceil(a.fValue).toInt)
-  else:
-    discard
+  if a.kind != vkNumber:
+    raise newException(BMathError, "ceil expects a number as argument")
+  newValue(ceil(a.nValue))
 
 proc floor*(a: Value): Value =
   ## Compute the floor of a value
-  case a.kind
-  of vkInt:
-    result = a
-  of vkFloat:
-    result = newValue(floor(a.fValue).toInt)
-  else:
-    discard
+  if a.kind != vkNumber:
+    raise newException(BMathError, "floor expects a number as argument")
+  newValue(floor(a.nValue))
 
 proc round*(a: Value): Value =
   ## Round a value to the nearest integer
-  case a.kind
-  of vkInt:
-    result = a
-  of vkFloat:
-    result = newValue(round(a.fValue).toInt)
-  else:
-    discard
+  if a.kind != vkNumber:
+    raise newException(BMathError, "round expects a number as argument")
 
 proc `%`*(a, b: Value): Value =
   ## Compute the remainder of the division of two values
   ## If values ar3e floats will be rounded to integers
   ## If the divisor is zero, a `BMathError` is raised
   ## The remainder is always an integer
-  try:
-    case (a.kind, b.kind)
-    of (vkInt, vkInt):
-      result = newValue(a.iValue mod b.iValue)
-    of (vkInt, vkFloat):
-      result = newValue(a.iValue mod b.round.iValue)
-    of (vkFloat, vkInt):
-      result = newValue(a.round.iValue mod b.iValue)
-    of (vkFloat, vkFloat):
-      result = newValue(a.round.iValue mod b.round.iValue)
-    else:
-      raise newException(BMathError, "'%' operands are not numbers")
-  except DivByZeroDefect:
+  if a.kind != vkNumber or b.kind != vkNumber:
+    raise newException(BMathError, "'%' operands are not numbers")
+  const ZERO = newNumber(0)
+  if b.nValue == ZERO:
     raise newException(BMathError, "Division by zero")
+  newValue(a.nValue % b.nValue)
 
 proc createVector*(values: openArray[Expression], evaluator: Evaluator): Value =
   # values should contain exactly 2 values (length and function or value to be repeated)
   if values.len != 2:
     raise newException(BMathError, "Vector should have exactly 2 values")
   let size = evaluator(values[0])
-  if size.kind != vkInt:
+  if size.kind != vkNumber and size.nValue.kind != nkInt:
     raise newException(BMathError, "Vector length should be an integer")
-  var elems = newSeqOfCap[Value](size.iValue)
-  for i in 0 ..< size.iValue:
+  var elements = newSeqOfCap[Value](size.nValue.iValue)
+  for i in 0 ..< size.nValue.iValue:
     let funcInvoke = Expression(
       kind: ekFuncInvoke,
       fun: values[1],
-      arguments: @[Expression(kind: ekInt, iValue: i)],
+      arguments: @[newNumberExpr(values[1].position, newNumber(i))],
     )
-    elems.add(evaluator(funcInvoke))
-  result = newValue(elems)
+    elements.add(evaluator(funcInvoke))
+  result = newValue(elements)
 
 proc createSeq*(values: openArray[Expression], evaluator: Evaluator): Value =
   # values should contain exactly 2 values (length and function to be called)
   if values.len != 2:
     raise newException(BMathError, "Seq should have exactly 2 values")
   let size = evaluator(values[0])
-  if size.kind != vkInt:
+  if size.kind != vkNumber and size.nValue.kind != nkInt:
     raise newException(BMathError, "Seq length should be an integer")
   var i = 0
   let fun = values[1]
@@ -372,12 +282,12 @@ proc createSeq*(values: openArray[Expression], evaluator: Evaluator): Value =
     kind: vkSeq,
     generator: Generator(
       next: proc(peek: bool): Value =
-        if i < size.iValue:
+        if i < size.nValue.iValue:
           let value = evaluator(
             Expression(
               kind: ekFuncInvoke,
               fun: fun,
-              arguments: @[Expression(kind: ekInt, iValue: i)],
+              arguments: @[Expression(kind: ekNumber, nValue: newNumber(i))],
             )
           )
           if not peek:
@@ -386,7 +296,7 @@ proc createSeq*(values: openArray[Expression], evaluator: Evaluator): Value =
         else:
           raise newException(BMathError, "End of seq"),
       atEnd: proc(): bool =
-        i >= size.iValue,
+        i >= size.nValue.iValue,
     ),
   )
 
@@ -409,10 +319,8 @@ iterator iter(sequence: Value): Value =
 proc valueToExpression*(value: Value): Expression =
   # Convert a value to an expression
   case value.kind
-  of vkInt:
-    result = Expression(kind: ekInt, iValue: value.iValue)
-  of vkFloat:
-    result = Expression(kind: ekFloat, fValue: value.fValue)
+  of vkNumber:
+    result = Expression(kind: ekNumber, nValue: value.nValue)
   of vkBool:
     if value.bValue:
       result = Expression(kind: ekTrue)
@@ -554,11 +462,11 @@ proc nth*(vector: Value, index: Value): Value =
   # Get the nth element of a vector
   if vector.kind != vkVector:
     raise newException(BMathError, "nth requires a vector as the first argument")
-  if index.kind != vkInt:
+  if index.kind != vkNumber and index.nValue.kind != nkInt:
     raise newException(BMathError, "nth requires an integer as the second argument")
-  if index.iValue < 0 or index.iValue >= vector.values.len:
+  if index.nValue.iValue < 0 or index.nValue.iValue >= vector.values.len:
     raise newException(BMathError, "Index out of bounds")
-  result = vector.values[index.iValue]
+  result = vector.values[index.nValue.iValue]
 
 proc first*(vector: Value): Value =
   # Get the first element of a vector
@@ -580,13 +488,13 @@ proc skip*(sequence: Value, n: Value): Value =
   # Skip the first n elements of a sequence and return the next element
   if sequence.kind != vkSeq:
     raise newException(BMathError, "skip requires a seq as the argument")
-  if n.kind != vkInt:
+  if n.kind != vkNumber and n.nValue.kind != nkInt:
     raise newException(BMathError, "skip requires an integer as the second argument")
-  if n.iValue < 0:
+  if n.nValue.iValue < 0:
     raise newException(
       BMathError, "skip requires a non-negative integer as the second argument"
     )
-  for _ in 0 ..< n.iValue:
+  for _ in 0 ..< n.nValue.iValue:
     discard sequence.generator.next()
   sequence.generator.next()
 
@@ -610,57 +518,33 @@ proc len*(vector: Value): Value =
 
 proc cos*(a: Value): Value =
   # Compute the cosine of a value
-  case a.kind
-  of vkInt:
-    result = newValue(cos(a.iValue.float))
-  of vkFloat:
-    result = newValue(cos(a.fValue))
-  else:
+  if a.kind != vkNumber:
     raise newException(BMathError, "cos expects a number as argument")
+  newValue(cos(a.nValue))
 
 proc sin*(a: Value): Value =
   # Compute the sine of a value
-  case a.kind
-  of vkInt:
-    result = newValue(sin(a.iValue.float))
-  of vkFloat:
-    result = newValue(sin(a.fValue))
-  else:
+  if a.kind != vkNumber:
     raise newException(BMathError, "sin expects a number as argument")
+  newValue(sin(a.nValue))
 
 proc tan*(a: Value): Value =
   # Compute the tangent of a value
-  case a.kind
-  of vkInt:
-    result = newValue(tan(a.iValue.float))
-  of vkFloat:
-    result = newValue(tan(a.fValue))
-  else:
+  if a.kind != vkNumber:
     raise newException(BMathError, "tan expects a number as argument")
+  newValue(tan(a.nValue))
 
 proc log*(a: Value, base: Value): Value =
   # Compute the logarithm of a value
-  case (a.kind, base.kind)
-  of (vkInt, vkInt):
-    result = newValue(log(a.iValue.float, base.iValue.float))
-  of (vkInt, vkFloat):
-    result = newValue(log(a.iValue.float, base.fValue))
-  of (vkFloat, vkInt):
-    result = newValue(log(a.fValue, base.iValue.float))
-  of (vkFloat, vkFloat):
-    result = newValue(log(a.fValue, base.fValue))
-  else:
+  if a.kind != vkNumber or base.kind != vkNumber:
     raise newException(BMathError, "log expects two numbers as arguments")
+  newValue(log(a.nValue, base.nValue))
 
 proc exp*(a: Value): Value =
   # Compute the exponential of a value
-  case a.kind
-  of vkInt:
-    result = newValue(exp(a.iValue.float))
-  of vkFloat:
-    result = newValue(exp(a.fValue))
-  else:
+  if a.kind != vkNumber:
     raise newException(BMathError, "exp expects a number as argument")
+  newValue(exp(a.nValue))
 
 proc collect*(sequence: Value): Value =
   # Collect a sequence into a vector

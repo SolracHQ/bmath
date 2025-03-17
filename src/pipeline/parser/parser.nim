@@ -7,7 +7,7 @@
 ## - Syntax error detection
 ## - Abstract syntax tree construction
 import fusion/matching
-import ../../types/[expression, errors, token]
+import ../../types/[expression, errors, token, number]
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse
@@ -145,10 +145,8 @@ proc parsePrimary(parser: var Parser): Expression =
   let token = parser.peek()
   if parser.match({tkLpar}):
     return parser.parseGroupOrFuncInvoke()
-  elif parser.match({tkInt}):
-    return newIntExpr(token.position, token.iValue)
-  elif parser.match({tkFloat}):
-    return newFloatExpr(token.position, token.fValue)
+  elif parser.match({tkNumber}):
+    return newNumberExpr(token.position, token.nValue)
   elif parser.match({tkTrue}):
     return newBoolExpr(token.position, true)
   elif parser.match({tkFalse}):
@@ -170,10 +168,8 @@ proc parseUnary(parser: var Parser): Expression =
     let operand = parser.parseUnary()
     # Unary constant folding: if the operand is a number, return its negation directly
     case operand.kind
-    of ekInt:
-      return newIntExpr(pos, -operand.iValue)
-    of ekFloat:
-      return newFloatExpr(pos, -operand.fValue)
+    of ekNumber:
+      return newNumberExpr(pos, -operand.nValue)
     else:
       return newNegExpr(pos, operand)
   if parser.match({tkNot}):

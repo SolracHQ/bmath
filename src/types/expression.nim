@@ -1,6 +1,7 @@
 import std/[strutils, sequtils]
 
 import position
+import number
 
 type
   ExpressionKind* = enum
@@ -10,8 +11,7 @@ type
     ## associated child nodes or values.
 
     # Literals
-    ekInt ## Integer literal
-    ekFloat ## Floating-point literal
+    ekNumber ## Numeric literal (integer or float)
     ekVector ## Vector literal
     ekTrue ## Boolean true literal
     ekFalse ## Boolean false literal
@@ -74,10 +74,8 @@ type
     ## - For identifiers and function calls: stores name and arguments.
     position*: Position ## Original source location
     case kind*: ExpressionKind
-    of ekInt:
-      iValue*: int ## Integer literal value
-    of ekFloat:
-      fValue*: float ## Floating-point literal value
+    of ekNumber:
+      nValue*: Number ## Integer value
     of ekAdd, ekSub, ekMul, ekDiv, ekMod, ekPow, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
         ekAnd, ekOr:
       left*: Expression ## Left operand of binary operation
@@ -112,9 +110,11 @@ type
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
   ## Creates a new literal expression based on the type of value.
   when T is int:
-    result = newIntExpr(pos, value)
+    result = newNumberExpr(pos, newNumber(value))
   elif T is float:
-    result = newFloatExpr(pos, value)
+    result = newNumberExpr(pos, newNumber(value))
+  elif T is Number:
+    result = newNumberExpr(pos, value)
   elif T is bool:
     result = newBoolExpr(pos, value)
   elif T is seq[Expression]:
@@ -125,11 +125,8 @@ proc newLiteralExpr*[T](pos: Position, value: T): Expression =
 proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
   result = Expression(kind: ekNot, position: pos, operand: operand)
 
-proc newIntExpr*(pos: Position, value: int): Expression {.inline.} =
-  result = Expression(kind: ekInt, position: pos, iValue: value)
-
-proc newFloatExpr*(pos: Position, value: float): Expression {.inline.} =
-  result = Expression(kind: ekFloat, position: pos, fValue: value)
+proc newNumberExpr*(pos: Position, value: Number): Expression {.inline.} =
+  result = Expression(kind: ekNumber, position: pos, nValue: value)
 
 proc newBoolExpr*(pos: Position, value: bool): Expression {.inline.} =
   if value:
@@ -198,10 +195,8 @@ proc stringify(node: Expression, indent: int): string =
   if node.isNil:
     return indentation & "nil\n"
   case node.kind
-  of ekInt:
-    result = indentation & "int: " & $node.iValue & "\n"
-  of ekFloat:
-    result = indentation & "float: " & $node.fValue & "\n"
+  of ekNumber:
+    result = indentation & "number: " & $node.nValue & "\n"
   of ekTrue:
     result = indentation & "true\n"
   of ekFalse:
@@ -280,10 +275,8 @@ proc `==`*(a, b: Expression): bool =
   if a.kind != b.kind:
     return false
   case a.kind
-  of ekInt:
-    return a.iValue == b.iValue
-  of ekFloat:
-    return a.fValue == b.fValue
+  of ekNumber:
+    return a.nValue == b.nValue
   of ekTrue, ekFalse:
     return true
   of ekAdd, ekSub, ekMul, ekDiv, ekPow, ekMod, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
@@ -347,10 +340,8 @@ proc `==`*(a, b: Expression): bool =
 proc asSource*(expr: Expression): string =
   ## Returns a string representation of the expression in source code format
   case expr.kind
-  of ekInt:
-    return $expr.iValue
-  of ekFloat:
-    return $expr.fValue
+  of ekNumber:
+    return $expr.nValue
   of ekTrue:
     return "true"
   of ekFalse:

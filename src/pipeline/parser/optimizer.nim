@@ -1,6 +1,6 @@
 import std/[tables, sets, sequtils, math]
 import fusion/matching
-import ../../types/[expression]
+import ../../types/[expression, number]
 from ../interpreter/environment import CORE_NAMES
 
 type
@@ -8,18 +8,15 @@ type
 
   VirtualValueKind = enum
     ## Represents the kind of a virtual value
-    vvkInt
-    vvkFloat
+    vvkNumber
     vvkBool
     vvkFunction
     vvkUnoptimized
 
   VirtualValue = object ## Represents a virtual value for constant folding
     case kind: VirtualValueKind
-    of vvkInt:
-      iValue: int
-    of vvkFloat:
-      fValue: float
+    of vvkNumber:
+      nValue: Number
     of vvkBool:
       bValue: bool
     of vvkFunction:
@@ -38,9 +35,11 @@ type
 proc newVirtualValue[T](value: T): VirtualValue =
   ## Initializes a new virtual value
   when T is int:
-    result = VirtualValue(kind: vvkInt, iValue: value)
+    result = VirtualValue(kind: vvkNumber, nValue: newNumber(value))
   elif T is float:
-    result = VirtualValue(kind: vvkFloat, fValue: value)
+    result = VirtualValue(kind: vvkNumber, nValue: newNumber(value))
+  elif T is Number:
+    result = VirtualValue(kind: vvkNumber, nValue: value)
   elif T is bool:
     result = VirtualValue(kind: vvkBool, bValue: value)
   else:
@@ -117,7 +116,7 @@ proc optimize*(optimizer: var Optimizer, node: Expression): Expression
 
 proc isOptimized(node: Expression): bool {.inline.} =
   ## Checks if an expression is optimized
-  result = node.kind in {ekInt, ekFloat, ekTrue, ekFalse, ekVector}
+  result = node.kind in {ekNumber, ekTrue, ekFalse, ekVector}
   result = result or (node.kind == ekAssign and node.isLocal and isOptimized(node.expr))
 
 proc exprToVirtualValue(
@@ -125,10 +124,8 @@ proc exprToVirtualValue(
 ): VirtualValue {.inline.} =
   ## Converts an expression to a virtual value
   case node.kind
-  of ekInt:
-    return newVirtualValue(node.iValue)
-  of ekFloat:
-    return newVirtualValue(node.fValue)
+  of ekNumber:
+    return newVirtualValue(node.nValue)
   of ekTrue:
     return newVirtualValue(true)
   of ekFalse:
@@ -148,10 +145,8 @@ proc VirtualValueToExpr(
 ): Expression {.inline.} =
   ## Converts a virtual value to an expression
   case value.kind
-  of vvkInt:
-    return newLiteralExpr(default.position, value.iValue)
-  of vvkFloat:
-    return newLiteralExpr(default.position, value.fValue)
+  of vvkNumber:
+    return newNumberExpr(default.position, value.nValue)
   of vvkBool:
     return newBoolExpr(default.position, value.bValue)
   of vvkFunction:
@@ -188,7 +183,7 @@ proc optimizeBlock(optimizer: var Optimizer, node: Expression): Expression {.inl
     of ekError:
       optimizer.env = oldEnv
       return optimized
-    of ekInt, ekFloat, ekTrue, ekFalse:
+    of ekNumber, ekTrue, ekFalse:
       discard
     of ekAssign:
       if not optimized.isLocal:
@@ -219,27 +214,20 @@ template optimizeBinary(
       return right
 
     when kd in {ekAdd, ekSub, ekMul, ekPow, ekGt, ekLt, ekGe, ekLe}:
-      if not (left.kind in {ekInt, ekFloat}):
+      if not (left.kind == ekNumber):
         return newBinaryExpr(node.position, kd, left, right)
-      if not (right.kind in {ekInt, ekFloat}):
+      if not (right.kind == ekNumber):
         return newBinaryExpr(node.position, kd, left, right)
 
     when kd in {ekDiv, ekMod}:
       # check right is not zero
-      if right.kind == ekInt and right.iValue == 0:
-        return newErrorExpr(node.position, "Division by zero")
-      if right.kind == ekFloat and right.fValue == 0:
+      const zero = newNumber(0)
+      if right.kind == ekNumber and right.nValue == zero:
         return newErrorExpr(node.position, "Division by zero")
 
     case (left.kind, right.kind)
-    of (ekInt, ekInt):
-      return newLiteralExpr(node.position, `op`(left.iValue, right.iValue))
-    of (ekFloat, ekFloat):
-      return newLiteralExpr(node.position, `op`(left.fValue, right.fValue))
-    of (ekInt, ekFloat):
-      return newLiteralExpr(node.position, `op`(left.iValue.float, right.fValue))
-    of (ekFloat, ekInt):
-      return newLiteralExpr(node.position, `op`(left.fValue, right.iValue.float))
+    of (ekNumber, ekNumber):
+      return newLiteralExpr(node.position, `op`(left.nValue, right.nValue))
     else:
       return newBinaryExpr(node.position, kd, left, right)
 
@@ -327,16 +315,14 @@ proc optimizeFuncInvoke(
 
 proc optimizeNegate(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
   ## Optimize negation operations
-  let value = optimize(optimizer, node.operand)
-  if value.kind == ekError:
-    return value
-  case value.kind
-  of ekInt:
-    return newLiteralExpr(node.position, -value.iValue)
-  of ekFloat:
-    return newLiteralExpr(node.position, -value.fValue)
+  result = optimize(optimizer, node.operand)
+  if result.kind == ekError:
+    return
+  case result.kind
+  of ekNumber:
+    result.nValue = -result.nValue
   else:
-    return newNegExpr(node.position, value)
+    result = newNegExpr(node.position, result)
 
 proc optimizeNot(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
   ## Optimize negation operations
@@ -375,7 +361,7 @@ proc optimizeExpression(optimizer: var Optimizer, node: Expression): Expression 
     return node
   ## Dispatch optimization based on the expression kind
   case node.kind
-  of ekInt, ekFloat, ekTrue, ekFalse:
+  of ekNumber, ekTrue, ekFalse:
     return node
   of ekAssign:
     return optimizeAssign(optimizer, node)
@@ -394,7 +380,7 @@ proc optimizeExpression(optimizer: var Optimizer, node: Expression): Expression 
   of ekDiv:
     return optimizeBinary(optimizer, node, `/`, ekDiv)
   of ekMod:
-    return optimizeBinary(optimizer, node, `mod`, ekMod)
+    return optimizeBinary(optimizer, node, `%`, ekMod)
   of ekPow:
     return optimizeBinary(optimizer, node, `^`, ekPow)
   of ekGt:
