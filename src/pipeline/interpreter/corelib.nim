@@ -219,8 +219,6 @@ proc sqrt*(a: Value): Value =
   ## Compute the square root of a value
   if a.kind != vkNumber:
     raise newException(BMathError, "sqrt expects a number as argument")
-  if a.nValue < newNumber(0):
-    raise newException(BMathError, "Cannot compute square root of negative number")
   result = newValue(sqrt(a.nValue))
 
 proc ceil*(a: Value): Value =

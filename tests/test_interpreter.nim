@@ -6,12 +6,14 @@ import ../src/types/value
 import ../src/types/errors
 
 proc evalString(s: string): Value =
-  var interp = newInterpreter()
+  var interpreter = newInterpreter()
   var lexer = newLexer(s)
   while not lexer.atEnd:
     let tokens = lexer.tokenizeExpression()
+    if tokens.len == 0:
+      continue
     let ast = parse(tokens)
-    result = interp.eval(ast).value
+    result = interpreter.eval(ast).value
 
 suite "Interpreter tests":
   test "Type promotion edge cases":
@@ -96,7 +98,7 @@ suite "Interpreter tests":
     check res.nValue.iValue == 1
     ## If condition fails and no else branch is provided, an error is expected.
     expect BMathError:
-      discard evalString("""if (2 > 3) 100 endif""")
+      discard evalString("""if (2 > 3) 100""")
 
   test "Complex if-else with nested local scopes":
     ## Combines if-elif structure with a nested block that uses local variables.
@@ -153,3 +155,68 @@ suite "Interpreter tests":
     let resultVal = evalString("{ sin(3.14) } + cos(3.14)").nValue.fValue
     let expected = sin(3.14) + cos(3.14)
     check abs(resultVal - expected) < 1e-6
+
+  test "Exception handling for type mismatches":
+    ## Using arithmetic with non-numeric values
+    expect BMathError:
+      discard evalString("5 + true")
+
+    expect BMathError:
+      discard evalString("[1, 2] - 3")
+
+    ## Using logical operators with non-boolean values
+    expect BMathError:
+      discard evalString("5 & 10")
+
+    ## Comparison with complex numbers
+    expect BMathError:
+      discard evalString("3i > 2")
+
+  test "Exception handling for invalid operations":
+    ## Modulo with complex numbers
+    expect BMathError:
+      discard evalString("5i % 2")
+
+  test "Exception handling for function calls":
+    ## Calling a function with wrong number of arguments
+    expect BMathError:
+      discard evalString("pow(2)")
+
+    ## Calling a non-existent function
+    expect BMathError:
+      discard evalString("nonExistentFunction(5)")
+
+    ## Calling a non-function value
+    expect BMathError:
+      discard evalString("x = 5\nx(10)")
+
+  test "Exception handling for vector operations":
+    ## Vector operations with mismatched sizes
+    expect BMathError:
+      discard evalString("[1, 2] + [3, 4, 5]")
+
+    ## Access out of bounds
+    expect BMathError:
+      discard evalString("nth([1, 2, 3], 5)")
+
+    ## Empty vector access
+    expect BMathError:
+      discard evalString("first([])")
+
+  test "Exception handling for scope and variable issues":
+    ## Local variable shadowing test
+    let scopeResult = evalString(
+      """
+      x = 10
+      {
+        local x = 20
+        x = x + 5
+      } 
+      x
+    """
+    )
+    check scopeResult.nValue.iValue == 10
+
+    ## Using an undefined variable
+    expect BMathError:
+      echo evalString("y = z + 5")

@@ -170,8 +170,12 @@ proc sqrt*(n: Number): Number {.inline.} =
   ## Returns the square root of a Number object
   case n.kind
   of nkInt:
+    if n.iValue < 0:
+      return newNumber(sqrt(n.toComplex()))
     return newNumber(sqrt(n.iValue.float))
   of nkFloat:
+    if n.fValue < 0:
+      return newNumber(sqrt(n.toComplex()))
     return newNumber(sqrt(n.fValue))
   of nkComplex:
     return newNumber(sqrt(n.cValue))
