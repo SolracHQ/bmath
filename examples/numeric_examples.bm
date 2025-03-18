@@ -37,3 +37,11 @@ displayScientific = avogadroNumber
 # displayInteger should output: 42
 # displayFloat should output: 3.1415
 # displayScientific should output: 6.022e23
+
+# [7] Complex Number Literals and Operations
+complexNumber1 = 3+4i                  # Complex literal (3+4i)
+complexNumber2 = 1-2i                  # Complex literal (1-2i)
+complexAddition = complexNumber1 + complexNumber2      # Expected: 4+2i
+complexSubtraction = complexNumber1 - complexNumber2   # Expected: 2+6i
+complexMultiplication = complexNumber1 * complexNumber2  # Expected: 11-2i
+complexDivision = complexNumber1 / complexNumber2        # Expected: -1+2i

@@ -1,4 +1,5 @@
 import position
+import number
 
 type
   TokenKind* = enum
@@ -43,8 +44,7 @@ type
     tkLine ## Parameter delimiter '|'
 
     # Literals and identifiers
-    tkInt ## Integer literal
-    tkFloat ## Floating-point literal
+    tkNumber ## Numeric literal (integer or float)
     tkTrue ## Boolean true literal
     tkFalse ## Boolean false literal
     tkIdent ## Identifier (variable/function name)
@@ -69,14 +69,26 @@ type
     ## - `name` for identifiers (tkIdent)
     position*: Position ## Source location of the token
     case kind*: TokenKind
-    of tkInt:
-      iValue*: int ## Integer value for tkInt tokens
-    of tkFloat:
-      fValue*: float ## Floating-point value for tkFloat tokens
+    of tkNumber:
+      nValue*: Number ## Numeric value for tkNumber tokens
     of tkIdent:
       name*: string ## Identifier name for tkIdent tokens
     else:
       discard
+
+template newToken*(value: typed, pos: Position): Token =
+  when value is SomeInteger:
+    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
+  elif value is SomeFloat:
+    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
+  elif value is Number:
+    Token(kind: tkNumber, nValue: value, position: pos)
+  elif value is Complex[float]:
+    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
+  elif value is SomeString:
+    Token(kind: tkIdent, name: value, position: pos)
+  else:
+    {.error: "Unsupported type for Token".}
 
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
@@ -132,10 +144,8 @@ proc `$`*(token: Token): string =
   of tkLine:
     "'|'"
   # Literals and identifiers
-  of tkInt:
-    $token.iValue
-  of tkFloat:
-    $token.fValue
+  of tkNumber:
+    $token.nValue
   of tkTrue:
     "true"
   of tkFalse:

@@ -11,8 +11,8 @@ suite "Optimizer Tests":
     var ast = parse(tokens)
     var opt = newOptimizer()
     let optimized = optimize(opt, ast)
-    check optimized.kind == ekInt
-    check optimized.iValue == 5
+    check optimized.kind == ekNumber
+    check optimized.nValue.iValue == 5
 
   test "Constant Folding Multiplication":
     var l = newLexer("4 * 5")
@@ -20,8 +20,8 @@ suite "Optimizer Tests":
     var ast = parse(tokens)
     var opt = newOptimizer()
     let optimized = optimize(opt, ast)
-    check optimized.kind == ekInt
-    check optimized.iValue == 20
+    check optimized.kind == ekNumber
+    check optimized.nValue.iValue == 20
 
   test "Unary Negation Folding":
     var l = newLexer("-4")
@@ -29,8 +29,8 @@ suite "Optimizer Tests":
     var ast = parse(tokens)
     var opt = newOptimizer()
     let optimized = optimize(opt, ast)
-    check optimized.kind == ekInt
-    check optimized.iValue == -4
+    check optimized.kind == ekNumber
+    check optimized.nValue.iValue == -4
 
   test "Constant Propagation in Assignments":
     # The code "a = 5\n a + 3" should be optimized to 8
@@ -40,17 +40,17 @@ suite "Optimizer Tests":
     var opt = newOptimizer()
     let optimizedBlock = optimize(opt, blockAst)
     # In a block optimized completely, the final expression is the result.
-    check optimizedBlock.kind == ekInt
-    check optimizedBlock.iValue == 8
+    check optimizedBlock.kind == ekNumber
+    check optimizedBlock.nValue.iValue == 8
 
   test "Optimizing If Expression with Constant Condition":
-    var l = newLexer("if (5 > 3) 100 else 50 endif")
+    var l = newLexer("if (5 > 3) 100 else 50")
     let tokens = tokenizeExpression(l)
     var ast = parse(tokens)
     var opt = newOptimizer()
     let optimized = optimize(opt, ast)
-    check optimized.kind == ekInt
-    check optimized.iValue == 100
+    check optimized.kind == ekNumber
+    check optimized.nValue.iValue == 100
 
   test "Division by Zero Generates Error Expression":
     var l = newLexer("10 / 0")
@@ -77,7 +77,7 @@ suite "Optimizer Tests":
     let optimized = optimize(opt, ast)
     check optimized.kind == ekVector
     check optimized.values.len == 3
-    check optimized.values[0].kind == ekInt
-    check optimized.values[0].iValue == 2
-    check optimized.values[1].iValue == 6
-    check optimized.values[2].iValue == 12
+    check optimized.values[0].kind == ekNumber
+    check optimized.values[0].nValue.iValue == 2
+    check optimized.values[1].nValue.iValue == 6
+    check optimized.values[2].nValue.iValue == 12

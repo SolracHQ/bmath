@@ -42,7 +42,8 @@ template wrapError*(ctx: string, fatal: bool = true, body: untyped): untyped =
   ##   - Logs errors with full context before exiting
   try:
     body
-  except IncompleteInputError as e: raise e
+  except IncompleteInputError as e:
+    raise e
   except BMathError as e:
     logError(e, ctx)
     if fatal:

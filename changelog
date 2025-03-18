@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.7.0
+- Added explicit support for complex numbers. Complex literals (e.g., 3+4i) work in arithmetic operations and functions.
+- Updated promotion rules: operations mixing int, float, and complex now promote to complex when needed.
+- Revised documentation and examples to reflect complex arithmetic behavior.
+
 ## Version 0.6.1
 - Removed the requirement for the `endif` keyword in conditional expressions.
 - Enhanced the lexer and parser to allow more flexible use of newlines. Not only blocks, but group and vector literals now allow newlines.

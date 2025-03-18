@@ -1,5 +1,5 @@
 import ../src/pipeline/lexer
-import ../src/types/[token, errors]
+import ../src/types/[token, number, errors]
 import unittest
 
 suite "Lexer tests":
@@ -9,9 +9,9 @@ suite "Lexer tests":
     while not l.atEnd:
       tokens.add l.next()
 
-    check tokens[0].iValue == 123
-    check tokens[1].fValue == 45.67
-    check tokens[2].fValue == 8e9
+    check tokens[0].nValue.iValue == 123
+    check tokens[1].nValue.fValue == 45.67
+    check tokens[2].nValue.fValue == 8e9
 
   test "Tokenizing operators":
     var l = newLexer("+-*/^%")
@@ -44,15 +44,15 @@ suite "Lexer tests":
       tkNewline, # tmp = a+b
       tkIdent,
       tkPow,
-      tkInt,
+      tkNumber,
       tkNewline, # tmp^2
       tkRCurly,
       tkEoe, # }
       tkIdent,
       tkLpar,
-      tkInt,
+      tkNumber,
       tkComma,
-      tkInt,
+      tkNumber,
       tkRpar, # myFunc(1, 2)
     ]
     for i in 0 ..< expected.len:
@@ -62,8 +62,8 @@ suite "Lexer tests":
   test "Tokenizing vector literal":
     var l = newLexer("v = [1, 2, 3]\n")
     let expected = [
-      tkIdent, tkAssign, tkLSquare, tkInt, tkComma, tkInt, tkComma, tkInt, tkRSquare,
-      tkEoe,
+      tkIdent, tkAssign, tkLSquare, tkNumber, tkComma, tkNumber, tkComma, tkNumber,
+      tkRSquare, tkEoe,
     ]
     for i in 0 ..< expected.len:
       let tok = l.next()
@@ -72,14 +72,14 @@ suite "Lexer tests":
   test "Tokenizing vec function call":
     var l = newLexer("v2 = vec(3, 4)")
     let expected =
-      [tkIdent, tkAssign, tkIdent, tkLpar, tkInt, tkComma, tkInt, tkRpar, tkEoe]
+      [tkIdent, tkAssign, tkIdent, tkLpar, tkNumber, tkComma, tkNumber, tkRpar, tkEoe]
     for i in 0 ..< expected.len:
       let tok = l.next()
       check tok.kind == expected[i]
 
   test "Tokenizing if and booleans":
-    var l = newLexer("if true else false elif endif")
-    let expected = [tkIf, tkTrue, tkElse, tkFalse, tkElif, tkEndIf, tkEoe]
+    var l = newLexer("if true else false elif")
+    let expected = [tkIf, tkTrue, tkElse, tkFalse, tkElif, tkEoe]
     for i in 0 ..< expected.len:
       let tok = l.next()
       check tok.kind == expected[i]
@@ -125,8 +125,71 @@ suite "Lexer tests":
       let tok = l.next()
       check tok.kind == expected[i]
 
-  test "malformed if expression missing endif throws exception":
-    let src = "if(a > b) 100 else 200"
-    var lexer = newLexer(src)
-    expect(IncompleteInputError):
-      discard tokenizeExpression(lexer)
+  test "Tokenizing complex numbers":
+    var l = newLexer("3i 4+3i 4+3i*2")
+    # Tokenize "3i"
+    let tok1 = l.next()
+    check tok1.kind == tkNumber
+    check $tok1.nValue == "3.0i"
+    # Tokenize "4+3i" into 3 tokens: number "4", '+' operator, number "3i"
+    let tok2 = l.next() # number "4"
+    check tok2.kind == tkNumber
+    check $tok2.nValue == "4"
+    let tok3 = l.next() # '+' operator
+    check tok3.kind == tkAdd
+    let tok4 = l.next() # number "3i"
+    check tok4.kind == tkNumber
+    check $tok4.nValue == "3.0i"
+    # Tokenize "4+3i*2" into 5 tokens: number "4", '+' operator, number "3i", '*' operator, number "2"
+    let tok5 = l.next() # number "4"
+    check tok5.kind == tkNumber
+    check $tok5.nValue == "4"
+    let tok6 = l.next() # '+' operator
+    check tok6.kind == tkAdd
+    let tok7 = l.next() # number "3i"
+    check tok7.kind == tkNumber
+    check $tok7.nValue == "3.0i"
+    let tok8 = l.next() # '*' operator
+    check tok8.kind == tkMul
+    let tok9 = l.next() # number "2"
+    check tok9.kind == tkNumber
+
+  test "Tokenizing additional operators":
+    var l = newLexer("a^2 5%3")
+    let t1 = l.next() # identifier "a"
+    check t1.kind == tkIdent
+    let t2 = l.next() # exponentiation operator
+    check t2.kind == tkPow
+    let t3 = l.next() # number 2
+    check t3.kind == tkNumber
+    let t4 = l.next() # number 5
+    check t4.kind == tkNumber
+    let t5 = l.next() # modulo operator
+    check t5.kind == tkMod
+    let t6 = l.next() # number 3
+    check t6.kind == tkNumber
+
+  test "Incomplete curly brace":
+    expect BMathError:
+      var lex = newLexer("{")
+      discard tokenizeExpression(lex)
+
+  test "Incomplete parenthesis":
+    expect BMathError:
+      var lex = newLexer("(")
+      discard tokenizeExpression(lex)
+
+  test "Incomplete square bracket":
+    expect BMathError:
+      var lex = newLexer("[")
+      discard tokenizeExpression(lex)
+
+  test "Incomplete if block":
+    expect BMathError:
+      var lex = newLexer("if x")
+      discard tokenizeExpression(lex)
+
+  test "Malformed number: incomplete exponent":
+    expect BMathError:
+      var lex = newLexer("1e")
+      discard lex.next() # parse number
