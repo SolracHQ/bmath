@@ -2,6 +2,8 @@ import fusion/matching
 import std/math
 import std/complex
 
+import errors
+
 type
   NumberKind* = enum
     nkInt ## Integer number
@@ -63,7 +65,7 @@ template toFloat(n: Number): float =
   of nkFloat:
     n.fValue
   of nkComplex:
-    raise newException(ValueError, "Cannot convert complex to float")
+    raise newException(BMathError, "Cannot convert complex to float")
 
 proc `+`*(a, b: Number): Number {.inline.} =
   ## Adds two Number objects together
@@ -140,7 +142,7 @@ proc `%`*(a, b: Number): Number {.inline.} =
   ## only operations between int values will return int.
   if a.kind == nkComplex or b.kind == nkComplex:
     raise
-      newException(ValueError, "Modulus operation not supported for complex numbers")
+      newException(BMathError, "Modulus operation not supported for complex numbers")
   elif a.kind == nkFloat or b.kind == nkFloat:
     return newNumber(toFloat(a) mod toFloat(b))
   else:
@@ -224,7 +226,7 @@ proc ceil*(n: Number): Number {.inline.} =
     return newNumber(ceil(n.fValue).int)
   of nkComplex:
     raise
-      newException(ValueError, "Ceiling operation not supported for complex numbers")
+      newException(BMathError, "Ceiling operation not supported for complex numbers")
 
 proc floor*(n: Number): Number {.inline.} =
   ## Returns the floor of a Number object
@@ -234,7 +236,7 @@ proc floor*(n: Number): Number {.inline.} =
   of nkFloat:
     return newNumber(floor(n.fValue).int)
   of nkComplex:
-    raise newException(ValueError, "Floor operation not supported for complex numbers")
+    raise newException(BMathError, "Floor operation not supported for complex numbers")
 
 proc round*(n: Number): Number {.inline.} =
   ## Returns the rounded value of a Number object
@@ -244,7 +246,7 @@ proc round*(n: Number): Number {.inline.} =
   of nkFloat:
     return newNumber(round(n.fValue).int)
   of nkComplex:
-    raise newException(ValueError, "Round operation not supported for complex numbers")
+    raise newException(BMathError, "Round operation not supported for complex numbers")
 
 proc exp*(n: Number): Number {.inline.} =
   ## Returns the exponential e^n of a Number object
@@ -259,28 +261,28 @@ proc exp*(n: Number): Number {.inline.} =
 proc `<`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for less than
   if a.kind == nkComplex or b.kind == nkComplex:
-    raise newException(ValueError, "Comparison not supported for complex numbers")
+    raise newException(BMathError, "Comparison not supported for complex numbers")
   else:
     a.toFloat < b.toFloat
 
 proc `<=`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for less than or equal to
   if a.kind == nkComplex or b.kind == nkComplex:
-    raise newException(ValueError, "Comparison not supported for complex numbers")
+    raise newException(BMathError, "Comparison not supported for complex numbers")
   else:
     a.toFloat <= b.toFloat
 
 proc `>`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for greater than
   if a.kind == nkComplex or b.kind == nkComplex:
-    raise newException(ValueError, "Comparison not supported for complex numbers")
+    raise newException(BMathError, "Comparison not supported for complex numbers")
   else:
     a.toFloat > b.toFloat
 
 proc `>=`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for greater than or equal to
   if a.kind == nkComplex or b.kind == nkComplex:
-    raise newException(ValueError, "Comparison not supported for complex numbers")
+    raise newException(BMathError, "Comparison not supported for complex numbers")
   else:
     a.toFloat >= b.toFloat
 
