@@ -78,12 +78,12 @@ suite "Interpreter tests":
     ## The inner 'local a' should not affect the outer 'a'.
     let res = evalString(
       """a = 10
-                                  {
-                                    local a = a
-                                    a = a + 5
-                                    a  # inner block returns 15, but outer 'a' remains 10
-                                  }
-                                  a"""
+        {
+          local a = a
+          a = a + 5
+          a  # inner block returns 15, but outer 'a' remains 10
+        }
+        a"""
     )
     check res.nValue.iValue == 10
 
@@ -91,7 +91,7 @@ suite "Interpreter tests":
     ## A proper if-elif-else expression.
     let res = evalString(
       """a = 10
-                                  if (a == 10) 1 elif (a == 5) 2 else 3"""
+         if (a == 10) 1 elif (a == 5) 2 else 3"""
     )
     check res.nValue.iValue == 1
     ## If condition fails and no else branch is provided, an error is expected.
@@ -103,11 +103,11 @@ suite "Interpreter tests":
     ## Outer 'a' is set to 20; inner block computes a temp value without modifying 'a'.
     let res = evalString(
       """a = 20
-                                  if (a > 15) {
-                                    local temp = a
-                                    temp = temp - 5
-                                    temp  # returns 15 from inner block
-                                  } elif (a == 10) 10 else 0"""
+        if (a > 15) {
+          local temp = a
+          temp = temp - 5
+          temp  # returns 15 from inner block
+        } elif (a == 10) 10 else 0"""
     )
     check res.nValue.iValue == 15
 

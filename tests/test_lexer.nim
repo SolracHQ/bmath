@@ -1,5 +1,5 @@
 import ../src/pipeline/lexer
-import ../src/types/token
+import ../src/types/[token, number]
 import unittest
 
 suite "Lexer tests":
@@ -124,3 +124,47 @@ suite "Lexer tests":
     for i in 0 ..< expected.len:
       let tok = l.next()
       check tok.kind == expected[i]
+
+  test "Tokenizing complex numbers":
+    var l = newLexer("3i 4+3i 4+3i*2")
+    # Tokenize "3i"
+    let tok1 = l.next()
+    check tok1.kind == tkNumber
+    check $tok1.nValue == "3.0i"
+    # Tokenize "4+3i" into 3 tokens: number "4", '+' operator, number "3i"
+    let tok2 = l.next() # number "4"
+    check tok2.kind == tkNumber
+    check $tok2.nValue == "4"
+    let tok3 = l.next() # '+' operator
+    check tok3.kind == tkAdd
+    let tok4 = l.next() # number "3i"
+    check tok4.kind == tkNumber
+    check $tok4.nValue == "3.0i"
+    # Tokenize "4+3i*2" into 5 tokens: number "4", '+' operator, number "3i", '*' operator, number "2"
+    let tok5 = l.next() # number "4"
+    check tok5.kind == tkNumber
+    check $tok5.nValue == "4"
+    let tok6 = l.next() # '+' operator
+    check tok6.kind == tkAdd
+    let tok7 = l.next() # number "3i"
+    check tok7.kind == tkNumber
+    check $tok7.nValue == "3.0i"
+    let tok8 = l.next() # '*' operator
+    check tok8.kind == tkMul
+    let tok9 = l.next() # number "2"
+    check tok9.kind == tkNumber
+
+  test "Tokenizing additional operators":
+    var l = newLexer("a^2 5%3")
+    let t1 = l.next() # identifier "a"
+    check t1.kind == tkIdent
+    let t2 = l.next() # exponentiation operator
+    check t2.kind == tkPow
+    let t3 = l.next() # number 2
+    check t3.kind == tkNumber
+    let t4 = l.next() # number 5
+    check t4.kind == tkNumber
+    let t5 = l.next() # modulo operator
+    check t5.kind == tkMod
+    let t6 = l.next() # number 3
+    check t6.kind == tkNumber
