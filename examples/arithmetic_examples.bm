@@ -76,3 +76,7 @@ floorExample = floor(3.9)                     # Floor of a number
 # Example of using the ceil function
 ceilExample = ceil(3.1)                       # Ceiling of a number
 # Expected result: 4
+
+# [14] Complex Arithmetic Operations
+complexAddExample = (3+4i) + (1-2i)      # Expected: 4+2i
+complexMulExample = (3+4i) * (1-2i)      # Expected: 11-2i

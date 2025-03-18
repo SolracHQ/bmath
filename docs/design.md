@@ -159,3 +159,12 @@ Additional Notes:
   ```
 - Lazy seq Data Type: A new lazy-evaluated sequence type is available via the constructor seq(size, generator), similar to vec. Operations such as map and filter now return a seq. To convert a seq to a vec, use the collect(seq) function.
 
+## Note on Complex Numbers
+
+Complex numbers are treated like other numbers but must end with "i". Note that due to operator precedence, expressions can behave differently than in pure math. For example:
+  
+  c1 = 4 + 3i  # parses as 4 plus 3i, which is correct  
+  c2 = 4+3i *2  # parses as 4 plus (3i * 2), yielding 4 + 6i  
+  c3 = (4 + 4i) * 2  # forces addition before multiplication, yielding 8 + 8i
+
+This behavior occurs because the * operator has higher precedence than +.

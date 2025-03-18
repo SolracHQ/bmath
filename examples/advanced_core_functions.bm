@@ -54,3 +54,6 @@ relationshipCheck = sineValue^2 + cosineValue^2 # Expected: ~1 (Pythagorean iden
 # Demonstrating the use of logarithm for scaling values.
 valueToScale = 1000                        # Example value
 scaledValue = log(valueToScale, 10)        # Expected: 3.0 (log base 10 of 1000)
+
+# [11] Complex Exponential Function
+complexExpResult = exp(1+0.5i)          # Expected: complex result (implementation-dependent)

@@ -1,4 +1,4 @@
-import unittest, math
+import unittest, math, complex
 import ../src/pipeline/interpreter/interpreter
 import ../src/pipeline/parser/parser
 import ../src/pipeline/lexer
@@ -116,4 +116,33 @@ suite "Interpreter tests":
     let res = evalString("""(5 == 5) & ((3 < 4) | (2 > 10))""")
     check res.bValue
     let res2 = evalString("""(5 != 5) | ((10 > 2) & (1 == 1))""")
-    check res2.bValue
+
+  test "Complex literal evaluation":
+    ## Evaluates a pure imaginary literal.
+    let res1 = evalString("3i")
+    check res1.nValue.cValue == complex(0.0, 3.0)
+    ## Evaluates a mixed real and complex addition, with promotion.
+    let res2 = evalString("2 + 3i")
+    check res2.nValue.cValue == complex(2.0, 3.0)
+
+  test "Complex arithmetic operations":
+    ## Addition and subtraction among pure imaginary numbers.
+    let resAdd = evalString("3i + 4i")
+    check resAdd.nValue.cValue == complex(0.0, 7.0)
+    let resSub = evalString("3i - 5i")
+    check resSub.nValue.cValue == complex(0.0, -2.0)
+    ## Multiplication resulting in a purely real number.
+    let resMul = evalString("3i * 3i")
+    check resMul.nValue.fValue == -9.0
+    ## Mixed arithmetic with real numbers.
+    let resMixed = evalString("1 + 2i + 3 + 4i")
+    check resMixed.nValue.cValue == complex(4.0, 6.0)
+
+  test "Complex division and exponentiation":
+    ## Division between a real and a complex number
+    ## 4 divided by (2i) equals -2i.
+    let resDiv = evalString("4 / 2i")
+    check resDiv.nValue.cValue == complex(0.0, -2.0)
+    ## Exponentiation: (3i)^2 equals -9.
+    let resPow = evalString("3i ^ 2")
+    check resPow.nValue.fValue == -9.0

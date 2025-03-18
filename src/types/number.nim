@@ -17,14 +17,17 @@ type
     of nkComplex:
       cValue*: Complex[float] ## Complex number value
 
-template newNumber*(value: typed): Number =
+proc newNumber*[T](value: T): Number {.inline.} =
   ## Creates a new Number object based on the type of value
   when value is SomeInteger:
     Number(kind: nkInt, iValue: value.int)
   elif value is SomeFloat:
     Number(kind: nkFloat, fValue: value.float)
   elif value is Complex[float]:
-    Number(kind: nkComplex, cValue: value)
+    if value.im == 0.0:
+      Number(kind: nkFloat, fValue: value.re)
+    else:
+      Number(kind: nkComplex, cValue: value)
   else:
     {.error: "Unsupported type for Number".}
 
@@ -42,7 +45,7 @@ proc isZero*(n: Number): bool {.inline.} =
   of nkFloat:
     return n.fValue == 0.0
   of nkComplex:
-    return n.cValue == complex(0.0, 0.0)
+    return n.cValue.re == 0.0 and n.cValue.im == 0.0
 
 template toComplex(n: Number): Complex[float] =
   case n.kind
@@ -289,4 +292,14 @@ proc `$`*(n: Number): string {.inline.} =
   of nkFloat:
     return $n.fValue
   of nkComplex:
-    return $n.cValue.re & " + " & $n.cValue.im & "i"
+    if n.cValue.re == 0.0 and n.cValue.im == 0.0:
+      return "0"
+    elif n.cValue.re == 0.0:
+      return $n.cValue.im & "i"
+    elif n.cValue.im == 0.0:
+      return $n.cValue.re
+    else:
+      if n.cValue.im < 0.0:
+        return $n.cValue.re & " - " & $(abs(n.cValue.im)) & "i"
+      else:
+        return $n.cValue.re & " + " & $n.cValue.im & "i"

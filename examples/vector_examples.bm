@@ -86,3 +86,7 @@ anyTrue3 = any(booleanVector3)  # Expected: false
 # [9] Chaining Operations '->'
 # Chaining operations using the '->' operator.
 chainedResult = integerVector -> map(|x| x * 2) -> filter(|x| (x % 4) == 0) -> collect  # Expected: [4, 8]
+
+# [10] Complex Vectors
+complexVector = [3+4i, 1-2i, 0+1i]   # A vector of complex numbers
+complexVectorSum = sum(complexVector)   # Expected: (3+4i)+(1-2i)+(0+1i) = 4+3i

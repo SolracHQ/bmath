@@ -9,7 +9,7 @@
 ## Implements error-resilient tokenization with precise error
 ## location reporting.
 
-import std/[strutils, tables]
+import std/[strutils, tables, complex]
 
 import ../types/[position, token, errors]
 
@@ -79,11 +79,24 @@ proc parseNumber*(lexer: var Lexer, start: int): Token =
       lexer.col.inc
   let numStr = lexer.source[start ..< lexer.current]
   try:
-    return
+    if lexer.current < lexer.source.len and lexer.source[lexer.current] == 'i':
+      lexer.current.inc
+      lexer.col.inc
       if isFloat:
-        newToken(parseFloat(numStr), Position(line: lexer.line, column: startCol))
+        return newToken(
+          complex(0.0, parseFloat(numStr)), Position(line: lexer.line, column: startCol)
+        )
       else:
-        newToken(parseInt(numStr), Position(line: lexer.line, column: startCol))
+        return newToken(
+          complex(0.0, parseInt(numStr).float),
+          Position(line: lexer.line, column: startCol),
+        )
+    else:
+      if isFloat:
+        return
+          newToken(parseFloat(numStr), Position(line: lexer.line, column: startCol))
+      else:
+        return newToken(parseInt(numStr), Position(line: lexer.line, column: startCol))
   except:
     raise newBMathError(
       "Invalid number format '" & numStr & "' is not a valid number",

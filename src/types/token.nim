@@ -76,13 +76,17 @@ type
     else:
       discard
 
-template newToken*(value: typed, position: Position): Token =
+template newToken*(value: typed, pos: Position): Token =
   when value is SomeInteger:
-    Token(kind: tkNumber, nValue: newNumber(value))
+    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
   elif value is SomeFloat:
-    Token(kind: tkNumber, nValue: newNumber(value))
+    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
+  elif value is Number:
+    Token(kind: tkNumber, nValue: value, position: pos)
+  elif value is Complex[float]:
+    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
   elif value is SomeString:
-    Token(kind: tkIdent, name: value)
+    Token(kind: tkIdent, name: value, position: pos)
   else:
     {.error: "Unsupported type for Token".}
 

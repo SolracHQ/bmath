@@ -7,16 +7,16 @@
   **Example:** `exit()`
 
 - **pow**  
-  Computes the value of a number raised to the power of another.  
-  **Accepted Types:** Two numeric values (integers or floats).  
+  Raises a number to the power of another. Supports integers, floats, and complex numbers.  
+  **Accepted Types:** Two numeric values (integer, float, or complex).  
   **Example:**  
   ```bm
   pow(3.2, 5)
   ```
 
 - **sqrt**  
-  Calculates the square root of a given number.  
-  **Accepted Types:** A single numeric value (integer or float).  
+  Calculates the square root of a non-negative number. When provided a complex number with a non-zero imaginary part, returns the complex square root.  
+  **Accepted Types:** A single numeric value (integer, float, or complex). Note that for real inputs, negative values will raise an exception.  
   **Example:** `sqrt(16)`
 
 - **floor**  
@@ -35,8 +35,8 @@
   **Example:** `round(3.5)`
 
 - **dot**  
-  Computes the dot product of two vectors.  
-  **Accepted Types:** Two vectors of numbers (both vectors must have the same length).  
+  Computes the dot product of two vectors of numbers.  
+  **Accepted Types:** Two vectors of numeric values (each vector can contain integers, floats, or complex numbers, but they must be of the same length).  
   **Example:** `dot([1, 2, 3], [4, 5, 6])`
 
 - **nth**  
@@ -55,77 +55,77 @@
   **Example:** `last([10, 20, 30])`
 
 - **vec**  
-  Constructs a new vector by specifying a size and a function or value to generate its elements.  
-  **Accepted Types:** An integer size and either a function (returning a number) or a constant value.  
-  **Example:** `vec(5, x -> x * 2)`
+  Constructs a new vector by specifying its size and a function or constant value used to generate its elements. Internally implemented as `createVector`.  
+  **Accepted Types:** An integer size and either a function (returning a number) or a constant value (which can be numeric or otherwise).  
+  **Example:** `vec(5, |x| x * 2)`
 
 - **createSeq**  
-  Constructs a new sequence (lazy evaluated) by specifying a size and a function or constant value to generate its elements.  
+  Constructs a new lazy-evaluated sequence by specifying a size and a function or constant value to generate its elements.  
   **Accepted Types:** An integer size and either a function (returning a value) or a constant value.  
-  **Example:** `createSeq(5, x -> x + 1)`
+  **Example:** `createSeq(5, |x| x + 1)`
 
 - **sin**  
-  Computes the sine of a given number (angle in radians).  
-  **Accepted Types:** A single numeric value (integer or float).  
+  Computes the sine of a given number (angle in radians). Supports complex numbers as well.  
+  **Accepted Types:** A single numeric value (integer, float, or complex).  
   **Example:** `sin(1.5708)`
 
 - **cos**  
-  Computes the cosine of a given number (angle in radians).  
-  **Accepted Types:** A single numeric value (integer or float).  
+  Computes the cosine of a given number (angle in radians). Supports complex numbers.  
+  **Accepted Types:** A single numeric value (integer, float, or complex).  
   **Example:** `cos(0)`
 
 - **tan**  
-  Computes the tangent of a given number (angle in radians).  
-  **Accepted Types:** A single numeric value (integer or float).  
+  Computes the tangent of a given number (angle in radians). Supports complex numbers.  
+  **Accepted Types:** A single numeric value (integer, float, or complex).  
   **Example:** `tan(0.7854)`
 
 - **log**  
-  Computes the logarithm of a number with respect to a given base.  
-  **Accepted Types:** Two numeric values (integers or floats).  
+  Computes the logarithm of a number with respect to a given base. Supports complex numbers if either argument is complex.  
+  **Accepted Types:** Two numeric values (integer, float, or complex).  
   **Example:** `log(100, 10)`
 
 - **exp**  
-  Computes the exponential (e^x) of a given number.  
-  **Accepted Types:** A single numeric value (integer or float).  
+  Computes the exponential (e^x) of a given number. Supports complex numbers.  
+  **Accepted Types:** A single numeric value (integer, float, or complex).  
   **Example:** `exp(1)`
 
 ## Arithmetic Operators
 - **Addition (+)**  
-  Performs addition for numbers or element-wise addition for vectors.  
-  **Accepted Types:** Numeric values (integers, floats) and vectors (of numeric types).  
+  Adds numbers or performs element-wise addition for vectors. When operating on numbers with different types (integer, float, complex), promotion rules apply (int → float → complex).  
+  **Accepted Types:** Numeric values (or vectors of numeric types).  
   **Example:** `3 + 4` or `4 + [3, 4]`
 
 - **Subtraction (-)**  
   **Binary:** Subtracts one numeric value from another or performs element-wise subtraction for vectors.  
   **Unary:** Negates a numeric value.  
-  **Accepted Types:** Numeric values (integers, floats) and vectors for binary operations.  
+  **Accepted Types:** Numeric values (or vectors for binary operations).  
   **Example:** `7 - 2` or `-5`
 
 - **Multiplication (*)**  
-  Multiplies numbers or performs scalar multiplication with vectors.  
-  **Accepted Types:** Numeric values (integers, floats) and a combination of a vector and a scalar.  
+  Multiplies numbers or performs scalar multiplication with vectors. Supports automatic promotion among numeric types including complex numbers.  
+  **Accepted Types:** Numeric values and combinations of a vector and a scalar.  
   **Example:** `3 * 4` or `2 * [1, 2, 3]`
 
 - **Division (/)**  
-  Divides one number by another, always returning a float.  
-  **Accepted Types:** Two numeric values (integers or floats).  
+  Divides one number by another. Always performs floating-point division for numbers; when operating on complex numbers, standard complex division is applied.  
+  **Accepted Types:** Two numeric values (integer, float, or complex).  
   **Exception:** Raises an exception if the divisor is 0.  
   **Example:** `10 / 2`
 
 - **Modulo (%)**  
-  Computes the remainder of an integer division, with necessary type promotion if required.  
-  **Accepted Types:** Numeric values (primarily integers).  
+  Computes the remainder of an integer division. If one or both operands are floats, they are promoted appropriately before the operation.  
+  **Accepted Types:** Numeric values (primarily integers, with promotion as needed).  
   **Exception:** Raises an exception if the divisor is 0.  
   **Example:** `10 % 3`
 
 - **Exponentiation (^)**  
-  Raises a number to the power of another.  
-  **Accepted Types:** Two numeric values (integers or floats); if both inputs are integers, the result remains an integer.  
+  Raises a number to the power of another. For negative exponents on integers, the result is promoted to a float. When complex numbers are involved, complex exponentiation is performed.  
+  **Accepted Types:** Two numeric values (integer, float, or complex).  
   **Example:** `2 ^ 3`
 
 ## Comparison Operators
 - **Equality (==)**  
-  Compares two values for equality after proper type promotion (e.g., between integers and floats).  
+  Compares two values for equality with type promotion (e.g., between integers and floats) and supports numeric types.  
   **Accepted Types:** Numeric values and other comparable types.  
   **Example:** `3 == 3` or `3 == 3.0`
 
@@ -135,50 +135,52 @@
   **Example:** `3 != 4`
 
 - **Less Than (<)**  
-  Checks if the left operand is less than the right operand.  
-  **Accepted Types:** Numeric values.  
+  Checks if the left operand is less than the right operand. Note: comparisons involving complex numbers raise an exception.  
+  **Accepted Types:** Numeric values (excluding complex).  
   **Example:** `3 < 5`
 
 - **Less Than or Equal (<=)**  
   Checks if the left operand is less than or equal to the right operand.  
-  **Accepted Types:** Numeric values.  
+  **Accepted Types:** Numeric values (excluding complex).  
   **Example:** `3 <= 3`
 
 - **Greater Than (>)**  
   Checks if the left operand is greater than the right operand.  
-  **Accepted Types:** Numeric values.  
+  **Accepted Types:** Numeric values (excluding complex).  
   **Example:** `5 > 3`
 
 - **Greater Than or Equal (>=)**  
   Checks if the left operand is greater than or equal to the right operand.  
-  **Accepted Types:** Numeric values.  
+  **Accepted Types:** Numeric values (excluding complex).  
   **Example:** `5 >= 5`
 
 ## Logical Operators
-- **not (!)**
-  Performs logical negation.  
+- **not (!)**  
+  Performs logical negation on boolean values.  
   **Accepted Types:** Boolean values.  
   **Example:** `!true`
 
-- **and (&)**
+- **and (&)**  
   Evaluates the logical conjunction of two boolean values.  
   **Accepted Types:** Boolean values.  
   **Example:** `true & false`
 
-- **or (|)**
+- **or (|)**  
   Evaluates the logical disjunction of two boolean values.  
   **Accepted Types:** Boolean values.  
   **Example:** `true | false`
 
 ## Sequence and Vector Operations
-Sequences are lazily evaluated collections that extend vector functionality. Many functions that operate on vectors now also support sequences.
+Sequences offer lazy evaluation while vectors are concrete collections. Many vector operations are extended to sequences.
 
 - **map**  
   Applies a function to each element of a vector or sequence, returning a new lazy sequence.  
   **Accepted Types:** A vector or sequence and a function that takes a value as input and returns a transformed value.  
   **Example:**  
   ```bm
-  map([1, 2, 3], x -> x * 2)
+  map([1, 2, 3], |x| x * 2)
+  # or using ->
+  [1, 2, 3] -> map(|x| x * 2)
   ```
 
 - **filter**  
@@ -186,20 +188,22 @@ Sequences are lazily evaluated collections that extend vector functionality. Man
   **Accepted Types:** A vector or sequence and a function that takes a value and returns a boolean.  
   **Example:**  
   ```bm
-  filter([1, 2, 3, 4], x -> x mod 2 == 0)
+  filter([1, 2, 3, 4], |x| x mod 2 == 0)
+  # or using ->
+  [1, 2, 3, 4] -> filter(|x| x mod 2 == 0)
   ```
 
 - **reduce**  
-  Reduces a vector by applying a binary function to combine its elements into a single result.  
-  **Accepted Types:** A non-empty vector and a binary function that takes two numbers and returns a number.  
+  Reduces a vector by applying a binary function to combine its elements into a single result, starting from an initial accumulator value.  
+  **Accepted Types:** A non-empty vector or sequence and a binary function that takes two values and returns a value.  
   **Example:**  
   ```bm
-  reduce([1, 2, 3, 4], 0, (acc, x) -> acc + x)
+  reduce([1, 2, 3, 4], 0, |acc, x| acc + x)
   ```
 
 - **sum**  
-  Computes the total sum of elements in a vector or sequence.  
-  **Accepted Types:** A vector or a sequence of numeric values.  
+  Computes the total sum of all elements in a vector or sequence.  
+  **Accepted Types:** A vector or sequence of numeric values.  
   **Example:**  
   ```bm
   sum([1, 2, 3, 4])
@@ -254,9 +258,11 @@ Sequences are lazily evaluated collections that extend vector functionality. Man
   ```
 
 ## General Notes
-- All built-in functions are registered in the global environment and are protected from being overwritten.  
-- Functions are first-class citizens implemented as inline lambda expressions; parameters are local, and closures capture references to variables rather than static copies.  
-- Operators follow promotion rules, ensuring that when operating on numbers of different types (e.g., integers and floats), the integer is promoted to a float. These rules ensure consistent results across arithmetic and comparison operations.  
-- Vector operations perform element-wise computations with proper dimension checking.  
-- Sequences offer a lazy evaluation model, allowing for efficient processing and transformation without immediate evaluation.  
-- **Division (/) and Modulo (%) operations raise an exception if the divisor is 0.**
+- All built-in functions are registered in the global environment and are protected from being overwritten.
+- Functions are first-class citizens, implemented as inline lambda expressions. Parameters are local, and closures capture references to variables.
+- Operators follow promotion rules: when operating on numbers of different types (e.g., integer, float, complex), the system promotes the operand to the higher type (int → float → complex) to ensure consistent results.
+- Vector operations perform element-wise computations with proper dimensionality checks.
+- Sequences provide lazy evaluation, enabling efficient processing and transformation without immediate materialization.
+- **Division (/) and Modulo (%) operations raise an exception if the divisor is zero.**
+- Comparison operators do not support complex numbers; attempting such comparisons raises an exception.
+- Several functions have distinct behaviors depending on whether they operate on a concrete vector or a lazy sequence (e.g., `map`, `filter`, `collect`).
