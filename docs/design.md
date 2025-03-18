@@ -10,7 +10,7 @@ The language now also supports chaining function calls using the arrow operator 
 The grammar is informally defined as follows:
 
 ```
-expression       -> ( assignation | block | if_expression | chain_expression )
+expression       -> ( assignation | chain_expression )
 
 chain_expression -> simple_expression ( "->" functionInvocation )*
 simple_expression-> ( assignation | block | if_expression | boolean )
@@ -33,7 +33,9 @@ power            -> unary ("^" unary)*
 
 unary            -> ("-")? primary
 
-primary          -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation
+primary          -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation | block | if_expression
+
+NUMBER          -> [0-9]* ("." [0-9]+)? ("i")?
 
 functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" 
            | "(" expression ")" "(" ( expression ("," expression)* )? ")"

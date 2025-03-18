@@ -146,3 +146,10 @@ suite "Interpreter tests":
     ## Exponentiation: (3i)^2 equals -9.
     let resPow = evalString("3i ^ 2")
     check resPow.nValue.fValue == -9.0
+
+  test "Block expression in arithmetic operations":
+    ## Test that blocks can be used as expressions.
+    ## Evaluates { sin(3.14) } + cos(3.14) as an expression.
+    let resultVal = evalString("{ sin(3.14) } + cos(3.14)").nValue.fValue
+    let expected = sin(3.14) + cos(3.14)
+    check abs(resultVal - expected) < 1e-6

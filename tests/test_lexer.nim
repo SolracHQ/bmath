@@ -1,5 +1,5 @@
 import ../src/pipeline/lexer
-import ../src/types/[token, number]
+import ../src/types/[token, number, errors]
 import unittest
 
 suite "Lexer tests":
@@ -168,3 +168,28 @@ suite "Lexer tests":
     check t5.kind == tkMod
     let t6 = l.next() # number 3
     check t6.kind == tkNumber
+
+  test "Incomplete curly brace":
+    expect BMathError:
+      var lex = newLexer("{")
+      discard tokenizeExpression(lex)
+
+  test "Incomplete parenthesis":
+    expect BMathError:
+      var lex = newLexer("(")
+      discard tokenizeExpression(lex)
+
+  test "Incomplete square bracket":
+    expect BMathError:
+      var lex = newLexer("[")
+      discard tokenizeExpression(lex)
+
+  test "Incomplete if block":
+    expect BMathError:
+      var lex = newLexer("if x")
+      discard tokenizeExpression(lex)
+
+  test "Malformed number: incomplete exponent":
+    expect BMathError:
+      var lex = newLexer("1e")
+      discard lex.next() # parse number

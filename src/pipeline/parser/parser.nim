@@ -140,11 +140,84 @@ proc parseVector(parser: var Parser): Expression =
       raise newBMathError("Expected ','", parser.previous().position)
   return newVectorExpr(pos, values)
 
+proc parseBlock(parser: var Parser): Expression =
+  ## Parses block expressions
+  let pos = parser.previous().position
+  # Skip newlines after '{'
+  while parser.match({tkNewline}):
+    continue
+  var expressions: seq[Expression] = @[]
+  while true:
+    expressions.add(parser.parseExpression())
+    # After an expression, require at least one newline or a closing curly brace.
+    if parser.match({tkRCurly}):
+      break
+    if not parser.match({tkNewline}):
+      raise newBMathError(
+        "Expected newline or '}' after expression", parser.peek().position
+      )
+    # Clear the rest of the newlines.
+    while parser.match({tkNewline}):
+      discard
+    if parser.match({tkRCurly}):
+      break
+  if expressions.len == 0:
+    raise newBMathError("Blocks must contain at least one expression", pos)
+  return newBlockExpr(pos, expressions)
+
+proc parseIf(parser: var Parser): Expression =
+  ## Parses if-elif-else-endif expressions
+  template cleanUpNewlines() =
+    while parser.match({tkNewline}):
+      discard
+
+  let pos = parser.previous().position
+  cleanUpNewlines()
+  var branches: seq[Condition] = @[]
+  var elseBranch: Expression
+  # Check ( after if
+  if not parser.match({tkLpar}):
+    raise newBMathError("Expected '(' after 'if'", parser.previous().position)
+  cleanUpNewlines()
+  let condition = parser.parseExpression()
+  cleanUpNewlines()
+  if not parser.match({tkRpar}):
+    raise newBMathError("Expected ')' after condition", parser.previous().position)
+  cleanUpNewlines()
+  branches.add(newCondition(condition, parser.parseExpression()))
+
+  # Parse elif conditions
+  while parser.match({tkElif}):
+    if not parser.match({tkLpar}):
+      raise newBMathError("Expected '(' after 'elif'", parser.previous().position)
+    cleanUpNewlines()
+    let condition = parser.parseExpression()
+    cleanUpNewlines()
+    if not parser.match({tkRpar}):
+      raise newBMathError("Expected ')' after condition", parser.previous().position)
+    cleanUpNewlines()
+    branches.add(newCondition(condition, parser.parseExpression()))
+
+  # Parse else branch, else is always required
+  cleanUpNewlines()
+  if not parser.match({tkElse}):
+    raise newBMathError(
+      "Expected 'else' after if-elif conditions", parser.previous().position
+    )
+  cleanUpNewlines()
+  elseBranch = parser.parseExpression()
+  cleanUpNewlines()
+  result = newIfExpr(pos, branches, elseBranch)
+
 proc parsePrimary(parser: var Parser): Expression =
   ## Parses primary expressions: numbers, groups, identifiers, and function definitions.
   let token = parser.peek()
   if parser.match({tkLpar}):
     return parser.parseGroupOrFuncInvoke()
+  elif parser.match({tkLCurly}):
+    result = parser.parseBlock()
+  elif parser.match({tkIf}):
+    result = parser.parseIf()
   elif parser.match({tkNumber}):
     return newNumberExpr(token.position, token.nValue)
   elif parser.match({tkTrue}):
@@ -294,82 +367,8 @@ proc parseAssignment(parser: var Parser): Expression =
       )
   return parser.parseBoolean()
 
-proc parseBlock(parser: var Parser): Expression =
-  ## Parses block expressions
-  let pos = parser.previous().position
-  # Skip newlines after '{'
-  while parser.match({tkNewline}):
-    continue
-  var expressions: seq[Expression] = @[]
-  while true:
-    expressions.add(parser.parseExpression())
-    # After an expression, require at least one newline or a closing curly brace.
-    if parser.match({tkRCurly}):
-      break
-    if not parser.match({tkNewline}):
-      raise newBMathError(
-        "Expected newline or '}' after expression", parser.peek().position
-      )
-    # Clear the rest of the newlines.
-    while parser.match({tkNewline}):
-      discard
-    if parser.match({tkRCurly}):
-      break
-  if expressions.len == 0:
-    raise newBMathError("Blocks must contain at least one expression", pos)
-  return newBlockExpr(pos, expressions)
-
-proc parseIf(parser: var Parser): Expression =
-  ## Parses if-elif-else-endif expressions
-  template cleanUpNewlines() =
-    while parser.match({tkNewline}):
-      discard
-
-  let pos = parser.previous().position
-  cleanUpNewlines()
-  var branches: seq[Condition] = @[]
-  var elseBranch: Expression
-  # Check ( after if
-  if not parser.match({tkLpar}):
-    raise newBMathError("Expected '(' after 'if'", parser.previous().position)
-  cleanUpNewlines()
-  let condition = parser.parseExpression()
-  cleanUpNewlines()
-  if not parser.match({tkRpar}):
-    raise newBMathError("Expected ')' after condition", parser.previous().position)
-  cleanUpNewlines()
-  branches.add(newCondition(condition, parser.parseExpression()))
-
-  # Parse elif conditions
-  while parser.match({tkElif}):
-    if not parser.match({tkLpar}):
-      raise newBMathError("Expected '(' after 'elif'", parser.previous().position)
-    cleanUpNewlines()
-    let condition = parser.parseExpression()
-    cleanUpNewlines()
-    if not parser.match({tkRpar}):
-      raise newBMathError("Expected ')' after condition", parser.previous().position)
-    cleanUpNewlines()
-    branches.add(newCondition(condition, parser.parseExpression()))
-
-  # Parse else branch, else is always required
-  cleanUpNewlines()
-  if not parser.match({tkElse}):
-    raise newBMathError(
-      "Expected 'else' after if-elif conditions", parser.previous().position
-    )
-  cleanUpNewlines()
-  elseBranch = parser.parseExpression()
-  cleanUpNewlines()
-  result = newIfExpr(pos, branches, elseBranch)
-
 proc parseExpression(parser: var Parser): Expression {.inline.} =
-  if parser.match({tkLCurly}):
-    result = parser.parseBlock()
-  elif parser.match({tkIf}):
-    result = parser.parseIf()
-  else:
-    result = parser.parseAssignment()
+  result = parser.parseAssignment()
   while parser.match({tkChain}):
     # parse chain operator
     let prev = parser.previous()
