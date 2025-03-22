@@ -6,8 +6,8 @@
 ## - Parenthesis grouping
 ## - Syntax error detection
 ## - Abstract syntax tree construction
-import fusion/matching
-import ../../types/[expression, errors, token, number]
+import ../../types/[expression, token, number]
+import ../../types/errors
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse

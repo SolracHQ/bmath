@@ -51,9 +51,6 @@ type
     # Block expression
     ekBlock ## Block expression (sequence of statements)
 
-    # Error finding on optimization phase
-    ekError ## Error node (used for error handling)
-
     # Control flow
     ekIf ## If-else conditional expression
 
@@ -102,8 +99,6 @@ type
     of ekIf:
       branches*: seq[Condition]
       elseBranch*: Expression ## Else branch expression 
-    of ekError:
-      message*: string ## Error message
     of ekTrue, ekFalse:
       discard ## Kind is enough to determine the value
 
@@ -181,9 +176,6 @@ proc newIfExpr*(
   result =
     Expression(kind: ekIf, position: pos, branches: branches, elseBranch: elseBranch)
 
-proc newErrorExpr*(pos: Position, message: string): Expression {.inline.} =
-  result = Expression(kind: ekError, position: pos, message: message)
-
 proc newCondition*(
     conditionExpr: Expression, thenExpr: Expression
 ): Condition {.inline.} =
@@ -249,8 +241,6 @@ proc stringify(node: Expression, indent: int): string =
     if node.elseBranch != nil:
       result.add("\n" & indentation & "else:\n")
       result.add(node.elseBranch.stringify(indent + 2))
-  of eKError:
-    result = indentation & "error: " & node.message & "\n"
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -334,8 +324,6 @@ proc `==`*(a, b: Expression): bool =
       return a.elseBranch == b.elseBranch
     else:
       return false
-  of ekError:
-    return a.message == b.message
 
 proc asSource*(expr: Expression): string =
   ## Returns a string representation of the expression in source code format
@@ -403,5 +391,3 @@ proc asSource*(expr: Expression): string =
     if expr.elseBranch != nil:
       src.add(" else " & asSource(expr.elseBranch))
     return src
-  of ekError:
-    return "error: " & expr.message

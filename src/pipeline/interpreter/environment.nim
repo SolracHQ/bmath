@@ -1,12 +1,16 @@
 import std/[sets, tables, macros]
 import corelib
-import ../../types/[value, errors, expression]
+import stdlib/arithmetic
+import ../../types/[value, expression]
+import errors
+
+from math import E, PI
 
 const CORE_NAMES* = toHashSet(
   [
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
     "last", "sin", "cos", "tan", "log", "exp", "len", "map", "filter", "reduce", "sum",
-    "any", "all", "collect", "seq", "skip", "hasNext", "next",
+    "any", "all", "collect", "seq", "skip", "hasNext", "next", "e", "pi",
   ]
 )
 
@@ -70,6 +74,8 @@ let global = Environment(
       "skip": native(skip(sequence, number)),
       "hasNext": native(hasNext(sequence)),
       "next": native(next(sequence)),
+      "e": newValue(E),
+      "pi": newValue(PI),
     }
   ),
 )
@@ -86,13 +92,15 @@ proc `[]`*(env: Environment, name: string): Value =
     if name in currentEnv.values:
       return currentEnv.values[name]
     currentEnv = currentEnv.parent
-  raise newException(BMathError, "Variable '" & name & "' is not defined")
+  raise newUndefinedVariableError(name)
 
 proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
   if env == nil:
+    # If this is reached, it means there's a bug in the interpreter
+    # because the environment should never be nil.
     raise newException(ValueError, "Trying to write on a nil environment")
   if name in CORE_NAMES:
-    raise newException(BMathError, "Cannot overwrite the reserved name '" & name & "'")
+    raise newReservedNameError(name)
   if local:
     env.values[name] = value
     return
@@ -103,11 +111,3 @@ proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
       return
     current = current.parent
   env.values[name] = value
-
-proc hasKey*(env: Environment, name: string): bool =
-  if env == nil:
-    return false
-  elif name in env.values:
-    return true
-  else:
-    return env.parent.hasKey(name)

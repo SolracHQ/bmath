@@ -1,9 +1,8 @@
 import unittest, math, complex
-import ../src/pipeline/interpreter/interpreter
-import ../src/pipeline/parser/parser
-import ../src/pipeline/lexer
+import ../src/pipeline/interpreter/[interpreter, errors]
+import ../src/pipeline/parser/[parser]
+import ../src/pipeline/lexer/[lexer, errors]
 import ../src/types/value
-import ../src/types/errors
 
 proc evalString(s: string): Value =
   var interpreter = newInterpreter()
@@ -33,7 +32,7 @@ suite "Interpreter tests":
   test "Division and modulo edge cases":
     ## Division by zero should raise an error.
     ## Negative modulo should return a negative result.
-    expect BMathError:
+    expect DivideByZeroError:
       discard evalString("5 / 0")
     check evalString("5 % 0.999").nValue.fValue == 0.0050000000000000044
     check evalString("-7 % 3").nValue.iValue == -1
@@ -72,7 +71,7 @@ suite "Interpreter tests":
 
   test "Error on undefined variable":
     ## Calling an undefined variable should raise an error.
-    expect BMathError:
+    expect UndefinedVariableError:
       discard evalString("undefinedVar + 10")
 
   test "Local keyword isolation in nested scopes":
@@ -97,7 +96,7 @@ suite "Interpreter tests":
     )
     check res.nValue.iValue == 1
     ## If condition fails and no else branch is provided, an error is expected.
-    expect BMathError:
+    expect IncompleteInputError:
       discard evalString("""if (2 > 3) 100""")
 
   test "Complex if-else with nested local scopes":
@@ -158,49 +157,49 @@ suite "Interpreter tests":
 
   test "Exception handling for type mismatches":
     ## Using arithmetic with non-numeric values
-    expect BMathError:
+    expect TypeError:
       discard evalString("5 + true")
 
-    expect BMathError:
+    expect TypeError:
       discard evalString("[1, 2] - 3")
 
     ## Using logical operators with non-boolean values
-    expect BMathError:
+    expect TypeError:
       discard evalString("5 & 10")
 
     ## Comparison with complex numbers
-    expect BMathError:
+    expect TypeError:
       discard evalString("3i > 2")
 
   test "Exception handling for invalid operations":
     ## Modulo with complex numbers
-    expect BMathError:
+    expect TypeError:
       discard evalString("5i % 2")
 
   test "Exception handling for function calls":
     ## Calling a function with wrong number of arguments
-    expect BMathError:
+    expect InvalidArgumentError:
       discard evalString("pow(2)")
 
     ## Calling a non-existent function
-    expect BMathError:
+    expect UndefinedVariableError:
       discard evalString("nonExistentFunction(5)")
 
     ## Calling a non-function value
-    expect BMathError:
+    expect TypeError:
       discard evalString("x = 5\nx(10)")
 
   test "Exception handling for vector operations":
     ## Vector operations with mismatched sizes
-    expect BMathError:
+    expect InvalidArgumentError:
       discard evalString("[1, 2] + [3, 4, 5]")
 
     ## Access out of bounds
-    expect BMathError:
+    expect InvalidArgumentError:
       discard evalString("nth([1, 2, 3], 5)")
 
     ## Empty vector access
-    expect BMathError:
+    expect InvalidArgumentError:
       discard evalString("first([])")
 
   test "Exception handling for scope and variable issues":
@@ -218,5 +217,5 @@ suite "Interpreter tests":
     check scopeResult.nValue.iValue == 10
 
     ## Using an undefined variable
-    expect BMathError:
+    expect UndefinedVariableError:
       echo evalString("y = z + 5")

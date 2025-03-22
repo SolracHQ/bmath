@@ -1,7 +1,7 @@
 ## test_parser.nim
 import unittest, math
 import ../src/pipeline/parser/parser
-import ../src/pipeline/lexer
+import ../src/pipeline/lexer/lexer
 import ../src/types/[expression]
 
 suite "Parser tests":

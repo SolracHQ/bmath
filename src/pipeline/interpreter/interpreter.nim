@@ -7,7 +7,11 @@
 ## - Type promotion (int/float) during operations
 
 import std/[sequtils]
-import ../../types/[value, errors, expression, position], corelib, environment
+import ../../types/[value, expression, position]
+import ../../types/errors
+import ./errors
+import corelib, environment
+import stdlib/[arithmetic, comparison]
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
@@ -41,7 +45,7 @@ proc applyFunction(
   if funValue.kind == vkNativeFunc:
     let native = funValue.nativeFunc
     if args.len != native.argc:
-      raise newBMathError(
+      raise newInvalidArgumentError(
         "Function expects " & $(native.argc) & " arguments, got " & $(args.len), pos
       )
     let evaluator = proc(node: Expression): Value =
@@ -49,7 +53,7 @@ proc applyFunction(
     return native.fun(args, evaluator)
   elif funValue.kind == vkFunction:
     if args.len != funValue.params.len:
-      raise newBMathError(
+      raise newInvalidArgumentError(
         "Function expects " & $(funValue.params.len) & " arguments, got " & $(args.len),
         pos,
       )
@@ -58,7 +62,7 @@ proc applyFunction(
       funcEnv[param, true] = interpreter.evalValue(args[i], env)
     return interpreter.evalValue(funValue.body, funcEnv)
   else:
-    raise newBMathError("Provided value is not callable", pos)
+    raise newTypeError("Provided value is not callable", pos)
 
 proc evalFunInvoke(
     interpreter: Interpreter, node: Expression, env: Environment
@@ -66,7 +70,7 @@ proc evalFunInvoke(
   ## Evaluates a function invocation when the callee has already been computed.
   let callee = interpreter.evalValue(node.fun, env)
   if callee.kind != vkFunction and callee.kind != vkNativeFunc:
-    raise newBMathError("Value is not a function", node.position)
+    raise newTypeError("Value is not a function", node.position)
   return applyFunction(interpreter, callee, node.arguments, env, node.position)
 
 proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value =
@@ -146,15 +150,13 @@ proc evalValue(
       for branch in node.branches:
         let condition = interpreter.evalValue(branch.condition, env)
         if condition.kind != vkBool:
-          raise newBMathError(
+          raise newTypeError(
             "Expected boolean condition, got " & $condition.kind,
             branch.condition.position,
           )
         if condition.bValue:
           return interpreter.evalValue(branch.then, env)
       return interpreter.evalValue(node.elseBranch, env)
-    of ekError:
-      raise newBMathError(node.message, node.position)
   except BMathError as e:
     e.position = node.position
     raise e

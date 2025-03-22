@@ -9,7 +9,7 @@
 ## API endpoint for expression evaluation.
 
 import
-  pipeline/lexer,
+  pipeline/lexer/lexer,
   pipeline/parser/[parser, optimizer],
   pipeline/interpreter/interpreter,
   logging,

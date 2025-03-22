@@ -76,30 +76,40 @@ type
     values*: Table[string, Value]
     parent*: Environment
 
-template newValue*(T: typedesc, n: T): Value =
+template newValue*[T](n: T): Value =
   ## Create a new Value object from a number
-  when T is SomeInteger:
+  when n is SomeInteger:
     Value(kind: vkNumber, nValue: newNumber(n))
-  elif T is SomeFloat:
+  elif n is SomeFloat:
     Value(kind: vkNumber, nValue: newNumber(n))
-  elif T is Number:
+  elif n is Number:
     Value(kind: vkNumber, nValue: n)
-  elif T is bool:
+  elif n is bool:
     Value(kind: vkBool, bValue: n.bool)
-  elif T is seq[Value]:
+  elif n is seq[Value]:
     Value(kind: vkVector, values: n)
-  elif T is NativeFunc:
+  elif n is NativeFunc:
     Value(kind: vkNativeFunc, nativeFunc: n)
   else:
-    {.error: "Unsupported type for Value".}
-
-template newValue*(n: typed): Value =
-  ## Create a new Value object from a number or a sequence of numbers
-  newValue(type(n), n)
+    const message = "Unsupported type '" & $T & "' for Value"
+    {.error: message.}
 
 proc newValue*(body: Expression, env: Environment, params: seq[string]): Value =
   ## Creates a new Value object wrapping a user-defined function.
   result = Value(kind: vkFunction, body: body, env: env, params: params)
+
+template rawAccess*(value: Value, kind: static[ValueKind]) =
+  when kind == vkNumber:
+    ## Returns the numeric value of the Value object
+    value.nValue
+  elif kind == vkBool:
+    ## Returns the boolean value of the Value object
+    value.bValue
+  elif kind == vkVector:
+    ## Returns the vector values of the Value object
+    value.values
+  else:
+    {.error: "Unsupported type for rawAccess".}
 
 proc `$`*(kind: ValueKind): string =
   ## Returns string representation of value kind
