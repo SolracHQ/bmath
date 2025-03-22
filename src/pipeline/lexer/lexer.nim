@@ -131,7 +131,9 @@ proc handleClosing*(
         "Unmatched '" & $openingChar & "' at " & $stackable.position, stackable.position
       )
   else:
-    raise newUnexpectedCharacterError("Unmatched '" & $closingChar & "'", pos(lexer.line, lexer.col))
+    raise newUnexpectedCharacterError(
+      "Unmatched '" & $closingChar & "'", pos(lexer.line, lexer.col)
+    )
 
 proc parseNumber*(lexer: var Lexer, start: int): Token =
   ## Parses a numeric literal (integer, float, or complex).

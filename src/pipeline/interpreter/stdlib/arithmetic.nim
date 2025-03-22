@@ -46,7 +46,7 @@ proc `+`*(a, b: Value): Value {.inline, captureNumericError.} =
 # ----- Subtraction procedures -----
 proc `-`*(a, b: Value): Value {.inline.}
 
-proc `-`*(a, b: openArray[Value]): Value {.inline,captureNumericError.} =
+proc `-`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## Subtract two vectors
   ##
   ## Parameters:
@@ -65,7 +65,7 @@ proc `-`*(a, b: openArray[Value]): Value {.inline,captureNumericError.} =
   for i in 0 ..< a.len:
     result.values.add(a[i] - b[i])
 
-proc `-`*(a, b: Value): Value {.inline,captureNumericError.} =
+proc `-`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Subtract two values
   ##
   ## Parameters:
@@ -85,7 +85,7 @@ proc `-`*(a, b: Value): Value {.inline,captureNumericError.} =
 
 proc `*`*(a, b: Value): Value {.inline.}
 
-proc `*`*(a, b: openArray[Value]): Value {.inline,captureNumericError.} =
+proc `*`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## Make dot product of two vectors
   ##
   ## Parameters:
@@ -103,7 +103,7 @@ proc `*`*(a, b: openArray[Value]): Value {.inline,captureNumericError.} =
   for i in 0 ..< a.len:
     result = result + a[i] * b[i]
 
-proc `*`*(a: Value, b: openArray[Value]): Value {.inline,captureNumericError.} =
+proc `*`*(a: Value, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## Multiply a number with a vector
   ##
   ## Parameters:
@@ -117,7 +117,7 @@ proc `*`*(a: Value, b: openArray[Value]): Value {.inline,captureNumericError.} =
   for i in 0 ..< b.len:
     result = result + a * b[i]
 
-proc `*`*(a, b: Value): Value {.inline,captureNumericError.} =
+proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Multiply two values
   ##
   ## Parameters:
@@ -139,7 +139,7 @@ proc `*`*(a, b: Value): Value {.inline,captureNumericError.} =
 
 # ----- Division procedures -----
 
-proc `/`*(a, b: Value): Value {.inline,captureNumericError.} =
+proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Divide two values
   ##
   ## Parameters:
@@ -157,7 +157,7 @@ proc `/`*(a, b: Value): Value {.inline,captureNumericError.} =
 
 # ----- Modulus procedures -----
 
-proc `%`*(a, b: Value): Value {.inline,captureNumericError.} =
+proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Modulus of two values
   ##
   ## Parameters:
@@ -175,7 +175,7 @@ proc `%`*(a, b: Value): Value {.inline,captureNumericError.} =
 
 # ----- Exponentiation procedures -----
 
-proc `^`*(a, b: Value): Value {.inline,captureNumericError.} =
+proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Exponentiation of two values
   ##
   ## Parameters:
@@ -192,7 +192,7 @@ proc `^`*(a, b: Value): Value {.inline,captureNumericError.} =
 # ----- Unary procedures -----
 proc `-`*(a: Value): Value {.inline.}
 
-proc `-`*(a: openArray[Value]): Value {.inline,captureNumericError.} =
+proc `-`*(a: openArray[Value]): Value {.inline, captureNumericError.} =
   ## Negate a vector
   ##
   ## Parameters:
@@ -205,7 +205,7 @@ proc `-`*(a: openArray[Value]): Value {.inline,captureNumericError.} =
   for i in 0 ..< a.len:
     result.values[i] = -a[i]
 
-proc `-`*(a: Value): Value {.inline,captureNumericError.} =
+proc `-`*(a: Value): Value {.inline, captureNumericError.} =
   ## Negate a value
   ##
   ## Parameters:

@@ -4,15 +4,13 @@ import ../../types/[errors, position]
 
 type
   LexerError* = object of BMathError ## Base error for lexical analysis issues
-  
-  IncompleteInputError* = object of LexerError 
-    ## Raised when input is incomplete
+
+  IncompleteInputError* = object of LexerError ## Raised when input is incomplete
 
   UnexpectedCharacterError* = object of LexerError
     ## Raised when an unexpected character is encountered
 
-  InvalidNumberFormatError* = object of LexerError
-    ## Raised when a number is malformed
+  InvalidNumberFormatError* = object of LexerError ## Raised when a number is malformed
 
 # Create a new IncompleteInputError with given position and message
 template newIncompleteInputError*(

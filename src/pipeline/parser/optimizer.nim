@@ -159,7 +159,7 @@ proc optimizeAssign(optimizer: var Optimizer, node: Expression): Expression {.in
   let name = node.ident
   let value = optimize(optimizer, node.expr)
   let vValue = exprToVirtualValue(value, optimizer)
-  let local =setValue(optimizer.env, name, node.isLocal, vValue)
+  let local = setValue(optimizer.env, name, node.isLocal, vValue)
   return newAssignExpr(node.position, name, value, local)
 
 proc optimizeIdent(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
@@ -212,9 +212,8 @@ template optimizeBinary(
       # check right is not zero
       const zero = newNumber(0)
       if right.kind == ekNumber and right.nValue == zero:
-        raise newException(
-          AbortOptimization, "Division by zero in expression: " & $node
-        )
+        raise
+          newException(AbortOptimization, "Division by zero in expression: " & $node)
 
     if left.kind == ekNumber and right.kind == ekNumber:
       return newLiteralExpr(node.position, `op`(left.nValue, right.nValue))

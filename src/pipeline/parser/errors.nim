@@ -4,15 +4,13 @@ import ../../types/[errors, position]
 
 type
   ParserError* = object of BMathError ## Base error for parsing issues
-  
+
   UnexpectedTokenError* = object of ParserError
     ## Raised when an unexpected token is encountered
-  
-  MissingTokenError* = object of ParserError
-    ## Raised when an expected token is missing
-  
-  InvalidExpressionError* = object of ParserError
-    ## Raised when an expression is invalid
+
+  MissingTokenError* = object of ParserError ## Raised when an expected token is missing
+
+  InvalidExpressionError* = object of ParserError ## Raised when an expression is invalid
 
 # Create a new UnexpectedTokenError with given position and message
 template newUnexpectedTokenError*(

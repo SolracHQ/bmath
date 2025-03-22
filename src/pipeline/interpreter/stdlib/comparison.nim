@@ -104,7 +104,9 @@ proc `not`*(a: Value): Value {.inline, captureNumericError.} =
   ## Raises:
   ## - BMathError: if the value is not a boolean
   if a.kind != vkBool:
-    raise newTypeError("Cannot negate a non-boolean value, expected: bool but got: " & $a.kind)
+    raise newTypeError(
+      "Cannot negate a non-boolean value, expected: bool but got: " & $a.kind
+    )
   result = newValue(not a.bValue)
 
 proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =

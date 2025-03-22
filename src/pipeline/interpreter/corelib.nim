@@ -308,7 +308,9 @@ proc skip*(sequence: Value, n: Value): Value =
   if n.kind != vkNumber and n.nValue.kind != nkInt:
     raise newTypeError("skip requires an integer as the second argument")
   if n.nValue.iValue < 0:
-    raise newInvalidArgumentError("skip requires a non-negative integer as the second argument")
+    raise newInvalidArgumentError(
+      "skip requires a non-negative integer as the second argument"
+    )
   for _ in 0 ..< n.nValue.iValue:
     discard sequence.generator.next()
   sequence.generator.next()
