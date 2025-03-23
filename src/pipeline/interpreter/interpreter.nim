@@ -56,10 +56,7 @@ template emptyLabeled(val: Value): LabeledValue =
   LabeledValue(value: val)
 
 proc evalFunctionCall(
-    interpreter: Interpreter,
-    funValue: Value,
-    args: openArray[Value],
-    env: Environment,
+    interpreter: Interpreter, funValue: Value, args: openArray[Value], env: Environment
 ): Value {.inline.} =
   ## Dispatches a function value (native or user-defined) with the given arguments.
   ##
@@ -113,16 +110,15 @@ proc evalFunInvoke(
     if callee.kind != vkFunction and callee.kind != vkNativeFunc:
       raise newTypeError("Value is not a function")
     return evalFunctionCall(
-      interpreter,
-      callee,
-      node.arguments.mapIt(interpreter.evalValue(it, env)),
-      env,
+      interpreter, callee, node.arguments.mapIt(interpreter.evalValue(it, env)), env
     )
   except BMathError as e:
     e.stack.add(node.position)
     raise e
 
-proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value {.inline.} =
+proc evalBlock(
+    interpreter: Interpreter, node: Expression, env: Environment
+): Value {.inline.} =
   ## Evaluates a block of expressions and returns the last computed value.
   ##
   ## Parameters:
@@ -141,7 +137,9 @@ proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Va
   except BMathError as e:
     raise e
 
-proc evalFunc(interpreter: Interpreter, node: Expression, env: Environment): Value {.inline.} =
+proc evalFunc(
+    interpreter: Interpreter, node: Expression, env: Environment
+): Value {.inline.} =
   ## Evaluates a function definition.
   ##
   ## Parameters:

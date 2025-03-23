@@ -179,14 +179,14 @@ proc merge*(a, b: Value): Value =
         else: "a vector as second argument"
       )
     )
-  
+
   result = Value(kind: vkVector)
   result.vector = newSeqOfCap[Value](a.vector.len + b.vector.len)
-  
+
   # Add all elements from first vector
   for item in a.vector:
     result.vector.add(item)
-    
+
   # Add all elements from second vector
   for item in b.vector:
     result.vector.add(item)
@@ -212,8 +212,8 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
   # Check if we have the correct number of arguments
   if args.len < 2 or args.len > 3:
     raise newInvalidArgumentError(
-      "slice expects 2 or 3 arguments (vector, endIndex) or (vector, startIndex, endIndex), but got " & 
-      $args.len & " arguments"
+      "slice expects 2 or 3 arguments (vector, endIndex) or (vector, startIndex, endIndex), but got " &
+        $args.len & " arguments"
     )
 
   # Check that the first argument is a vector
@@ -238,13 +238,13 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
         )
       )
     endIndex = args[1].number.iValue
-    
+
     # Check that endIndex is within bounds
     if endIndex < 0 or endIndex > source.vector.len:
       raise newInvalidArgumentError(
         "End index out of bounds for slice: index " & $endIndex &
-          " is outside valid range [0, " & $source.vector.len &
-          "] for vector of length " & $source.vector.len
+          " is outside valid range [0, " & $source.vector.len & "] for vector of length " &
+          $source.vector.len
       )
   else:
     # Both start and end indices provided
@@ -262,10 +262,10 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
           else: "a " & $args[2].kind
         )
       )
-    
+
     startIndex = args[1].number.iValue
     endIndex = args[2].number.iValue
-    
+
     # Check that indices are within bounds
     if startIndex < 0 or startIndex >= source.vector.len:
       raise newInvalidArgumentError(
@@ -276,18 +276,18 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
     if endIndex < 0 or endIndex > source.vector.len:
       raise newInvalidArgumentError(
         "End index out of bounds for slice: index " & $endIndex &
-          " is outside valid range [0, " & $source.vector.len &
-          "] for vector of length " & $source.vector.len
+          " is outside valid range [0, " & $source.vector.len & "] for vector of length " &
+          $source.vector.len
       )
-  
+
   # Validate that start index is less than end index
   if startIndex >= endIndex:
     raise newInvalidArgumentError(
-      "Invalid slice range: start index " & $startIndex & 
-      " must be less than end index " & $endIndex
+      "Invalid slice range: start index " & $startIndex & " must be less than end index " &
+        $endIndex
     )
 
   # Create the result vector
   result = Value(kind: vkVector)
   # Use Nim's slice operation to create the new vector
-  result.vector = source.vector[startIndex..<endIndex]
+  result.vector = source.vector[startIndex ..< endIndex]

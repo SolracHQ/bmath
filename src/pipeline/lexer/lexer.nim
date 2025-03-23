@@ -351,17 +351,14 @@ proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
         let last = lexer.stack.pop
         case last.kind
         of skCurly:
-          raise newIncompleteInputError(
-            "Unmatched '{' at " & $last.position, last.position
-          )
+          raise
+            newIncompleteInputError("Unmatched '{' at " & $last.position, last.position)
         of skParen:
-          raise newIncompleteInputError(
-            "Unmatched '(' at " & $last.position, last.position
-          )
+          raise
+            newIncompleteInputError("Unmatched '(' at " & $last.position, last.position)
         of skSquare:
-          raise newIncompleteInputError(
-            "Unmatched '[' at " & $last.position, last.position
-          )
+          raise
+            newIncompleteInputError("Unmatched '[' at " & $last.position, last.position)
         of skIf:
           raise newIncompleteInputError(
             "Unmatched 'if' at " & $last.position, last.position

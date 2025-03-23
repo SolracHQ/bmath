@@ -28,15 +28,11 @@ type
   SequenceExhaustedError* = object of InvalidArgumentError
     ## Raised when attempting to access an exhausted sequence
 
-template newRuntimeError*(
-    message: string
-): ref RuntimeError =
+template newRuntimeError*(message: string): ref RuntimeError =
   ## Creates a new RuntimeError with given message
   (ref RuntimeError)(msg: message)
 
-template newArithmeticError*(
-    message: string
-): ref ArithmeticError =
+template newArithmeticError*(message: string): ref ArithmeticError =
   ## Creates a new ArithmeticError with given message
   (ref ArithmeticError)(msg: message)
 
@@ -51,45 +47,29 @@ template newTypeError*(message: string): ref TypeError =
   ## Creates a new TypeError with given message
   (ref TypeError)(msg: message)
 
-template newUnsupportedTypeError*(
-    message: string
-): ref UnsupportedTypeError =
+template newUnsupportedTypeError*(message: string): ref UnsupportedTypeError =
   ## Creates a new UnsupportedTypeError with given message
   (ref UnsupportedTypeError)(msg: message)
 
-template newInvalidArgumentError*(
-    message: string
-): ref InvalidArgumentError =
+template newInvalidArgumentError*(message: string): ref InvalidArgumentError =
   ## Creates a new InvalidArgumentError with given message
   (ref InvalidArgumentError)(msg: message)
 
-template newUnknownIdentifierError*(
-    message: string
-): ref UnknownIdentifierError =
+template newUnknownIdentifierError*(message: string): ref UnknownIdentifierError =
   ## Creates a new UnknownIdentifierError with given message
   (ref UnknownIdentifierError)(msg: message)
 
-template newEnvironmentError*(
-    message: string
-): ref EnvironmentError =
+template newEnvironmentError*(message: string): ref EnvironmentError =
   ## Creates a new EnvironmentError with given message
   (ref EnvironmentError)(msg: message)
 
-template newUndefinedVariableError*(
-    name: string
-): ref UndefinedVariableError =
+template newUndefinedVariableError*(name: string): ref UndefinedVariableError =
   ## Creates a new UndefinedVariableError for an undefined variable
-  (ref UndefinedVariableError)(
-    msg: "Variable '" & name & "' is not defined"
-  )
+  (ref UndefinedVariableError)(msg: "Variable '" & name & "' is not defined")
 
-template newReservedNameError*(
-    name: string
-): ref ReservedNameError =
+template newReservedNameError*(name: string): ref ReservedNameError =
   ## Creates a new ReservedNameError for attempts to modify reserved names
-  (ref ReservedNameError)(
-    msg: "Cannot overwrite the reserved name '" & name & "'"
-  )
+  (ref ReservedNameError)(msg: "Cannot overwrite the reserved name '" & name & "'")
 
 template newSequenceExhaustedError*(
     message: string = "Sequence has been exhausted"
@@ -110,8 +90,8 @@ template newVectorLengthMismatchError*(
     "Vector length mismatch: expected " & $expected & ", got " & $actual
   )
 
-template newInvalidOperationError*(
-    op: string, lhs, rhs: string
-): ref TypeError =
+template newInvalidOperationError*(op: string, lhs, rhs: string): ref TypeError =
   ## Creates an error for invalid operations between types
-  newTypeError("Invalid types for " & op & " operation: '" & lhs & "' and '" & rhs & "'")
+  newTypeError(
+    "Invalid types for " & op & " operation: '" & lhs & "' and '" & rhs & "'"
+  )

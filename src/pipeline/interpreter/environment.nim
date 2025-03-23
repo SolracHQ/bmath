@@ -22,7 +22,7 @@ const CORE_NAMES* = toHashSet(
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
     "last", "sin", "cos", "tan", "cot", "sec", "csc", "log", "exp", "len", "map",
     "filter", "reduce", "sum", "any", "all", "collect", "seq", "skip", "hasNext",
-    "next", "e", "pi", "abs", "merge", "slice", "take", "zip"
+    "next", "e", "pi", "abs", "merge", "slice", "take", "zip",
   ]
 )
 

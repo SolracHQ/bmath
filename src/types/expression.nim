@@ -380,9 +380,10 @@ proc asSource*(expr: Expression, ident: int = 0): string =
       return "{" & asSource(expr.expressions[0]) & "}"
     else:
       let innerIndent = " ".repeat((ident + 1) * 2)
-      return "{" & "\n" &
-      expr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") & "\n" &
-      indentation & "}"
+      return
+        "{" & "\n" &
+        expr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") & "\n" &
+        indentation & "}"
   of ekFunc:
     return "|" & expr.params.join(", ") & "| " & asSource(expr.body)
   of ekVector:

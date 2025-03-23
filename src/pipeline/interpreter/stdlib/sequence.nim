@@ -299,7 +299,7 @@ proc zip*(seq1: Value, seq2: Value): Value =
   ## Returns:
   ## - A new sequence containing vectors of paired elements from input sequences,
   ##   with length equal to the length of the shorter input sequence
-  
+
   # Type checking
   if seq1.kind != vkSeq:
     raise newTypeError(
@@ -309,12 +309,12 @@ proc zip*(seq1: Value, seq2: Value): Value =
     raise newTypeError(
       "zip requires a sequence as the second argument, but got a " & $seq2.kind
     )
-  
+
   # Create the result sequence
   var resultSeq = Sequence(transformers: @[])
   let gen1 = seq1.sequence.generator
   let gen2 = seq2.sequence.generator
-  
+
   resultSeq.generator = Generator(
     atEnd: proc(): bool =
       gen1.atEnd() or gen2.atEnd(),
@@ -323,14 +323,13 @@ proc zip*(seq1: Value, seq2: Value): Value =
         raise newSequenceExhaustedError(
           "Sequence exhausted: one of the input sequences has been exhausted"
         )
-      
+
       # Get next elements from both sequences
       let val1 = gen1.next(peek)
       let val2 = gen2.next(peek)
-      
+
       # Pair them in a vector
-      result = Value(kind: vkVector, vector: @[val1, val2])
-    ,
+      result = Value(kind: vkVector, vector: @[val1, val2]),
   )
-  
+
   result = Value(kind: vkSeq, sequence: resultSeq)
