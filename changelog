@@ -1,5 +1,27 @@
 # Changelog
 
+## Version 0.8.0
+- Revamped error handling system with specific error types replacing generic errors:
+  - Interpreter errors: DivideByZeroError, TypeError, UnsupportedTypeError, InvalidArgumentError, etc.
+  - Parser errors: UnexpectedTokenError, MissingTokenError, InvalidExpressionError
+  - Lexer errors: IncompleteInputError, UnexpectedCharacterError, InvalidNumberFormatError
+- Enhanced error reporting with detailed stack traces showing the exact execution path
+- Fixed argument re-evaluation issue in higher-order functions (vec, seq, map, filter, reduce) see [#7](https://github.com/SolracHQ/bmath/issues/7):
+  - Improves performance by preventing redundant computation
+  - Eliminates bugs in functions with side effects by ensuring expressions are only evaluated once
+- Added protective measures to prevent overwriting reserved names in the environment
+- Added mathematical constants as built-in values:
+  - `pi` - The mathematical constant π (3.14159...)
+  - `e` - Euler's number (2.71828...)
+- Expanded standard library with new core functions and improved existing ones:
+  - Enhanced sequence operations (skip, hasNext, next, collect, take, zip)
+  - Vector operations (merge, slice)
+  - Improved higher-order function consistency
+- Comprehensive documentation updates:
+  - Expanded design documentation with formal syntax descriptions
+  - Enhanced examples for complex numbers, vectors, and sequences
+  - Updated standard library reference with complete function signatures
+
 ## Version 0.7.0
 - Added explicit support for complex numbers. Complex literals (e.g., 3+4i) work in arithmetic operations and functions.
 - Updated promotion rules: operations mixing int, float, and complex now promote to complex when needed.

@@ -122,14 +122,24 @@ For a complete reference, see the [Standard Library Documentation](docs/stdlib.m
 
 ## Error Handling
 
-bmath provides clear error messages that include position information to help locate issues in your code. Future enhancements will include:
+bmath provides clear error messages that include position information to help locate issues in your code. The error handling system includes:
 
-- Stack traces for better debugging
+- Detailed error messages with the specific type of error
+- Stack traces showing the execution path leading to the error, for example:
+  ```
+  [DivideByZeroError] Division by zero is not allowed
+  Stack Trace:
+    - 4:3
+    - 2:9
+    - 1:11
+  ```
+- Position information to help locate the exact point of failure
+
+Future enhancements will include:
 - Planned support for error handling expressions (implementation details still being considered)
 
 ## ToDo
 
-- Enhance error handling with stack traces
 - Implement try-catch expression functionality for error handling
 - Improve UI for error reporting to highlight the exact location of errors in source code
 - Continue expanding the standard library with useful mathematical functions
