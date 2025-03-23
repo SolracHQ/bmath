@@ -326,7 +326,7 @@ proc `==`*(a, b: Expression): bool =
     else:
       return false
 
-proc asSource*(expr: Expression): string =
+proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format
   case expr.kind
   of ekNumber:
@@ -375,7 +375,14 @@ proc asSource*(expr: Expression): string =
     return
       asSource(expr.fun) & "(" & expr.arguments.mapIt(asSource(it)).join(", ") & ")"
   of ekBlock:
-    return "{" & expr.expressions.mapIt(asSource(it)).join("\n") & "}"
+    let indentation = " ".repeat(ident * 2)
+    if expr.expressions.len == 1:
+      return "{" & asSource(expr.expressions[0]) & "}"
+    else:
+      let innerIndent = " ".repeat((ident + 1) * 2)
+      return "{" & "\n" &
+      expr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") & "\n" &
+      indentation & "}"
   of ekFunc:
     return "|" & expr.params.join(", ") & "| " & asSource(expr.body)
   of ekVector:

@@ -21,7 +21,10 @@ proc map*(values: openArray[Value], invoker: FnInvoker): Value =
 
   # Check if we have exactly 2 arguments (vector/sequence and function)
   if values.len != 2:
-    raise newInvalidArgumentError("map expects exactly 2 arguments (vector/sequence and function), but got " & $values.len)
+    raise newInvalidArgumentError(
+      "map expects exactly 2 arguments (vector/sequence and function), but got " &
+        $values.len
+    )
   # Evaluate the first argument to get the vector/sequence
   let value = values[0]
 
@@ -40,11 +43,13 @@ proc map*(values: openArray[Value], invoker: FnInvoker): Value =
       Transformer(
         kind: tkMap,
         fun: proc(x: Value): Value =
-          invoker(fun, [x])
+          invoker(fun, [x]),
       )
     )
   else:
-    raise newTypeError("map requires a vector or sequence as the first argument, but got a " & $value.kind)
+    raise newTypeError(
+      "map requires a vector or sequence as the first argument, but got a " & $value.kind
+    )
 
 proc filter*(values: openArray[Value], invoker: FnInvoker): Value =
   ## Filter a vector or sequence using a predicate function
@@ -63,8 +68,11 @@ proc filter*(values: openArray[Value], invoker: FnInvoker): Value =
 
   # Check if we have exactly 2 arguments (vector/sequence and predicate function)
   if values.len != 2:
-    raise newInvalidArgumentError("filter expects exactly 2 arguments (vector/sequence and predicate function), but got " & $values.len)
-  
+    raise newInvalidArgumentError(
+      "filter expects exactly 2 arguments (vector/sequence and predicate function), but got " &
+        $values.len
+    )
+
   # Evaluate the first argument to get the vector/sequence
   let value = values[0]
 
@@ -84,11 +92,15 @@ proc filter*(values: openArray[Value], invoker: FnInvoker): Value =
     result.sequence.transformers.add(
       Transformer(
         kind: tkFilter,
-        fun: proc(x: Value): Value = invoker(fun, [x])
+        fun: proc(x: Value): Value =
+          invoker(fun, [x]),
       )
     )
   else:
-    raise newTypeError("filter requires a vector or sequence as the first argument, but got a " & $value.kind)
+    raise newTypeError(
+      "filter requires a vector or sequence as the first argument, but got a " &
+        $value.kind
+    )
 
 proc reduce*(values: openArray[Value], invoker: FnInvoker): Value =
   ## Reduces a vector or sequence by applying a binary function
@@ -108,25 +120,29 @@ proc reduce*(values: openArray[Value], invoker: FnInvoker): Value =
 
   # Check if we have exactly 3 arguments (vector/sequence, initial value, and function)
   if values.len != 3:
-    raise newInvalidArgumentError("reduce expects exactly 3 arguments (vector/sequence, initial value, and function), but got " & $values.len)
-  
+    raise newInvalidArgumentError(
+      "reduce expects exactly 3 arguments (vector/sequence, initial value, and function), but got " &
+        $values.len
+    )
+
   # Evaluate the first argument to get the vector/sequence
   let value = values[0]
-  var accumulator = values[1]  # Initial value
+  result = values[1] # Initial value
 
   case value.kind
   of vkVector:
     # Apply the reduction function to each element
     for i in 0 ..< value.vector.len:
-      accumulator = invoker(values[2], [accumulator, value.vector[i]])
-    result = accumulator
+      result = invoker(values[2], [result, value.vector[i]])
   of vkSeq:
     # Materialize the sequence and then reduce
     for v in value.iter():
-      accumulator = invoker(values[2], [accumulator, v])
-    result = accumulator
+      result = invoker(values[2], [result, v])
   else:
-    raise newTypeError("reduce requires a vector or sequence as the first argument, but got a " & $value.kind)
+    raise newTypeError(
+      "reduce requires a vector or sequence as the first argument, but got a " &
+        $value.kind
+    )
 
 proc sum*(a: Value): Value {.inline.} =
   ## Computes the total sum of all elements in a vector or sequence
@@ -140,7 +156,7 @@ proc sum*(a: Value): Value {.inline.} =
   ## Raises:
   ## - TypeError: if argument is not a vector or sequence
   ## - TypeError: if any element is not a number
-  
+
   case a.kind
   of vkVector:
     result = newValue(0)
@@ -155,7 +171,9 @@ proc sum*(a: Value): Value {.inline.} =
         raise newTypeError("sum requires numeric values, but found " & $v.kind)
       result += v
   else:
-    raise newTypeError("sum requires a vector or sequence as argument, but got a " & $a.kind)
+    raise newTypeError(
+      "sum requires a vector or sequence as argument, but got a " & $a.kind
+    )
 
 proc any*(a: Value): Value {.inline.} =
   ## Returns true if at least one element in a vector or sequence of boolean values is true
@@ -169,7 +187,7 @@ proc any*(a: Value): Value {.inline.} =
   ## Raises:
   ## - TypeError: if argument is not a vector or sequence
   ## - TypeError: if any element is not a boolean
-  
+
   case a.kind
   of vkVector:
     result = Value(kind: vkBool, boolean: false)
@@ -188,7 +206,9 @@ proc any*(a: Value): Value {.inline.} =
         result.boolean = true
         break
   else:
-    raise newTypeError("any requires a vector or sequence as argument, but got a " & $a.kind)
+    raise newTypeError(
+      "any requires a vector or sequence as argument, but got a " & $a.kind
+    )
 
 proc all*(a: Value): Value {.inline.} =
   ## Returns true only if every element in a vector or sequence of boolean values is true
@@ -202,7 +222,7 @@ proc all*(a: Value): Value {.inline.} =
   ## Raises:
   ## - TypeError: if argument is not a vector or sequence
   ## - TypeError: if any element is not a boolean
-  
+
   case a.kind
   of vkVector:
     result = Value(kind: vkBool, boolean: true)
@@ -221,4 +241,6 @@ proc all*(a: Value): Value {.inline.} =
         result.boolean = false
         break
   else:
-    raise newTypeError("all requires a vector or sequence as argument, but got a " & $a.kind)
+    raise newTypeError(
+      "all requires a vector or sequence as argument, but got a " & $a.kind
+    )

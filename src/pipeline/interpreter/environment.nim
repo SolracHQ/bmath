@@ -1,13 +1,14 @@
 ## environment.nim - Environment Management Module
 ##
-## Provides the variable scope and function binding system:
-## - Lookup of variables and functions in hierarchical scopes
-## - Registration of native functions with argument validation
-## - Core built-in function implementation
-## - Environment creation and management
+## Provides the hierarchical variable scope and function binding system:
+## - Lookup of variables and functions in nested lexical scopes
+## - Registration and validation of native Nim functions
+## - Core built-in mathematical and utility functions
+## - Environment creation and manipulation
 ##
 ## The environment system implements lexical scoping with parent-child
-## relationships between environments.
+## relationships between environments, allowing for variable shadowing
+## and proper closure behavior.
 
 import std/[sets, tables, macros]
 import stdlib/[arithmetic, trigonometry, vector, sequence, itertools]
@@ -21,7 +22,7 @@ const CORE_NAMES* = toHashSet(
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
     "last", "sin", "cos", "tan", "cot", "sec", "csc", "log", "exp", "len", "map",
     "filter", "reduce", "sum", "any", "all", "collect", "seq", "skip", "hasNext",
-    "next", "e", "pi", "abs",
+    "next", "e", "pi", "abs", "merge", "slice", "take", "zip"
   ]
 )
 
@@ -29,16 +30,19 @@ macro native(call: untyped): Value =
   ## Creates a NativeFunc from function call syntax.
   ## 
   ## This macro simplifies wrapping Nim functions as native functions
-  ## in the interpreter, automatically validating argument counts.
+  ## in the interpreter, automatically validating argument counts and
+  ## generating appropriate error messages.
   ## 
   ## Usage:
-  ##   native(pow(a, b))  # Creates NativeFunc that validates the number of arguments amd calls pow(a, b)
+  ##   native(pow(a, b))  # Creates a NativeFunc that expects exactly 2 arguments
+  ##   native(sqrt(x))    # Creates a NativeFunc that expects exactly 1 argument
   ##
   ## Params:
-  ##   call: untyped - A function call expression to wrap
+  ##   call: untyped - A function call expression to wrap as a native function
   ##
   ## Returns:
-  ##   Value - A vkNativeFunc value that wraps the given function
+  ##   Value - A vkNativeFunc value that performs argument validation before
+  ##           calling the wrapped function
   let funcSym: NimNode = call[0]
   let funcName = $funcSym
   let callArgs = call.len - 1
@@ -47,19 +51,20 @@ macro native(call: untyped): Value =
   var funcCall = newCall(funcSym)
   for i in 0 ..< callArgs:
     funcCall.add:
-      quote: `param`[`i`]
+      quote:
+        `param`[`i`]
 
   # Construct NativeFunc using quote for clarity
   result = quote:
     Value(
       kind: vkNativeFunc,
       nativeFn: proc(`param`: openArray[Value], _: FnInvoker): Value =
-                  if `callArgs` != `param`.len:
-                    raise newInvalidArgumentError(
-                      "Invalid number of arguments for function `" & `funcName` & "`" & " expected " &
-                      $`callArgs` & " got " & $`param`.len,
-                    )
-                  `funcCall`
+        if `callArgs` != `param`.len:
+          raise newInvalidArgumentError(
+            "Invalid number of arguments for function `" & `funcName` & "`" &
+              " expected " & $`callArgs` & " got " & $`param`.len
+          )
+        `funcCall`,
     )
 
 # global environment contains all the built-in functions
@@ -78,7 +83,7 @@ let global = Environment(
       "nth": native(nth(vector, number)),
       "first": native(first(vector)),
       "last": native(last(vector)),
-      "vec": Value(kind: vkNativeFunc,nativeFn:vec),
+      "vec": Value(kind: vkNativeFunc, nativeFn: vec),
       "seq": Value(kind: vkNativeFunc, nativeFn: sequence),
       "map": Value(kind: vkNativeFunc, nativeFn: itertools.map),
       "filter": Value(kind: vkNativeFunc, nativeFn: itertools.filter),
@@ -101,6 +106,10 @@ let global = Environment(
       "next": native(next(sequence)),
       "e": newValue(E),
       "pi": newValue(PI),
+      "merge": native(merge(vector, vector)),
+      "slice": Value(kind: vkNativeFunc, nativeFn: slice),
+      "take": native(take(sequence, number)),
+      "zip": native(zip(sequence, sequence)),
     }
   ),
 )
@@ -108,28 +117,29 @@ let global = Environment(
 proc newEnv*(parent: Environment = nil): Environment =
   ## Creates a new environment with an optional parent.
   ##
-  ## If no parent is provided, returns the global environment containing
-  ## all built-in functions. Otherwise, creates a new environment with the
-  ## specified parent, establishing lexical scoping.
+  ## If no parent is provided, creates an environment with the global environment
+  ## as its parent. The global environment contains all built-in functions and constants.
+  ## Using parent environments establishes proper lexical scoping for variable lookup.
   ##
   ## Params:
-  ##   parent: Environment - (optional) The parent environment (default is nil)
+  ##   parent: Environment - (optional) The parent environment for lexical scoping (default is nil)
   ##
   ## Returns:
-  ##   Environment - A new environment instance
-  if parent == nil:
-    return global
+  ##   Environment - A new environment instance with the appropriate parent chain
   new(result)
-  result.parent = parent
+  if parent == nil:
+    result.parent = global
+  else:
+    result.parent = parent
 
 proc `[]`*(env: Environment, name: string): Value =
   ## Retrieves a value by name from the environment.
   ##
-  ## Searches the current environment and all parent environments
-  ## for a variable with the given name.
+  ## Searches the current environment and traverses up the parent chain
+  ## for a variable with the given name, implementing lexical scoping rules.
   ##
   ## Params:
-  ##   env: Environment - The environment to search in
+  ##   env: Environment - The environment to start the search in
   ##   name: string - The name of the variable to retrieve
   ##
   ## Returns:
@@ -148,18 +158,18 @@ proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
   ## Sets or creates a variable in the environment.
   ##
   ## By default, attempts to update an existing variable in the current
-  ## or parent environments. If local=true, always creates/updates the variable
-  ## in the current environment regardless of parent scopes.
+  ## or parent environments (lexical scoping). If local=true, always creates or
+  ## updates the variable in the current environment regardless of parent scopes.
   ##
   ## Params:
   ##   env: Environment - The environment to modify
   ##   name: string - The name of the variable to set
-  ##   local: bool - (optional) If true, forces creation in the current environment (default is false)
+  ##   local: bool - (optional) If true, forces creation in the current environment only (default is false)
   ##   value: Value - The value to assign to the variable
   ##
   ## Raises:
   ##   ValueError - If trying to write to a nil environment (programming error)
-  ##   ReservedNameError - If trying to modify a built-in/reserved name
+  ##   ReservedNameError - If trying to modify a built-in/reserved name in CORE_NAMES
   if env == nil:
     # If this is reached, it means there's a bug in the interpreter
     # because the environment should never be nil.

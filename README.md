@@ -5,11 +5,12 @@ bmath is a lightweight command-line tool for evaluating mathematical expressions
 ## Highlights
 
 - **Pure Expression Philosophy:** Every expression—from assignments and conditionals to inline lambdas—yields a result.
+- **Mathematical Focus:** First-class support for complex numbers, vectors, and sequences for advanced mathematical operations.
 - **Minimal Core:** No loops or dedicated string types. Instead, leverage vectors and sequences for iteration and data handling.
 - **First-Class Functions:** Define functions inline; they return functions as values, making functional composition both natural and powerful.
-- **Verbal Conditionals:** Use if/elif/else/endif constructs where every branch returns a value.
+- **Verbal Conditionals:** Use if/elif/else constructs where every branch returns a value.
 - **Chaining Operations:** Utilize the arrow operator (`->`) to streamline chaining operations like map, filter, and reduce.
-- **Standard Library:** Access a suite of built-in functions for arithmetic, trigonometry, logarithms, and more. See the [Standard Library Documentation](docs/stdlib.md) for further details.
+- **Rich Standard Library:** Access a comprehensive suite of built-in functions for arithmetic, trigonometry, logarithms, complex numbers, vector operations, sequences, and more. See the [Standard Library Documentation](docs/stdlib.md) for complete details.
 
 ## Getting Started
 
@@ -72,43 +73,67 @@ pi = 3.1415
 
 ## Motivation and Design Principles
 
-I started this project with a simple idea: create a lightweight tool for terminal-based mathematical calculations that is not only practical for everyday use but also a platform for exploring the full potential of an expression-based language. Every element in this language is designed to return a value, whether it’s an assignment, a function definition, or a conditional, yields a concrete result.
+I started this project with a simple idea: create a lightweight tool for terminal-based mathematical calculations that is not only practical for everyday use but also a platform for exploring the full potential of an expression-based language. Every element in this language is designed to return a value, whether it's an assignment, a function definition, or a conditional, yields a concrete result.
 
 - **Expression-First:** Every construct is an expression that produces a tangible value.
 - **Concrete Results:** No operation can result in no value (void or unit) or invalid value (nil)
 - **Simplicity and Clarity:** The language employs a minimal set of keywords with clear, concise syntax for easier readability and writing.
 - **Single Expression Orientation:** Tailored for REPL environments, the lexer and parser are designed to process one instruction at a time.
 
-I invite everyone to join in the evolution of bmath. Whether through pull requests, issue reports, or simply sharing your thoughts, your contributions are essential. Help shape bmath into a powerful and intuitive tool for scripting and daily calculations, and let’s continue to refine and expand its capabilities together.
-
+I invite everyone to join in the evolution of bmath. Whether through pull requests, issue reports, or simply sharing your thoughts, your contributions are essential. Help shape bmath into a powerful and intuitive tool for scripting and daily calculations, and let's continue to refine and expand its capabilities together.
 
 ## Example Files
 
-Discover the capabilities of bmath through these examples:
+Explore the capabilities of bmath through these new examples:
 
-- **[vector_examples.bm](examples/vector_examples.bm)**  
-  Vectors, arithmetic operations, dot products, and higher-order functions.
-- **[numeric_examples.bm](examples/numeric_examples.bm)**  
-  Working with integers, floating-point numbers, and scientific notations.
-- **[function_examples.bm](examples/function_examples.bm)**  
-  Inline lambda definitions, function composition, and recursion.
-- **[recursive_examples.bm](examples/recursive_examples.bm)**  
-  Recursive algorithms such as factorial and Fibonacci.
+- **[basic_examples.bm](examples/basic_examples.bm)**  
+  Basic language features including variables, blocks, and conditionals.
 - **[arithmetic_examples.bm](examples/arithmetic_examples.bm)**  
-  Various arithmetic operations and complex mathematical expressions.
-- **[advanced_core_functions.bm](examples/advanced_core_functions.bm)**  
-  Trigonometric, logarithmic, and exponential function examples.
-- **[comparison_examples.bm](examples/comparison_examples.bm)**  
-  Examples of relational, logical operations, and conditionals.
-- **[seq_examples.bm](examples/seq_examples.bm)**  
-  Sequences operations: generating, filtering, mapping, and reducing sequences.
+  Basic and advanced arithmetic operations including complex number arithmetic.
+- **[function_examples.bm](examples/function_examples.bm)**  
+  Function definition, lambda expressions, higher-order functions, and closures.
+- **[recursive_examples.bm](examples/recursive_examples.bm)**  
+  Recursive algorithms including factorial, fibonacci, and tree recursion.
+- **[vector_examples.bm](examples/vector_examples.bm)**  
+  Vector creation, operations, and higher-order functions on vectors.
+- **[numeric_examples.bm](examples/numeric_examples.bm)**  
+  Working with different numeric types including complex numbers.
+- **[sequence_examples.bm](examples/sequence_examples.bm)**  
+  Lazy sequence creation, transformation, and evaluation.
+- **[comparison_logical_examples.bm](examples/comparison_logical_examples.bm)**  
+  Comparison operators, logical operators, and their applications.
+- **[trigonometric_examples.bm](examples/trigonometric_examples.bm)**  
+  Trigonometric functions and their applications.
+- **[advanced_math_examples.bm](examples/advanced_math_examples.bm)**  
+  Advanced mathematical operations including statistics, numerical methods, and vector math.
+
+## Standard Library
+
+The bmath standard library has been significantly expanded to include:
+
+- Comprehensive arithmetic operations (including complex number support)
+- Trigonometric, logarithmic, and exponential functions
+- Vector operations (creation, manipulation, mathematical operations)
+- Sequence operations (lazy evaluation, transformation, collection)
+- Iteration utilities (map, filter, reduce)
+- Statistical functions
+
+For a complete reference, see the [Standard Library Documentation](docs/stdlib.md).
+
+## Error Handling
+
+bmath provides clear error messages that include position information to help locate issues in your code. Future enhancements will include:
+
+- Stack traces for better debugging
+- Planned support for error handling expressions (implementation details still being considered)
 
 ## ToDo
 
-- Add support for imaginary numbers.
-- Evaluate the possibility of a bytecode-based VM to improve performance on recursive-heavy code.
-- Enhance error handling – not just display the line and column, but highlight the exact location of the error.
-  
+- Enhance error handling with stack traces
+- Implement try-catch expression functionality for error handling
+- Improve UI for error reporting to highlight the exact location of errors in source code
+- Continue expanding the standard library with useful mathematical functions
+
 ## Development
 
 ### Build Options

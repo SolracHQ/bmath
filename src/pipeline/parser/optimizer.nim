@@ -303,7 +303,7 @@ proc optimizeNegate(optimizer: var Optimizer, node: Expression): Expression {.in
 
 proc optimizeNot(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
   ## Optimize negation operations
-  let value = optimize(optimizer, node.expr)
+  let value = optimize(optimizer, node.operand)
   case value.kind
   of ekTrue:
     return newLiteralExpr(node.position, false)

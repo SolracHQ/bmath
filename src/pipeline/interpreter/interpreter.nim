@@ -1,10 +1,16 @@
 ## interpreter.nim - Abstract Syntax Tree Evaluator
 ##
-## Implements recursive tree-walking interpretation of parsed
-## mathematical expressions. Handles:
-## - Numeric value propagation
-## - Arithmetic operation execution
-## - Type promotion (int/float) during operations
+## Implements tree-walking interpretation of parsed mathematical expressions.
+## This module is responsible for:
+## - Expression evaluation and value propagation
+## - Environment management (variable scoping)
+## - Function calling and application
+## - Arithmetic, logical, and comparison operations
+## - Type checking and error handling during execution
+## - Control flow (conditionals, blocks)
+##
+## The interpreter processes expressions recursively, maintaining an execution
+## environment that tracks variable bindings and their values.
 
 import std/[sequtils]
 import ../../types/[value, expression, position]
@@ -14,10 +20,13 @@ import environment
 import stdlib/[arithmetic, comparison, logical]
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
-  env: Environment
+  env: Environment ## The global environment for storing variables
 
 proc newInterpreter*(): Interpreter =
-  ## Initializes a new interpreter with an empty environment
+  ## Initializes a new interpreter with an empty global environment.
+  ##
+  ## Returns: 
+  ##   Interpreter - A new interpreter instance with initialized environment.
   result = Interpreter()
   result.env = newEnv()
 
@@ -26,7 +35,19 @@ proc evalValue(
 ): Value
 
 proc evalAssign(interpreter: Interpreter, node: Expression, env: Environment): Value =
-  ## Evaluates an assignment node and returns its computed value.
+  ## Evaluates an assignment expression, storing the result in the environment.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   node: Expression - The assignment expression node.
+  ##   env: Environment - The current execution environment.
+  ##
+  ## Returns:
+  ##   Value - The computed value of the assigned expression.
+  ##
+  ## Remarks:
+  ##   The computed value is stored in the environment under the identifier
+  ##   specified in the assignment node, respecting scope (local/global).
   let val = interpreter.evalValue(node.expr, env)
   env[node.ident, node.isLocal] = val
   return val
@@ -34,7 +55,7 @@ proc evalAssign(interpreter: Interpreter, node: Expression, env: Environment): V
 template emptyLabeled(val: Value): LabeledValue =
   LabeledValue(value: val)
 
-proc applyFunction(
+proc evalFunctionCall(
     interpreter: Interpreter,
     funValue: Value,
     args: openArray[Value],
@@ -42,12 +63,24 @@ proc applyFunction(
     pos: Position,
 ): Value =
   ## Dispatches a function value (native or user-defined) with the given arguments.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   funValue: Value - The function value to be applied.
+  ##   args: openArray[Value] - The arguments to pass to the function.
+  ##   env: Environment - The current execution environment.
+  ##   pos: Position - The position in the source code for error reporting.
+  ##
+  ## Returns:
+  ##   Value - The result of the function application.
+  ##
+  ## Raises:
+  ##   InvalidArgumentError - If the number of arguments does not match the function's parameters.
+  ##   TypeError - If the provided value is not callable.
   if funValue.kind == vkNativeFunc:
     let native = funValue.nativeFn
     let invoker = proc(function: Value, args: openArray[Value]): Value =
-      interpreter.applyFunction(
-        function, args, env, pos
-      )
+      interpreter.evalFunctionCall(function, args, env, pos)
     return native(args, invoker)
   elif funValue.kind == vkFunction:
     let fun = funValue.function
@@ -66,13 +99,38 @@ proc evalFunInvoke(
     interpreter: Interpreter, node: Expression, env: Environment
 ): Value =
   ## Evaluates a function invocation when the callee has already been computed.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   node: Expression - The function invocation expression node.
+  ##   env: Environment - The current execution environment.
+  ##
+  ## Returns:
+  ##   Value - The result of the function invocation.
+  ##
+  ## Raises:
+  ##   TypeError - If the callee is not a function.
   let callee = interpreter.evalValue(node.fun, env)
   if callee.kind != vkFunction and callee.kind != vkNativeFunc:
     raise newTypeError("Value is not a function", node.position)
-  return applyFunction(interpreter, callee, node.arguments.mapIt(interpreter.evalValue(it, env)), env, node.position)
+  return evalFunctionCall(
+    interpreter,
+    callee,
+    node.arguments.mapIt(interpreter.evalValue(it, env)),
+    env,
+    node.position,
+  )
 
 proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value =
   ## Evaluates a block of expressions and returns the last computed value.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   node: Expression - The block expression node.
+  ##   env: Environment - The current execution environment.
+  ##
+  ## Returns:
+  ##   Value - The last computed value in the block.
   var blockEnv = newEnv(parent = env)
   var lastVal: Value
   for expr in node.expressions:
@@ -81,15 +139,36 @@ proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Va
 
 proc evalFunc(interpreter: Interpreter, node: Expression, env: Environment): Value =
   ## Evaluates a function definition.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   node: Expression - The function definition expression node.
+  ##   env: Environment - The current execution environment.
+  ##
+  ## Returns:
+  ##   Value - The function value.
   return newValue(node.body, env, node.params)
 
 proc evalValue(
     interpreter: Interpreter, node: Expression, environment: Environment
 ): Value =
   ## Recursively evaluates an AST node and returns a plain Value.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   node: Expression - The expression node to evaluate.
+  ##   environment: Environment - The current execution environment.
+  ##
+  ## Returns:
+  ##   Value - The evaluated value of the expression.
+  ##
+  ## Raises:
+  ##   TypeError - If a type mismatch occurs during evaluation.
+  ##   BMathError - If a mathematical error occurs during evaluation.
   let env = if environment == nil: interpreter.env else: environment
   template binOp(node, op: untyped): Value =
     op(interpreter.evalValue(node.left, env), interpreter.evalValue(node.right, env))
+
   try:
     case node.kind
     of ekNumber:
@@ -164,6 +243,14 @@ proc eval*(
 ): LabeledValue =
   ## Top-level evaluation returns a LabeledValue.
   ## If the node is an assignment, the label is preserved.
+  ##
+  ## Parameters:
+  ##   interpreter: Interpreter - The current interpreter instance.
+  ##   node: Expression - The expression node to evaluate.
+  ##   environment: Environment - The current execution environment (optional).
+  ##
+  ## Returns:
+  ##   LabeledValue - The evaluated value with an optional label.
   let env = if environment == nil: interpreter.env else: environment
   if node.kind == ekAssign:
     return LabeledValue(label: node.ident, value: interpreter.evalValue(node, env))

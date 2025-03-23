@@ -1,0 +1,50 @@
+# Basic Examples in BMath Language
+# ================================
+# This file demonstrates the basic syntax and features of the BMath language.
+
+# [1] Variable Assignment
+x = 42                    # Assigning a value to a variable
+y = 3.14                  # Assigning a float value
+z = x + y                 # Using variables in expressions
+
+# [2] Block Expressions
+blockResult = {           # A block containing multiple expressions
+  a = 5
+  b = 7
+  a * b                   # The last expression becomes the result (35)
+}
+
+# Using a block in place of a grouped expression
+doubledBlock = {4 + 4} * 2  # Evaluates to 16
+
+# [3] If Expressions
+absoluteValue = |x| if(x >= 0) x else -x
+
+positiveExample = absoluteValue(5)    # Expected: 5
+negativeExample = absoluteValue(-5)   # Expected: 5
+
+# [4] If-Elif-Else Expressions
+signFunction = |x| if(x > 0) 1 \
+                  elif(x < 0) -1 \
+                  else 0
+
+positiveSign = signFunction(10)       # Expected: 1
+negativeSign = signFunction(-10)      # Expected: -1
+zeroSign = signFunction(0)            # Expected: 0
+
+# [5] Local Variables
+outerVar = 10
+localVarExample = {
+  local outerVar = 20     # Creates a local variable that shadows the outer one
+  outerVar * 2            # Uses the local variable (40)
+}
+# outerVar is still 10 here
+
+# [6] Multi-line Expressions with Backslash
+longExpression = 1 + 2 + 3 + \
+                 4 + 5 + 6 + \
+                 7 + 8 + 9   # Expected: 45
+
+# [7] Chained Assignments
+a = b = c = 5             # All variables get value 5
+chainedSum = a + b + c    # Expected: 15

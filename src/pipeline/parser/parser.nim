@@ -7,7 +7,7 @@
 ## - Syntax error detection
 ## - Abstract syntax tree construction
 import ../../types/[expression, token, number]
-import errors 
+import errors
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse
@@ -182,19 +182,22 @@ proc parseIf(parser: var Parser): Expression =
   let condition = parser.parseExpression()
   cleanUpNewlines()
   if not parser.match({tkRpar}):
-    raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
+    raise
+      newMissingTokenError("Expected ')' after condition", parser.previous().position)
   cleanUpNewlines()
   branches.add(newCondition(condition, parser.parseExpression()))
 
   # Parse elif conditions
   while parser.match({tkElif}):
     if not parser.match({tkLpar}):
-      raise newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
+      raise
+        newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
     cleanUpNewlines()
     let condition = parser.parseExpression()
     cleanUpNewlines()
     if not parser.match({tkRpar}):
-      raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
+      raise
+        newMissingTokenError("Expected ')' after condition", parser.previous().position)
     cleanUpNewlines()
     branches.add(newCondition(condition, parser.parseExpression()))
 
@@ -353,8 +356,9 @@ proc parseAssignment(parser: var Parser): Expression =
   if parser.match({tkIdent, tkLocal}):
     let local = parser.previous().kind == tkLocal
     if local and not parser.match({tkIdent}):
-      raise
-        newMissingTokenError("Expected identifier after 'local'", parser.previous().position)
+      raise newMissingTokenError(
+        "Expected identifier after 'local'", parser.previous().position
+      )
     let name = parser.previous()
     if parser.match({tkAssign}):
       let value = parser.parseExpression()

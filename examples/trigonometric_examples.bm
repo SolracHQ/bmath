@@ -1,0 +1,94 @@
+# Trigonometric Function Examples
+# =============================
+# This file demonstrates trigonometric functions in BMath language.
+
+# [1] Basic Trigonometric Functions
+# ------------------------------
+# Sine function
+sineZero = sin(0)                    # Expected: 0.0
+sinePiHalf = sin(3.14159/2)          # Expected: ~1.0 (sin(π/2))
+sineMinusPiHalf = sin(-3.14159/2)    # Expected: ~-1.0 (sin(-π/2))
+
+# Cosine function
+cosineZero = cos(0)                  # Expected: 1.0
+cosinePi = cos(3.14159)              # Expected: ~-1.0 (cos(π))
+
+# Tangent function
+tangentZero = tan(0)                 # Expected: 0.0
+tangentPiFourth = tan(3.14159/4)     # Expected: ~1.0 (tan(π/4))
+
+# [2] Additional Trigonometric Functions
+# -----------------------------------
+# Cotangent function
+cotangentPiFourth = cot(3.14159/4)   # Expected: ~1.0 (cot(π/4))
+
+# Secant function
+secantZero = sec(0)                  # Expected: 1.0
+
+# Cosecant function
+cosecantPiHalf = csc(3.14159/2)      # Expected: ~1.0 (csc(π/2))
+
+# [3] Trigonometric Identities
+# --------------------------
+# Pythagorean identity: sin²(θ) + cos²(θ) = 1
+angle = 0.7                          # An arbitrary angle
+sinSquaredPlusCosSquared = sin(angle)^2 + cos(angle)^2  # Expected: ~1.0
+
+# Tangent identity: tan(θ) = sin(θ)/cos(θ)
+tanIdentity = sin(angle)/cos(angle)  # Should equal tan(angle)
+tanDirect = tan(angle)               # Direct calculation for comparison
+
+# [4] Working with Radians and Degrees
+# ---------------------------------
+# Convert degrees to radians
+degToRad = |degrees| degrees * 3.14159 / 180
+
+# Convert radians to degrees
+radToDeg = |radians| radians * 180 / 3.14159
+
+# Examples of conversions
+angle45Rad = degToRad(45)            # Expected: ~0.7854 (π/4)
+angle1Deg = radToDeg(0.0174533)      # Expected: ~1.0
+
+# Calculate sine of angle in degrees
+sin45 = sin(degToRad(45))            # Expected: ~0.7071 (sin(45°))
+
+# [5] Inverse Trigonometric Functions (Approximated)
+# ---------------------------------------------
+# Note: BMath might not have built-in inverse trig functions,
+# so we can approximate them with other methods or use them
+# if they exist in the standard library
+
+# Approximation of arcsin
+arcsin = |x| {
+  # Simple approximation using Taylor series
+  # This is a very basic approximation and not accurate for all inputs
+  x + (x^3)/6 + (3*(x^5))/40 + (5*(x^7))/112
+}
+
+arcsin05 = arcsin(0.5)               # Approximate value
+
+# [6] Trigonometric Functions with Complex Arguments
+# ----------------------------------------------
+# Sine of complex number
+sineComplex = sin(1 + 2i)            # Expected: complex result
+
+# Cosine of complex number
+cosineComplex = cos(1 + 2i)          # Expected: complex result
+
+# [7] Practical Applications
+# -----------------------
+# Calculate distance on a unit circle
+circleX = |angle| cos(angle)
+circleY = |angle| sin(angle)
+
+# Points on a unit circle
+pointAt0 = [circleX(0), circleY(0)]          # Expected: [1.0, 0.0]
+pointAtPiHalf = [circleX(3.14159/2), circleY(3.14159/2)]  # Expected: [~0.0, ~1.0]
+
+# [8] Vector Applications
+# --------------------
+# Apply trigonometric functions to vectors
+angles = [0, 3.14159/6, 3.14159/4, 3.14159/3, 3.14159/2]
+sineValues = map(angles, |x| sin(x))  # Expected: [0.0, 0.5, 0.7071, 0.866, 1.0]
+cosineValues = map(angles, |x| cos(x)) # Expected: [1.0, 0.866, 0.7071, 0.5, 0.0]

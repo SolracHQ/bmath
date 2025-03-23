@@ -8,7 +8,7 @@ import utils
 
 proc `+`*(a, b: Value): Value {.inline.}
 
-proc `+=`*(a: var Value, b: Value){.inline.} =
+proc `+=`*(a: var Value, b: Value) {.inline.} =
   a = a + b
 
 proc `+`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
@@ -160,6 +160,25 @@ proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
 
 # ----- Division procedures -----
 
+proc `/`*(a, b: Value): Value {.inline.}
+
+proc `/`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} =
+  ## Divide a vector by a number
+  ##
+  ## Parameters:
+  ## - a: vector to divide
+  ## - b: number to divide by
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the division
+  ##
+  ## Raises:
+  ## - ArithmeticError: for numeric calculation errors
+  result = Value(kind: vkVector)
+  result.vector = newSeqOfCap[Value](a.len)
+  for i in 0 ..< a.len:
+    result.vector.add(a[i] / b)
+
 proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Divide two values
   ##
@@ -178,10 +197,33 @@ proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
     if b.number.isZero:
       raise newZeroDivisionError()
     return newValue(a.number / b.number)
+  elif a.kind == vkVector and b.kind == vkNumber:
+    if b.number.isZero:
+      raise newZeroDivisionError()
+    return a.vector / b
   else:
     raise newInvalidOperationError("division", $a.kind, $b.kind)
 
 # ----- Modulus procedures -----
+
+proc `%`*(a, b: Value): Value {.inline.}
+
+proc `%`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} =
+  ## Modulus of a vector by a number
+  ##
+  ## Parameters:
+  ## - a: vector to take modulus of
+  ## - b: number to take modulus by
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the modulus
+  ##
+  ## Raises:
+  ## - ArithmeticError: for numeric calculation errors
+  result = Value(kind: vkVector)
+  result.vector = newSeqOfCap[Value](a.len)
+  for i in 0 ..< a.len:
+    result.vector.add(a[i] % b)
 
 proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Modulus of two values
@@ -201,10 +243,33 @@ proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
     if b.number.isZero:
       raise newZeroDivisionError()
     return newValue(a.number % b.number)
+  elif a.kind == vkVector and b.kind == vkNumber:
+    if b.number.isZero:
+      raise newZeroDivisionError()
+    return a.vector % b
   else:
     raise newInvalidOperationError("modulus", $a.kind, $b.kind)
 
 # ----- Exponentiation procedures -----
+
+proc `^`*(a, b: Value): Value {.inline.}
+
+proc `^`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} =
+  ## Exponentiation of a vector by a number
+  ##
+  ## Parameters:
+  ## - a: vector to exponentiate
+  ## - b: exponent value
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the exponentiation
+  ##
+  ## Raises:
+  ## - ArithmeticError: for numeric calculation errors
+  result = Value(kind: vkVector)
+  result.vector = newSeqOfCap[Value](a.len)
+  for i in 0 ..< a.len:
+    result.vector.add(a[i] ^ b)
 
 proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Exponentiation of two values
@@ -221,6 +286,8 @@ proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## - ArithmeticError: for numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
     return newValue(a.number ^ b.number)
+  elif a.kind == vkVector and b.kind == vkNumber:
+    return a.vector ^ b
   else:
     raise newInvalidOperationError("exponentiation", $a.kind, $b.kind)
 

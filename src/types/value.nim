@@ -60,7 +60,7 @@ type
   LabeledValue* = object
     label*: string
     value*: Value
-  
+
   FnInvoker* = proc(function: Value, args: openArray[Value]): Value
     ## Function type for invoking functions in the runtime.
 
@@ -88,7 +88,9 @@ template newValue*[T](n: T): Value =
     const message = "Unsupported type '" & $T & "' for Value"
     {.error: message.}
 
-proc newValue*(body: Expression, env: Environment, params: seq[string]): Value {.inline.} =
+proc newValue*(
+    body: Expression, env: Environment, params: seq[string]
+): Value {.inline.} =
   ## Creates a new Value object wrapping a user-defined function.
   var functionObj = Function(body: body, env: env, params: params)
   result = Value(kind: vkFunction, function: functionObj)

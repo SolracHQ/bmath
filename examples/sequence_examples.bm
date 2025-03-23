@@ -1,0 +1,112 @@
+# Sequence Operations Examples
+# ==========================
+# This file demonstrates lazy sequence operations in BMath language.
+
+# [1] Creating Sequences
+# -------------------
+# Create a finite sequence of 5 elements
+finiteSeq = seq(5, |i| i * 2)              # Lazy sequence: [0, 2, 4, 6, 8]
+
+# Create a sequence from a vector
+vectorSeq = seq([1, 2, 3, 4, 5])           # Lazy sequence from vector
+
+# Create an infinite sequence (used carefully!)
+# This represents an infinite sequence of natural numbers
+naturalNumbers = seq(|i| i)                # 0, 1, 2, 3, ...
+
+# Create an infinite sequence of a constant value
+constantSeq = seq(42)                      # 42, 42, 42, ...
+
+# [2] Sequence Generation Examples
+# -----------------------------
+# Generate Fibonacci sequence
+fibonacciSeq = |n| {
+  a = 0
+  b = 1
+  seq(n, |i| {
+    temp = b
+    b = a + b
+    a = temp
+  })
+}
+
+# Generate a sequence of factorials
+factorialSeq = |n| {
+  fact = 1
+  seq(n, |i| {
+    fact = fact * (i + 1)
+  })
+}
+
+# [3] Accessing Sequence Elements
+# ----------------------------
+# Skip to a specific element and get it
+fib10 = fibonacciSeq(10) -> skip(9)        # Expected: 55 (10th Fibonacci)
+fact5 = factorialSeq(5) -> skip(4)         # Expected: 120 (5!)
+
+# Collect the entire sequence into a vector
+fibVector = fibonacciSeq(8) -> collect     # First 8 Fibonacci numbers
+                                          # [1, 1, 2, 3, 5, 8, 13, 21]
+
+# [4] Sequence Transformations
+# -------------------------
+# Map: Transform each element
+doubledFibs = fibonacciSeq(8) -> \
+              map(|x| x * 2) -> \
+              collect                      # Expected: [2, 2, 4, 6, 10, 16, 26, 42]
+
+# Filter: Select elements matching a predicate
+evenFibs = fibonacciSeq(12) -> \
+           filter(|x| x % 2 == 0) -> \
+           collect                         # Expected: [2, 8, 34, 144]
+
+# [5] Complex Sequence Processing
+# ----------------------------
+# Chain multiple operations
+processedSeq = naturalNumbers -> \
+               map(|x| x * x) ->  \         # Square the numbers
+               filter(|x| x % 2 == 0) -> \  # Keep only even squares
+               map(|x| x / 2) ->  \         # Divide by 2
+               take(5) -> \                 # Take first 5 elements
+               collect                     # Convert to vector
+                                          # Expected: [0, 2, 8, 18, 32]
+
+# [6] Combining Sequences
+# --------------------
+# Zip two sequences (element-wise combination)
+zipSequence = seq(5, |i| i) -> \
+              zip(seq(5, |i| i * 10)) ->\
+              collect                      # Expected: [[0, 0], [1, 10], [2, 20], [3, 30], [4, 40]]
+
+# [7] Sequence Reductions
+# --------------------
+# Find sum of first 100 natural numbers
+sumFirst100 = seq(100, |i| i + 1) -> sum   # Expected: 5050
+
+# Find product of first 5 natural numbers (5!)
+productFirst5 = seq(5, |i| i + 1) -> \
+                reduce(1, |acc, x| acc * x) # Expected: 120
+
+# [8] Infinite Sequence Caution
+# --------------------------
+# Working with infinite sequences requires care to avoid endless computation
+# Always limit the computation with take(), filter(), or similar operations
+
+# Generate first 10 perfect squares
+perfectSquares = naturalNumbers -> \
+                 map(|x| x * x) -> \
+                 take(10) -> \
+                 collect                   # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+# [9] Custom Sequence Operations
+# ---------------------------
+# Create a sequence of running average
+runningAvg = |numbers| {
+  _sum = 0
+  seq(len(numbers), |i| {
+    _sum = _sum + nth(numbers, i)
+    _sum / (i + 1)
+  }) -> collect
+}
+
+avgResult = runningAvg([2, 4, 6, 8, 10])   # Expected: [2.0, 3.0, 4.0, 5.0, 6.0]
