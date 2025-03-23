@@ -1,4 +1,4 @@
-import macros, strutils
+import macros
 
 macro captureNumericError*(procDef: untyped): untyped =
   ## This macro is used as a pragma on arithmetic functions.
@@ -19,15 +19,7 @@ macro captureNumericError*(procDef: untyped): untyped =
     except ComplexComparisonError:
       raise newInvalidOperationError("comparison", "complex", "complex")
     except ComplexCeilFloorRoundError as e:
-      if e.msg.contains("Ceiling"):
-        raise
-          newUnsupportedTypeError("Ceiling operation not supported for complex numbers")
-      elif e.msg.contains("Floor"):
-        raise
-          newUnsupportedTypeError("Floor operation not supported for complex numbers")
-      else:
-        raise
-          newUnsupportedTypeError("Round operation not supported for complex numbers")
+      raise newUnsupportedTypeError(e.msg)
     except NumericError as e:
       # For other numeric errors, wrap in ArithmeticError
       raise newArithmeticError(e.msg)

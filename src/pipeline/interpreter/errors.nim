@@ -25,6 +25,9 @@ type
   ReservedNameError* = object of EnvironmentError
     ## Raised when attempting to modify a reserved name
 
+  SequenceExhaustedError* = object of InvalidArgumentError
+    ## Raised when attempting to access an exhausted sequence
+
 template newRuntimeError*(
     message: string, pos: Position = Position()
 ): ref RuntimeError =
@@ -87,6 +90,12 @@ template newReservedNameError*(
   (ref ReservedNameError)(
     position: pos, msg: "Cannot overwrite the reserved name '" & name & "'"
   )
+
+template newSequenceExhaustedError*(
+    message: string = "Sequence has been exhausted", pos: Position = Position()
+): ref SequenceExhaustedError =
+  ## Creates a new SequenceExhaustedError with given position and message
+  (ref SequenceExhaustedError)(position: pos, msg: message)
 
 # Templates with specific error names for common cases
 template newZeroDivisionError*(pos: Position = Position()): ref DivideByZeroError =

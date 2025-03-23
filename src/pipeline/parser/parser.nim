@@ -7,7 +7,7 @@
 ## - Syntax error detection
 ## - Abstract syntax tree construction
 import ../../types/[expression, token, number]
-import ../../types/errors
+import errors 
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse
@@ -73,7 +73,7 @@ proc parseGroupOrFuncInvoke(parser: var Parser): Expression =
   let expr = parser.parseExpression()
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
-    raise newBMathError("Expected ')'", pos)
+    raise newMissingTokenError("Expected ')'", pos)
   if parser.match({tkLpar}):
     var args: seq[Expression] = @[]
     while true:
@@ -83,7 +83,7 @@ proc parseGroupOrFuncInvoke(parser: var Parser): Expression =
       if parser.match({tkRpar}):
         break
       if not parser.match({tkComma}):
-        raise newBMathError("Expected ','", parser.previous().position)
+        raise newMissingTokenError("Expected ','", parser.previous().position)
     result = Expression(kind: ekFuncInvoke, position: pos, fun: expr, arguments: args)
   else:
     result = expr
@@ -100,7 +100,7 @@ proc parseIdentifierOrFuncCall(parser: var Parser): Expression =
       if parser.match({tkRpar}):
         break
       if not parser.match({tkComma}):
-        raise newBMathError("Expected ','", parser.previous().position)
+        raise newMissingTokenError("Expected ','", parser.previous().position)
     return newFuncCallExpr(token.position, token.name, args)
   else:
     return newIdentExpr(token.position, token.name)
@@ -112,14 +112,14 @@ proc parseFunction(parser: var Parser): Expression =
     if parser.match({tkIdent}):
       params.add(parser.previous().name)
     else:
-      raise newBMathError(
+      raise newUnexpectedTokenError(
         "Expected identifier but got '" & $parser.previous().kind & "'",
         parser.previous().position,
       )
     if parser.match({tkLine}):
       break
     if not parser.match({tkComma}):
-      raise newBMathError("Expected ','", parser.previous().position)
+      raise newMissingTokenError("Expected ','", parser.previous().position)
   return newFuncExpr(parser.previous().position, params, parser.parseExpression())
 
 proc parseVector(parser: var Parser): Expression =
@@ -137,7 +137,7 @@ proc parseVector(parser: var Parser): Expression =
     if parser.match({tkRSquare}):
       break
     if not parser.match({tkComma}):
-      raise newBMathError("Expected ','", parser.previous().position)
+      raise newMissingTokenError("Expected ','", parser.previous().position)
   return newVectorExpr(pos, values)
 
 proc parseBlock(parser: var Parser): Expression =
@@ -153,7 +153,7 @@ proc parseBlock(parser: var Parser): Expression =
     if parser.match({tkRCurly}):
       break
     if not parser.match({tkNewline}):
-      raise newBMathError(
+      raise newMissingTokenError(
         "Expected newline or '}' after expression", parser.peek().position
       )
     # Clear the rest of the newlines.
@@ -162,7 +162,7 @@ proc parseBlock(parser: var Parser): Expression =
     if parser.match({tkRCurly}):
       break
   if expressions.len == 0:
-    raise newBMathError("Blocks must contain at least one expression", pos)
+    raise newInvalidExpressionError("Blocks must contain at least one expression", pos)
   return newBlockExpr(pos, expressions)
 
 proc parseIf(parser: var Parser): Expression =
@@ -177,31 +177,31 @@ proc parseIf(parser: var Parser): Expression =
   var elseBranch: Expression
   # Check ( after if
   if not parser.match({tkLpar}):
-    raise newBMathError("Expected '(' after 'if'", parser.previous().position)
+    raise newMissingTokenError("Expected '(' after 'if'", parser.previous().position)
   cleanUpNewlines()
   let condition = parser.parseExpression()
   cleanUpNewlines()
   if not parser.match({tkRpar}):
-    raise newBMathError("Expected ')' after condition", parser.previous().position)
+    raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
   cleanUpNewlines()
   branches.add(newCondition(condition, parser.parseExpression()))
 
   # Parse elif conditions
   while parser.match({tkElif}):
     if not parser.match({tkLpar}):
-      raise newBMathError("Expected '(' after 'elif'", parser.previous().position)
+      raise newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
     cleanUpNewlines()
     let condition = parser.parseExpression()
     cleanUpNewlines()
     if not parser.match({tkRpar}):
-      raise newBMathError("Expected ')' after condition", parser.previous().position)
+      raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
     cleanUpNewlines()
     branches.add(newCondition(condition, parser.parseExpression()))
 
   # Parse else branch, else is always required
   cleanUpNewlines()
   if not parser.match({tkElse}):
-    raise newBMathError(
+    raise newMissingTokenError(
       "Expected 'else' after if-elif conditions", parser.previous().position
     )
   cleanUpNewlines()
@@ -232,7 +232,7 @@ proc parsePrimary(parser: var Parser): Expression =
     return parser.parseVector()
   else:
     let token = parser.peek()
-    raise newBMathError("Unexpected token " & $token, token.position)
+    raise newUnexpectedTokenError("Unexpected token " & $token, token.position)
 
 proc parseUnary(parser: var Parser): Expression =
   ## Parses unary negations
@@ -354,7 +354,7 @@ proc parseAssignment(parser: var Parser): Expression =
     let local = parser.previous().kind == tkLocal
     if local and not parser.match({tkIdent}):
       raise
-        newBMathError("Expected identifier after 'local'", parser.previous().position)
+        newMissingTokenError("Expected identifier after 'local'", parser.previous().position)
     let name = parser.previous()
     if parser.match({tkAssign}):
       let value = parser.parseExpression()
@@ -362,7 +362,7 @@ proc parseAssignment(parser: var Parser): Expression =
     elif not local:
       parser.back()
     else:
-      raise newBMathError(
+      raise newMissingTokenError(
         "Expected '=' after local '" & name.name & "'", parser.previous().position
       )
   return parser.parseBoolean()
@@ -374,7 +374,7 @@ proc parseExpression(parser: var Parser): Expression {.inline.} =
     let prev = parser.previous()
     let right = parser.parsePrimary()
     if right.kind != ekFuncInvoke and right.kind != ekIdent:
-      raise newBMathError(
+      raise newInvalidExpressionError(
         "Expected function call after '->' but got '" & $right.kind & "'", prev.position
       )
     if right.kind == ekFuncInvoke:
@@ -387,4 +387,4 @@ proc parse*(tokens: seq[Token]): Expression =
   result = parser.parseExpression()
   if not parser.isAtEnd:
     let token = parser.peek()
-    raise newBMathError("Unexpected token " & $token, token.position)
+    raise newUnexpectedTokenError("Unexpected token " & $token, token.position)

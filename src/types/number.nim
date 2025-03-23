@@ -156,6 +156,10 @@ proc `%`*(a, b: Number): Number {.inline.} =
   ## any operation with complex will raise an exception,
   ## any operation with float will return float,
   ## only operations between int values will return int.
+  ##
+  ## Raises:
+  ## - ComplexModulusError: when attempting modulus with complex numbers
+  ## - DivisionByZeroError: when divisor is zero
   if a.kind == nkComplex or b.kind == nkComplex:
     raise (ref ComplexModulusError)(
       msg: "Modulus operation not supported for complex numbers"
@@ -173,6 +177,9 @@ proc `^`*(a, b: Number): Number {.inline.} =
   ## if there is no complex, any operation with float will return float,
   ## only operations between int values will return int except negative powers
   ## which will return float.
+  ##
+  ## Raises:
+  ## - NumericError: for errors during power operation
   if a.kind == nkComplex or b.kind == nkComplex:
     return newNumber(toComplex(a).pow toComplex(b))
   elif a.kind == nkFloat or b.kind == nkFloat:
@@ -185,6 +192,9 @@ proc `^`*(a, b: Number): Number {.inline.} =
 
 proc sqrt*(n: Number): Number {.inline.} =
   ## Returns the square root of a Number object
+  ##
+  ## Raises:
+  ## - NumericError: for errors during square root calculation
   case n.kind
   of nkInt:
     if n.iValue < 0:
@@ -203,6 +213,9 @@ proc `==`*(a, b: Number): bool {.inline.} =
 
 proc sin*(n: Number): Number {.inline.} =
   ## Returns the sine of a Number object
+  ##
+  ## Raises:
+  ## - NumericError: for errors during sine calculation
   case n.kind
   of nkInt:
     return newNumber(sin(n.iValue.float))
@@ -213,6 +226,9 @@ proc sin*(n: Number): Number {.inline.} =
 
 proc cos*(n: Number): Number {.inline.} =
   ## Returns the cosine of a Number object
+  ##
+  ## Raises:
+  ## - NumericError: for errors during cosine calculation
   case n.kind
   of nkInt:
     return newNumber(cos(n.iValue.float))
@@ -223,6 +239,9 @@ proc cos*(n: Number): Number {.inline.} =
 
 proc tan*(n: Number): Number {.inline.} =
   ## Returns the tangent of a Number object
+  ##
+  ## Raises:
+  ## - NumericError: for errors during tangent calculation
   case n.kind
   of nkInt:
     return newNumber(tan(n.iValue.float))
@@ -231,8 +250,41 @@ proc tan*(n: Number): Number {.inline.} =
   of nkComplex:
     return newNumber(tan(n.cValue))
 
+proc cot*(n: Number): Number {.inline.} =
+  ## Returns the cotangent of a Number object
+  case n.kind
+  of nkInt:
+    newNumber(cot(n.iValue.float))
+  of nkFloat:
+    newNumber(cot(n.fValue))
+  of nkComplex:
+    return newNumber(cot(n.cValue))
+
+proc sec*(n: Number): Number {.inline.} =
+  ## Returns the secant of a Number object
+  case n.kind
+  of nkInt:
+    newNumber(sec(n.iValue.float))
+  of nkFloat:
+    newNumber(sec(n.fValue))
+  of nkComplex:
+    return newNumber(sec(n.cValue))
+
+proc csc*(n: Number): Number {.inline.} =
+  ## Returns the cosecant of a Number object
+  case n.kind
+  of nkInt:
+    newNumber(csc(n.iValue.float))
+  of nkFloat:
+    newNumber(csc(n.fValue))
+  of nkComplex:
+    return newNumber(csc(n.cValue))
+
 proc log*(n: Number, base: Number): Number {.inline.} =
   ## Returns the natural logarithm of a Number object
+  ##
+  ## Raises:
+  ## - NumericError: for errors during logarithm calculation
   if n.kind == nkComplex or base.kind == nkComplex:
     return newNumber(ln(toComplex(n)) / ln(toComplex(base)))
   else:
@@ -240,6 +292,9 @@ proc log*(n: Number, base: Number): Number {.inline.} =
 
 proc ceil*(n: Number): Number {.inline.} =
   ## Returns the ceiling of a Number object
+  ##
+  ## Raises:
+  ## - ComplexCeilFloorRoundError: when attempting with complex numbers
   case n.kind
   of nkInt:
     return n
@@ -250,8 +305,21 @@ proc ceil*(n: Number): Number {.inline.} =
       msg: "Ceiling operation not supported for complex numbers"
     )
 
+proc abs*(n: Number): Number {.inline.} =
+  ## Returns the absolute value of a Number object
+  case n.kind
+  of nkInt:
+    return newNumber(abs(n.iValue))
+  of nkFloat:
+    return newNumber(abs(n.fValue))
+  of nkComplex:
+    return newNumber(abs(n.cValue))
+
 proc floor*(n: Number): Number {.inline.} =
   ## Returns the floor of a Number object
+  ##
+  ## Raises:
+  ## - ComplexCeilFloorRoundError: when attempting with complex numbers
   case n.kind
   of nkInt:
     return n
@@ -264,6 +332,9 @@ proc floor*(n: Number): Number {.inline.} =
 
 proc round*(n: Number): Number {.inline.} =
   ## Returns the rounded value of a Number object
+  ##
+  ## Raises:
+  ## - ComplexCeilFloorRoundError: when attempting with complex numbers
   case n.kind
   of nkInt:
     return n
@@ -276,6 +347,9 @@ proc round*(n: Number): Number {.inline.} =
 
 proc exp*(n: Number): Number {.inline.} =
   ## Returns the exponential e^n of a Number object
+  ##
+  ## Raises:
+  ## - NumericError: for errors during exponential calculation
   case n.kind
   of nkInt:
     return newNumber(exp(n.iValue.float))
@@ -286,6 +360,9 @@ proc exp*(n: Number): Number {.inline.} =
 
 proc `<`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for less than
+  ##
+  ## Raises:
+  ## - ComplexComparisonError: when comparing complex numbers
   if a.kind == nkComplex or b.kind == nkComplex:
     raise
       (ref ComplexComparisonError)(msg: "Comparison not supported for complex numbers")
@@ -294,6 +371,9 @@ proc `<`*(a, b: Number): bool {.inline.} =
 
 proc `<=`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for less than or equal to
+  ##
+  ## Raises:
+  ## - ComplexComparisonError: when comparing complex numbers
   if a.kind == nkComplex or b.kind == nkComplex:
     raise
       (ref ComplexComparisonError)(msg: "Comparison not supported for complex numbers")
@@ -302,6 +382,9 @@ proc `<=`*(a, b: Number): bool {.inline.} =
 
 proc `>`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for greater than
+  ##
+  ## Raises:
+  ## - ComplexComparisonError: when comparing complex numbers
   if a.kind == nkComplex or b.kind == nkComplex:
     raise
       (ref ComplexComparisonError)(msg: "Comparison not supported for complex numbers")
@@ -310,6 +393,9 @@ proc `>`*(a, b: Number): bool {.inline.} =
 
 proc `>=`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for greater than or equal to
+  ##
+  ## Raises:
+  ## - ComplexComparisonError: when comparing complex numbers
   if a.kind == nkComplex or b.kind == nkComplex:
     raise
       (ref ComplexComparisonError)(msg: "Comparison not supported for complex numbers")

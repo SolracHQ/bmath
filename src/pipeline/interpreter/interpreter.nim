@@ -10,8 +10,8 @@ import std/[sequtils]
 import ../../types/[value, expression, position]
 import ../../types/errors
 import ./errors
-import corelib, environment
-import stdlib/[arithmetic, comparison]
+import environment
+import stdlib/[arithmetic, comparison, logical]
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment
@@ -37,30 +37,28 @@ template emptyLabeled(val: Value): LabeledValue =
 proc applyFunction(
     interpreter: Interpreter,
     funValue: Value,
-    args: seq[Expression],
+    args: openArray[Value],
     env: Environment,
     pos: Position,
 ): Value =
   ## Dispatches a function value (native or user-defined) with the given arguments.
   if funValue.kind == vkNativeFunc:
-    let native = funValue.nativeFunc
-    if args.len != native.argc:
-      raise newInvalidArgumentError(
-        "Function expects " & $(native.argc) & " arguments, got " & $(args.len), pos
+    let native = funValue.nativeFn
+    let invoker = proc(function: Value, args: openArray[Value]): Value =
+      interpreter.applyFunction(
+        function, args, env, pos
       )
-    let evaluator = proc(node: Expression): Value =
-      interpreter.evalValue(node, env)
-    return native.fun(args, evaluator)
+    return native(args, invoker)
   elif funValue.kind == vkFunction:
-    if args.len != funValue.params.len:
+    let fun = funValue.function
+    if args.len != fun.params.len:
       raise newInvalidArgumentError(
-        "Function expects " & $(funValue.params.len) & " arguments, got " & $(args.len),
-        pos,
+        "Function expects " & $(fun.params.len) & " arguments, got " & $(args.len), pos
       )
-    let funcEnv = newEnv(parent = funValue.env)
-    for i, param in funValue.params.pairs:
-      funcEnv[param, true] = interpreter.evalValue(args[i], env)
-    return interpreter.evalValue(funValue.body, funcEnv)
+    let funcEnv = newEnv(parent = fun.env)
+    for i, param in fun.params.pairs:
+      funcEnv[param, true] = args[i]
+    return interpreter.evalValue(fun.body, funcEnv)
   else:
     raise newTypeError("Provided value is not callable", pos)
 
@@ -71,7 +69,7 @@ proc evalFunInvoke(
   let callee = interpreter.evalValue(node.fun, env)
   if callee.kind != vkFunction and callee.kind != vkNativeFunc:
     raise newTypeError("Value is not a function", node.position)
-  return applyFunction(interpreter, callee, node.arguments, env, node.position)
+  return applyFunction(interpreter, callee, node.arguments.mapIt(interpreter.evalValue(it, env)), env, node.position)
 
 proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value =
   ## Evaluates a block of expressions and returns the last computed value.
@@ -83,7 +81,7 @@ proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Va
 
 proc evalFunc(interpreter: Interpreter, node: Expression, env: Environment): Value =
   ## Evaluates a function definition.
-  return Value(kind: vkFunction, body: node.body, env: env, params: node.params)
+  return newValue(node.body, env, node.params)
 
 proc evalValue(
     interpreter: Interpreter, node: Expression, environment: Environment
@@ -92,15 +90,14 @@ proc evalValue(
   let env = if environment == nil: interpreter.env else: environment
   template binOp(node, op: untyped): Value =
     op(interpreter.evalValue(node.left, env), interpreter.evalValue(node.right, env))
-
   try:
     case node.kind
     of ekNumber:
       return newValue(node.nValue)
     of ekTrue:
-      return Value(kind: vkBool, bValue: true)
+      return Value(kind: vkBool, boolean: true)
     of ekFalse:
-      return Value(kind: vkBool, bValue: false)
+      return Value(kind: vkBool, boolean: false)
     of ekAdd:
       return binOp(node, `+`)
     of ekSub:
@@ -131,7 +128,7 @@ proc evalValue(
       return binOp(node, `or`)
     of ekVector:
       return
-        Value(kind: vkVector, values: node.values.mapIt(interpreter.evalValue(it, env)))
+        Value(kind: vkVector, vector: node.values.mapIt(interpreter.evalValue(it, env)))
     of ekNeg:
       return -interpreter.evalValue(node.operand, env)
     of ekNot:
@@ -154,11 +151,12 @@ proc evalValue(
             "Expected boolean condition, got " & $condition.kind,
             branch.condition.position,
           )
-        if condition.bValue:
+        if condition.boolean:
           return interpreter.evalValue(branch.then, env)
       return interpreter.evalValue(node.elseBranch, env)
   except BMathError as e:
-    e.position = node.position
+    if e.position == Position():
+      e.position = node.position
     raise e
 
 proc eval*(

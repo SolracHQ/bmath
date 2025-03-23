@@ -8,6 +8,9 @@ import utils
 
 proc `+`*(a, b: Value): Value {.inline.}
 
+proc `+=`*(a: var Value, b: Value){.inline.} =
+  a = a + b
+
 proc `+`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## Add two vectors together
   ## 
@@ -16,16 +19,17 @@ proc `+`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## - b: second vector
   ##
   ## Raises:
-  ## - BMathError: if the vectors are not of the same length
+  ## - VectorLengthMismatchError: if the vectors are not of the same length
+  ## - ArithmeticError: for arithmetic errors during calculations
   ## 
   ## Returns:
   ## - a new Value object with the result of the addition
   if a.len != b.len:
     raise newVectorLengthMismatchError(a.len, b.len)
   result = Value(kind: vkVector)
-  result.values = newSeqOfCap[Value](a.len)
+  result.vector = newSeqOfCap[Value](a.len)
   for i in 0 ..< a.len:
-    result.values.add(a[i] + b[i])
+    result.vector.add(a[i] + b[i])
 
 proc `+`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Add two values together
@@ -36,10 +40,14 @@ proc `+`*(a, b: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the addition
+  ##
+  ## Raises:
+  ## - InvalidOperationError: if operands are of incompatible types
+  ## - ArithmeticError: for numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    return newValue(a.nValue + b.nValue)
+    return newValue(a.number + b.number)
   elif a.kind == vkVector and b.kind == vkVector:
-    return a.values + b.values
+    return a.vector + b.vector
   else:
     raise newInvalidOperationError("addition", $a.kind, $b.kind)
 
@@ -54,16 +62,17 @@ proc `-`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## - b: second vector
   ##
   ## Raises:
-  ## - BMathError: if the vectors are not of the same length
+  ## - VectorLengthMismatchError: if the vectors are not of the same length
+  ## - ArithmeticError: for arithmetic errors during calculations
   ##
   ## Returns:
   ## - a new Value object with the result of the subtraction
   if a.len != b.len:
     raise newVectorLengthMismatchError(a.len, b.len)
   result = Value(kind: vkVector)
-  result.values = newSeqOfCap[Value](a.len)
+  result.vector = newSeqOfCap[Value](a.len)
   for i in 0 ..< a.len:
-    result.values.add(a[i] - b[i])
+    result.vector.add(a[i] - b[i])
 
 proc `-`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Subtract two values
@@ -74,10 +83,14 @@ proc `-`*(a, b: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the subtraction
+  ##
+  ## Raises:
+  ## - InvalidOperationError: if operands are of incompatible types
+  ## - ArithmeticError: for numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    return newValue(a.nValue - b.nValue)
+    return newValue(a.number - b.number)
   elif a.kind == vkVector and b.kind == vkVector:
-    return a.values - b.values
+    return a.vector - b.vector
   else:
     raise newInvalidOperationError("subtraction", $a.kind, $b.kind)
 
@@ -93,7 +106,8 @@ proc `*`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## - b: second vector
   ##
   ## Raises:
-  ## - BMathError: if the vectors are not of the same length
+  ## - VectorLengthMismatchError: if the vectors are not of the same length
+  ## - ArithmeticError: for numeric calculation errors
   ##
   ## Returns:
   ## - a new Value object with the result of the multiplication
@@ -112,10 +126,13 @@ proc `*`*(a: Value, b: openArray[Value]): Value {.inline, captureNumericError.} 
   ##
   ## Returns:
   ## - a new Value object with the result of the multiplication
+  ##
+  ## Raises:
+  ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.values = newSeqOfCap[Value](b.len)
+  result.vector = newSeqOfCap[Value](b.len)
   for i in 0 ..< b.len:
-    result = result + a * b[i]
+    result.vector.add(a * b[i])
 
 proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Multiply two values
@@ -126,14 +143,18 @@ proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the multiplication
+  ##
+  ## Raises:
+  ## - InvalidOperationError: if operands are of incompatible types
+  ## - ArithmeticError: for numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    return newValue(a.nValue * b.nValue)
+    return newValue(a.number * b.number)
   elif a.kind == vkVector and b.kind == vkVector:
-    return a.values * b.values
+    return a.vector * b.vector
   elif a.kind == vkNumber and b.kind == vkVector:
-    return a * b.values
+    return a * b.vector
   elif a.kind == vkVector and b.kind == vkNumber:
-    return b * a.values
+    return b * a.vector
   else:
     raise newInvalidOperationError("multiplication", $a.kind, $b.kind)
 
@@ -148,10 +169,15 @@ proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the division
+  ##
+  ## Raises:
+  ## - InvalidOperationError: if operands are of incompatible types
+  ## - ZeroDivisionError: if divisor is zero
+  ## - ArithmeticError: for other numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    if b.nValue.isZero:
+    if b.number.isZero:
       raise newZeroDivisionError()
-    return newValue(a.nValue / b.nValue)
+    return newValue(a.number / b.number)
   else:
     raise newInvalidOperationError("division", $a.kind, $b.kind)
 
@@ -166,10 +192,15 @@ proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the modulus
+  ##
+  ## Raises:
+  ## - InvalidOperationError: if operands are of incompatible types or if complex numbers are used
+  ## - ZeroDivisionError: if divisor is zero
+  ## - ArithmeticError: for other numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    if b.nValue.isZero:
+    if b.number.isZero:
       raise newZeroDivisionError()
-    return newValue(a.nValue % b.nValue)
+    return newValue(a.number % b.number)
   else:
     raise newInvalidOperationError("modulus", $a.kind, $b.kind)
 
@@ -184,8 +215,12 @@ proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the exponentiation
+  ##
+  ## Raises:
+  ## - InvalidOperationError: if operands are of incompatible types
+  ## - ArithmeticError: for numeric calculation errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    return newValue(a.nValue ^ b.nValue)
+    return newValue(a.number ^ b.number)
   else:
     raise newInvalidOperationError("exponentiation", $a.kind, $b.kind)
 
@@ -200,10 +235,13 @@ proc `-`*(a: openArray[Value]): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the negated vector
+  ##
+  ## Raises:
+  ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.values = newSeqOfCap[Value](a.len)
+  result.vector = newSeqOfCap[Value](a.len)
   for i in 0 ..< a.len:
-    result.values[i] = -a[i]
+    result.vector[i] = -a[i]
 
 proc `-`*(a: Value): Value {.inline, captureNumericError.} =
   ## Negate a value
@@ -213,9 +251,105 @@ proc `-`*(a: Value): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the negated value
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number or vector
+  ## - ArithmeticError: for numeric calculation errors
   if a.kind == vkNumber:
-    return newValue(-a.nValue)
+    return newValue(-a.number)
   elif a.kind == vkVector:
-    return -a.values
+    return -a.vector
   else:
     raise newUnsupportedTypeError("Cannot negate value of type: " & $a.kind)
+
+# ----- Square root procedure -----
+proc sqrt*(a: Value): Value {.inline, captureNumericError.} =
+  ## Square root of a value
+  ##
+  ## Parameters:
+  ## - a: value to take the square root of
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the square root
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ArithmeticError: for numeric calculation errors
+  if a.kind == vkNumber:
+    return newValue(sqrt(a.number))
+  else:
+    raise
+      newUnsupportedTypeError("Cannot take square root of value of type: " & $a.kind)
+
+# ----- Absolute value procedure -----
+proc abs*(a: Value): Value {.inline, captureNumericError.} =
+  ## Absolute value of a value
+  ##
+  ## Parameters:
+  ## - a: value to take the absolute value of
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the absolute value
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ArithmeticError: for numeric calculation errors
+  if a.kind == vkNumber:
+    return newValue(abs(a.number))
+  else:
+    raise
+      newUnsupportedTypeError("Cannot take absolute value of value of type: " & $a.kind)
+
+# ----- Floor procedure -----
+proc floor*(a: Value): Value {.inline, captureNumericError.} =
+  ## Floor of a value
+  ##
+  ## Parameters:
+  ## - a: value to take the floor of
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the floor
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ComplexCeilFloorRoundError: if operand is a complex number
+  if a.kind == vkNumber:
+    return newValue(floor(a.number))
+  else:
+    raise newUnsupportedTypeError("Cannot take floor of value of type: " & $a.kind)
+
+# ----- Ceiling procedure -----
+proc ceil*(a: Value): Value {.inline, captureNumericError.} =
+  ## Ceiling of a value
+  ##
+  ## Parameters:
+  ## - a: value to take the ceiling of
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the ceiling
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ComplexCeilFloorRoundError: if operand is a complex number
+  if a.kind == vkNumber:
+    return newValue(ceil(a.number))
+  else:
+    raise newUnsupportedTypeError("Cannot take ceiling of value of type: " & $a.kind)
+
+# ----- Round procedure -----
+proc round*(a: Value): Value {.inline, captureNumericError.} =
+  ## Round a value
+  ##
+  ## Parameters:
+  ## - a: value to round
+  ##
+  ## Returns:
+  ## - a new Value object with the result of the rounding
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ComplexCeilFloorRoundError: if operand is a complex number
+  if a.kind == vkNumber:
+    return newValue(round(a.number))
+  else:
+    raise newUnsupportedTypeError("Cannot round value of type: " & $a.kind)

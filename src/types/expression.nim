@@ -184,55 +184,56 @@ proc newCondition*(
 proc stringify(node: Expression, indent: int): string =
   ## Helper for AST string representation (internal use)
   let indentation = " ".repeat(indent)
+  result = indentation & "position: " & $node.position & "\n"
   if node.isNil:
-    return indentation & "nil\n"
+    result.add indentation & "nil\n"
   case node.kind
   of ekNumber:
-    result = indentation & "number: " & $node.nValue & "\n"
+    result.add indentation & "number: " & $node.nValue & "\n"
   of ekTrue:
-    result = indentation & "true\n"
+    result.add indentation & "true\n"
   of ekFalse:
-    result = indentation & "false\n"
+    result.add indentation & "false\n"
   of eKAdd, eKSub, eKMul, eKDiv, eKMod, eKPow, eKEq, eKNe, eKLt, eKLe, eKGt, eKGe,
       eKAnd, eKOr:
     let kindStr = toLowerAscii($node.kind).substr(2)
-    result = indentation & kindStr & ":\n"
+    result.add indentation & kindStr & ":\n"
     result.add(indentation & "  left:\n")
     result.add(node.left.stringify(indent + 4))
     result.add("\n" & indentation & "  right:\n")
     result.add(node.right.stringify(indent + 4))
   of eKNeg:
-    result = indentation & "neg:\n"
+    result.add indentation & "neg:\n"
     result.add(node.operand.stringify(indent + 2))
   of eKNot:
-    result = indentation & "not:\n"
+    result.add indentation & "not:\n"
     result.add(node.operand.stringify(indent + 2))
   of eKIdent:
-    result = indentation & "ident: " & node.name & "\n"
+    result.add indentation & "ident: " & node.name & "\n"
   of eKAssign:
-    result = indentation & "assign: " & node.ident & "\n"
+    result.add indentation & "assign: " & node.ident & "\n"
     result.add("\n" & indentation & "  isLocal: " & $node.isLocal & "\n")
     result.add(node.expr.stringify(indent + 2))
   of eKBlock:
-    result = indentation & "block:\n"
+    result.add indentation & "block:\n"
     for expr in node.expressions:
       result.add(expr.stringify(indent + 2))
   of eKFunc:
-    result = indentation & "function:\n"
+    result.add indentation & "function:\n"
     result.add(indentation & "  params: " & $node.params & "\n")
     result.add(node.body.stringify(indent + 2))
   of eKVector:
-    result = indentation & "vector:\n"
+    result.add indentation & "vector:\n"
     for val in node.values:
       result.add(val.stringify(indent + 2))
   of eKFuncInvoke:
-    result = indentation & "function call:\n"
+    result.add indentation & "function call:\n"
     result.add(node.fun.stringify(indent + 2))
     result.add("\n" & indentation & "  arguments:\n")
     for arg in node.arguments:
       result.add(arg.stringify(indent + 4))
   of eKIf:
-    result = indentation & "if:\n"
+    result.add indentation & "if:\n"
     for branch in node.branches:
       result.add(indentation & "  condition:\n")
       result.add(branch.condition.stringify(indent + 4))

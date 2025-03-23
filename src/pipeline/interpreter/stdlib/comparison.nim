@@ -17,10 +17,10 @@ proc `<`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## - false if a is not less than b
   ##
   ## Raises:
-  ## - BMathError: if the values are not numbers
-  ## - BMathError: if any of the values is a complex
+  ## - TypeError: if the values are not numbers
+  ## - InvalidOperationError: if any of the values is a complex
   if a.kind == vkNumber and b.kind == vkNumber:
-    result = newValue(a.nValue < b.nValue)
+    result = newValue(a.number < b.number)
   else:
     raise newTypeError("'<' operands are not numbers")
 
@@ -37,10 +37,10 @@ proc `<=`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## - false if a is not less than or equal to b
   ##
   ## Raises:
-  ## - BMathError: if the values are not numbers
-  ## - BMathError: if any of the values is a complex
+  ## - TypeError: if the values are not numbers
+  ## - InvalidOperationError: if any of the values is a complex
   if a.kind == vkNumber and b.kind == vkNumber:
-    result = newValue(a.nValue <= b.nValue)
+    result = newValue(a.number <= b.number)
   else:
     raise newTypeError("'<=' operands are not numbers")
 
@@ -57,10 +57,10 @@ proc `>`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## - false if a is not greater than b
   ##
   ## Raises:
-  ## - BMathError: if the values are not numbers
-  ## - BMathError: if any of the values is a complex
+  ## - TypeError: if the values are not numbers
+  ## - InvalidOperationError: if any of the values is a complex
   if a.kind == vkNumber and b.kind == vkNumber:
-    result = newValue(a.nValue > b.nValue)
+    result = newValue(a.number > b.number)
   else:
     raise newTypeError("'>' operands are not numbers")
 
@@ -77,10 +77,10 @@ proc `>=`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## - false if a is not greater than or equal to b
   ##
   ## Raises:
-  ## - BMathError: if the values are not numbers
-  ## - BMathError: if any of the values is a complex
+  ## - TypeError: if the values are not numbers
+  ## - InvalidOperationError: if any of the values is a complex
   if a.kind == vkNumber and b.kind == vkNumber:
-    result = newValue(a.nValue >= b.nValue)
+    result = newValue(a.number >= b.number)
   else:
     raise newTypeError("'>=' operands are not numbers")
 
@@ -93,6 +93,9 @@ template `!=`*(a, b: Value): Value =
   ##
   ## Returns:
   ## - a new Value object with bool kind
+  ##
+  ## Raises:
+  ## - Same errors as the `==` operator
   not (a == b)
 
 proc `not`*(a: Value): Value {.inline, captureNumericError.} =
@@ -102,12 +105,12 @@ proc `not`*(a: Value): Value {.inline, captureNumericError.} =
   ## - a: value to be negated - must be a boolean
   ##
   ## Raises:
-  ## - BMathError: if the value is not a boolean
+  ## - TypeError: if the value is not a boolean
   if a.kind != vkBool:
     raise newTypeError(
       "Cannot negate a non-boolean value, expected: bool but got: " & $a.kind
     )
-  result = newValue(not a.bValue)
+  result = newValue(not a.boolean)
 
 proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Compare two values for equality
@@ -120,15 +123,18 @@ proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## - a new Value object with bool kind
   ## - true if the values are equal
   ## - false if the values are not equal
+  ##
+  ## Raises:
+  ## - ArithmeticError: when comparing values with arithmetic errors
   if a.kind == vkNumber and b.kind == vkNumber:
-    result = newValue(a.nValue == b.nValue)
+    result = newValue(a.number == b.number)
   elif a.kind == vkVector and b.kind == vkVector:
-    if a.values.len != b.values.len:
+    if a.vector.len != b.vector.len:
       result = newValue(false)
     else:
       var eq = true
-      for i in 0 ..< a.values.len:
-        if (a.values[i] != b.values[i]).bValue:
+      for i in 0 ..< a.vector.len:
+        if (a.vector[i] != b.vector[i]).boolean:
           eq = false
           break
       result = newValue(eq)

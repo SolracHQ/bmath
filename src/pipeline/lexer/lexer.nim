@@ -309,7 +309,8 @@ proc next*(lexer: var Lexer): Token =
       continue
     # Handle newline: update line/column counters and emit either an EOE or newline token.
     if lexer.source[lexer.current] == '\n':
-      lexer.advance()
+      lexer.line += 1
+      lexer.current.inc
       lexer.col = 1
       if lexer.skipNewline:
         lexer.skipNewline = false

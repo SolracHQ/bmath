@@ -15,28 +15,34 @@ type
     vkNumber ## Numeric value stored in `nValue` field
     vkBool ## Boolean value stored in `bValue` field
     vkNativeFunc ## Native function stored in `nativeFunc` field
-    vkFunction ## User-defined function
+    vkFunction ## User-defined function stored as reference
     vkVector ## Vector value
-    vkSeq ## Sequence value, lazily evaluated
+    vkSeq ## Sequence value, lazily evaluated and stored as reference
+
+  Function* = ref object ## User-defined function data
+    body*: Expression ## Function body
+    env*: Environment ## Environment for variable bindings
+    params*: seq[string] ## Parameter names for the function
+
+  Sequence* = ref object ## Lazily evaluated sequence
+    generator*: Generator ## Function to generate sequence values
+    transformers*: seq[Transformer] ## Functions to transform sequence values
 
   Value* = object
     ## Variant type representing runtime numeric values with type tracking.
     case kind*: ValueKind ## Type discriminator determining active field
     of vkNumber:
-      nValue*: Number ## Numeric storage when kind is `vkNumber`
+      number*: Number ## Numeric storage when kind is `vkNumber`
     of vkBool:
-      bValue*: bool ## Boolean storage when kind is `vkBool`
+      boolean*: bool ## Boolean storage when kind is `vkBool`
     of vkNativeFunc:
-      nativeFunc*: NativeFunc ## Native function storage when kind is `vkNativeFunc`
+      nativeFn*: NativeFn ## Native function storage when kind is `vkNativeFunc`
     of vkFunction:
-      body*: Expression ## User-defined function body
-      env*: Environment ## Environment for variable bindings
-      params*: seq[string] ## Parameter names for the function
+      function*: Function ## User-defined function storage when kind is `vkFunction`
     of vkVector:
-      values*: seq[Value] ## Vector storage when kind is `vkVector`
+      vector*: seq[Value] ## Vector storage when kind is `vkVector`
     of vkSeq:
-      generator*: Generator ## Function to generate sequence values
-      transformers*: seq[Transformer] ## Functions to transform sequence values
+      sequence*: Sequence ## Sequence storage when kind is `vkSeq`
 
   TransformerKind* = enum
     ## Discriminator for runtime transformer types stored in `Transformer` objects.
@@ -54,22 +60,12 @@ type
   LabeledValue* = object
     label*: string
     value*: Value
+  
+  FnInvoker* = proc(function: Value, args: openArray[Value]): Value
+    ## Function type for invoking functions in the runtime.
 
-  Evaluator* = proc(node: Expression): Value
-    ## Function type for evaluating AST nodes in the interpreter.
-
-  HostFunction* = proc(args: openArray[Expression], evaluator: Evaluator): Value
+  NativeFn* = proc(args: openArray[Value], invoker: FnInvoker): Value
     ## Function in the host language callable from the interpreter.
-
-  NativeFunc* = object
-    ## Native function interface callable from the interpreter.
-    ## Native functions get access to the interpreter capabilities using the evaluator.
-    ## 
-    ## Fields:
-    ##   argc: Number of expected arguments
-    ##   fun:  Procedure implementing the function logic
-    argc*: int
-    fun*: HostFunction
 
   Environment* = ref object
     ## Environment for storing variable bindings and parent scopes.
@@ -79,35 +75,34 @@ type
 template newValue*[T](n: T): Value =
   ## Create a new Value object from a number
   when n is SomeInteger:
-    Value(kind: vkNumber, nValue: newNumber(n))
+    Value(kind: vkNumber, number: newNumber(n))
   elif n is SomeFloat:
-    Value(kind: vkNumber, nValue: newNumber(n))
+    Value(kind: vkNumber, number: newNumber(n))
   elif n is Number:
-    Value(kind: vkNumber, nValue: n)
+    Value(kind: vkNumber, number: n)
   elif n is bool:
-    Value(kind: vkBool, bValue: n.bool)
+    Value(kind: vkBool, boolean: n.bool)
   elif n is seq[Value]:
-    Value(kind: vkVector, values: n)
-  elif n is NativeFunc:
-    Value(kind: vkNativeFunc, nativeFunc: n)
+    Value(kind: vkVector, vector: n)
   else:
     const message = "Unsupported type '" & $T & "' for Value"
     {.error: message.}
 
-proc newValue*(body: Expression, env: Environment, params: seq[string]): Value =
+proc newValue*(body: Expression, env: Environment, params: seq[string]): Value {.inline.} =
   ## Creates a new Value object wrapping a user-defined function.
-  result = Value(kind: vkFunction, body: body, env: env, params: params)
+  var functionObj = Function(body: body, env: env, params: params)
+  result = Value(kind: vkFunction, function: functionObj)
 
 template rawAccess*(value: Value, kind: static[ValueKind]) =
   when kind == vkNumber:
     ## Returns the numeric value of the Value object
-    value.nValue
+    value.number
   elif kind == vkBool:
     ## Returns the boolean value of the Value object
-    value.bValue
+    value.boolean
   elif kind == vkVector:
     ## Returns the vector values of the Value object
-    value.values
+    value.vector
   else:
     {.error: "Unsupported type for rawAccess".}
 
@@ -125,15 +120,15 @@ proc `$`*(value: Value): string =
   ## Returns string representation of numeric value
   case value.kind
   of vkNumber:
-    $value.nValue
+    $value.number
   of vkBool:
-    $value.bValue
+    $value.boolean
   of vkNativeFunc:
     "<native func>"
   of vkFunction:
-    "|" & value.params.join(", ") & "| " & value.body.asSource
+    "|" & value.function.params.join(", ") & "| " & value.function.body.asSource
   of vkVector:
-    "[" & value.values.mapIt($it).join(", ") & "]"
+    "[" & value.vector.mapIt($it).join(", ") & "]"
   of vkSeq:
     "<seq>"
 
@@ -148,3 +143,21 @@ proc `$`*(env: Environment): string =
     result = "Environment(parent: " & $env.parent & ", values: " & $env.values & ")"
   else:
     result = "Environment(values: " & $env.values & ")"
+
+when defined(showSize):
+  static:
+    echo "Value type size analysis:"
+    echo "└─ Size of Value: ", sizeof(Value), " bytes"
+    echo "   ├─ Base size (kind discriminator): ", sizeof(ValueKind), " bytes"
+    echo "   ├─ vkNumber variant"
+    echo "   │  └─ Number component: ", sizeof(Number), " bytes"
+    echo "   ├─ vkBool variant"
+    echo "   │  └─ Bool component: ", sizeof(bool), " bytes"
+    echo "   ├─ vkNativeFunc variant"
+    echo "   │  └─ NativeFunc component: ", sizeof(NativeFn), " bytes"
+    echo "   ├─ vkFunction variant"
+    echo "   │  └─ Function pointer size: ", sizeof(ref Function), " bytes"
+    echo "   ├─ vkVector variant"
+    echo "   │  └─ Vector component (seq): ", sizeof(seq[Value]), " bytes"
+    echo "   └─ vkSeq variant"
+    echo "      └─ Sequence pointer size: ", sizeof(ref Sequence), " bytes"

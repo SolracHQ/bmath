@@ -45,6 +45,9 @@ function         -> "|" ( ( IDENTIFIER ) ( "," IDENTIFIER )* )? "|" expression
 vector           -> "[" ( expression ("," expression)* )? "]"
 ```
 
+### Comments
+BMath only supports single-line comments, which start with `#` and continue until the end of the line. Multi-line comments are not supported.
+
 ### Syntax Sugar: Arrow Operator for Chained Function Calls
 
 Expressions using the arrow operator are transformed as follows: given an expression of the form  
