@@ -1,47 +1,106 @@
-# Numeric Examples in Math CLI Language
-# =====================================
-# This file demonstrates the use of numeric literals in the math CLI language.
-# It includes examples of integer literals, floating-point literals, and scientific notation.
+# Numeric Examples in BMath Language
+# ================================
+# This file demonstrates different numeric types and their operations.
 
-# [1] Integer Literals
-integerLiteral = 42              # An integer literal
-negativeInteger = -7             # A negative integer literal
-zeroInteger = 0                   # Zero as an integer
+# [1] Integer Literals and Operations
+# --------------------------------
+intValue = 42                     # A positive integer
+negativeInt = -7                  # A negative integer
+zeroInt = 0                       # Zero as an integer
 
-# [2] Floating-Point Literals
-piConstant = 3.1415              # A floating-point literal representing pi
-eulerNumber = 2.71828             # A floating-point literal representing Euler's number
-smallFloat = 1.6e-6               # A small floating-point number in scientific notation
+# Basic integer operations
+intSum = 15 + 27                   # Expected: 42
+intDiff = 100 - 58                 # Expected: 42
+intProd = 6 * 7                    # Expected: 42
+intQuot = 84 / 2                   # Expected: 42.0 (division always returns float)
+intMod = 100 % 58                  # Expected: 42 (remainder)
+intPow = 2 ^ 5                     # Expected: 32 (exponentiation)
 
-# [3] Scientific Notation
-avogadroNumber = 6.022e23        # Avogadro's number in scientific notation
-largeFloat = 1.0e10               # A large floating-point number
-tinyFloat = 1.0e-10               # A very small floating-point number
+# [2] Floating-Point Literals and Operations
+# ---------------------------------------
+floatValue = 3.14159               # PI as a float
+negativeFloat = -2.71828           # Negative float (Euler's number)
+scientificNotation = 6.022e23      # Scientific notation (Avogadro's number)
 
-# [4] Combining Literals in Expressions
-combinedResult = integerLiteral + piConstant  # Adding integer and float: 42 + 3.1415 = 45.1415
-scientificSum = avogadroNumber + smallFloat    # Adding large and small float: 6.022e23 + 1.6e-6 ≈ 6.022e23
+# Float operations
+floatSum = 3.14 + 2.86             # Expected: 6.0
+floatProd = 3.14 * 2               # Expected: 6.28
+floatDiv = 10.5 / 2.5              # Expected: 4.2
+floatPow = 2.0 ^ 3.0               # Expected: 8.0
 
-# [5] Using Literals in Functions
-# Example: Using pow function with literals
-squaredPi = pow(piConstant, 2)  # Squaring pi: (3.1415)^2 ≈ 9.86902225
-cubedInteger = pow(integerLiteral, 3)  # Cubing the integer: 42^3 = 74088
+# [3] Mixed Integer and Float Operations
+# -----------------------------------
+# Type promotion: int -> float
+mixedSum = 5 + 3.5                 # Expected: 8.5
+mixedProd = 4 * 2.5                # Expected: 10.0
+mixedDiv = 10 / 4                  # Expected: 2.5 (int/int gives float)
+mixedPow = 2 ^ 2.5                 # Expected: 5.66 (approximately)
 
-# [6] Displaying Results
-# The following expressions can be used to display results in the CLI.
-displayInteger = integerLiteral
-displayFloat = piConstant
-displayScientific = avogadroNumber
+# [4] Complex Number Literals and Operations
+# ---------------------------------------
+complexNumber = 3 + 4i             # Complex literal (3+4i)
+pureImaginary = 5i                 # Pure imaginary number (0+5i)
+complexFromReal = 7 + 0i           # Complex from real (same as 7)
 
-# Expected Outputs:
-# displayInteger should output: 42
-# displayFloat should output: 3.1415
-# displayScientific should output: 6.022e23
+# Basic complex operations
+complexSum = (3 + 4i) + (2 - 3i)   # Expected: 5+1i
+complexDiff = (3 + 4i) - (2 - 3i)  # Expected: 1+7i
+complexProd = (3 + 4i) * (2 - 3i)  # Expected: 18-i
+complexDiv = (3 + 4i) / (2 - 3i)   # Expected: complex result
 
-# [7] Complex Number Literals and Operations
-complexNumber1 = 3+4i                  # Complex literal (3+4i)
-complexNumber2 = 1-2i                  # Complex literal (1-2i)
-complexAddition = complexNumber1 + complexNumber2      # Expected: 4+2i
-complexSubtraction = complexNumber1 - complexNumber2   # Expected: 2+6i
-complexMultiplication = complexNumber1 * complexNumber2  # Expected: 11-2i
-complexDivision = complexNumber1 / complexNumber2        # Expected: -1+2i
+# Complex number functions
+complexAbs = abs(3 + 4i)           # Expected: 5.0 (magnitude)
+complexSqrt = sqrt(-9)             # Expected: 3i
+
+# [5] Numeric Type Promotion
+# -----------------------
+# Promotion rules: int -> float -> complex
+promotion1 = 1 + 2.5               # int+float -> float (3.5)
+promotion2 = 2.5 + 3i              # float+complex -> complex (2.5+3i)
+promotion3 = 2 * (3 + 4i)          # int*complex -> complex (6+8i)
+
+# [6] Numeric Precision and Limits
+# -----------------------------
+# Floating-point precision
+floatPrecision = 0.1 + 0.2         # May not be exactly 0.3 due to binary floating-point
+floatComparison = (0.1 + 0.2) == 0.3  # May be false due to precision issues
+
+# Large and small numbers
+largeNumber = 1e30                 # A very large number
+smallNumber = 1e-30                # A very small number
+largeTimesSmall = largeNumber * smallNumber  # Expected: ~1.0
+
+# [7] Number Conversions
+# -------------------
+# Explicit type conversions (if supported in the language)
+intToFloat = 42 + 0.0              # Convert int to float by adding 0.0
+floatToInt = floor(3.7)            # Convert float to int with floor function
+
+# [8] Special Numeric Functions
+# --------------------------
+absValue = abs(-42)                # Expected: 42
+absComplex = abs(3 + 4i)           # Expected: 5.0
+
+sqrtValue = sqrt(16)               # Expected: 4.0
+sqrtFloat = sqrt(2)                # Expected: 1.414... (irrational)
+
+roundValue = round(3.5)            # Expected: 4
+floorValue = floor(3.7)            # Expected: 3
+ceilValue = ceil(3.2)              # Expected: 4
+
+# [9] Numeric Vector Operations
+# --------------------------
+intVector = [1, 2, 3]
+floatVector = [1.5, 2.5, 3.5]
+complexVector = [1+1i, 2+2i, 3+3i]
+
+mixedVectorSum = intVector + floatVector  # Element-wise addition with promotion
+
+# Vector operations with different numeric types
+vectorScalarProd = 2 * intVector    # Expected: [2, 4, 6, 8]
+complexVectorProd = 2i * intVector  # Expected: [2i, 4i, 6i, 8i]
+
+# [10] Numeric Expressions with Mixed Types
+# --------------------------------------
+expression1 = (1 + 2i) * (3 + 4.5) / 2  # Complex mixed expression
+expression2 = sqrt(16) + sqrt(-16)      # Expected: 4+4i (real + imaginary)

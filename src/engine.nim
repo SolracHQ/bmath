@@ -9,7 +9,7 @@
 ## API endpoint for expression evaluation.
 
 import
-  pipeline/lexer,
+  pipeline/lexer/lexer,
   pipeline/parser/[parser, optimizer],
   pipeline/interpreter/interpreter,
   logging,
@@ -29,7 +29,6 @@ proc newEngine*(replMode: bool = false): Engine =
 
 iterator run*(engine: Engine, source: string): LabeledValue =
   ## Executes source while maintaining interpreter state
-  # debug("Running source: ", source)
   var lexer = newLexer(source)
 
   while not lexer.atEnd:

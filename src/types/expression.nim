@@ -51,9 +51,6 @@ type
     # Block expression
     ekBlock ## Block expression (sequence of statements)
 
-    # Error finding on optimization phase
-    ekError ## Error node (used for error handling)
-
     # Control flow
     ekIf ## If-else conditional expression
 
@@ -102,8 +99,6 @@ type
     of ekIf:
       branches*: seq[Condition]
       elseBranch*: Expression ## Else branch expression 
-    of ekError:
-      message*: string ## Error message
     of ekTrue, ekFalse:
       discard ## Kind is enough to determine the value
 
@@ -181,9 +176,6 @@ proc newIfExpr*(
   result =
     Expression(kind: ekIf, position: pos, branches: branches, elseBranch: elseBranch)
 
-proc newErrorExpr*(pos: Position, message: string): Expression {.inline.} =
-  result = Expression(kind: ekError, position: pos, message: message)
-
 proc newCondition*(
     conditionExpr: Expression, thenExpr: Expression
 ): Condition {.inline.} =
@@ -192,55 +184,56 @@ proc newCondition*(
 proc stringify(node: Expression, indent: int): string =
   ## Helper for AST string representation (internal use)
   let indentation = " ".repeat(indent)
+  result = indentation & "position: " & $node.position & "\n"
   if node.isNil:
-    return indentation & "nil\n"
+    result.add indentation & "nil\n"
   case node.kind
   of ekNumber:
-    result = indentation & "number: " & $node.nValue & "\n"
+    result.add indentation & "number: " & $node.nValue & "\n"
   of ekTrue:
-    result = indentation & "true\n"
+    result.add indentation & "true\n"
   of ekFalse:
-    result = indentation & "false\n"
+    result.add indentation & "false\n"
   of eKAdd, eKSub, eKMul, eKDiv, eKMod, eKPow, eKEq, eKNe, eKLt, eKLe, eKGt, eKGe,
       eKAnd, eKOr:
     let kindStr = toLowerAscii($node.kind).substr(2)
-    result = indentation & kindStr & ":\n"
+    result.add indentation & kindStr & ":\n"
     result.add(indentation & "  left:\n")
     result.add(node.left.stringify(indent + 4))
     result.add("\n" & indentation & "  right:\n")
     result.add(node.right.stringify(indent + 4))
   of eKNeg:
-    result = indentation & "neg:\n"
+    result.add indentation & "neg:\n"
     result.add(node.operand.stringify(indent + 2))
   of eKNot:
-    result = indentation & "not:\n"
+    result.add indentation & "not:\n"
     result.add(node.operand.stringify(indent + 2))
   of eKIdent:
-    result = indentation & "ident: " & node.name & "\n"
+    result.add indentation & "ident: " & node.name & "\n"
   of eKAssign:
-    result = indentation & "assign: " & node.ident & "\n"
+    result.add indentation & "assign: " & node.ident & "\n"
     result.add("\n" & indentation & "  isLocal: " & $node.isLocal & "\n")
     result.add(node.expr.stringify(indent + 2))
   of eKBlock:
-    result = indentation & "block:\n"
+    result.add indentation & "block:\n"
     for expr in node.expressions:
       result.add(expr.stringify(indent + 2))
   of eKFunc:
-    result = indentation & "function:\n"
+    result.add indentation & "function:\n"
     result.add(indentation & "  params: " & $node.params & "\n")
     result.add(node.body.stringify(indent + 2))
   of eKVector:
-    result = indentation & "vector:\n"
+    result.add indentation & "vector:\n"
     for val in node.values:
       result.add(val.stringify(indent + 2))
   of eKFuncInvoke:
-    result = indentation & "function call:\n"
+    result.add indentation & "function call:\n"
     result.add(node.fun.stringify(indent + 2))
     result.add("\n" & indentation & "  arguments:\n")
     for arg in node.arguments:
       result.add(arg.stringify(indent + 4))
   of eKIf:
-    result = indentation & "if:\n"
+    result.add indentation & "if:\n"
     for branch in node.branches:
       result.add(indentation & "  condition:\n")
       result.add(branch.condition.stringify(indent + 4))
@@ -249,8 +242,6 @@ proc stringify(node: Expression, indent: int): string =
     if node.elseBranch != nil:
       result.add("\n" & indentation & "else:\n")
       result.add(node.elseBranch.stringify(indent + 2))
-  of eKError:
-    result = indentation & "error: " & node.message & "\n"
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -334,10 +325,8 @@ proc `==`*(a, b: Expression): bool =
       return a.elseBranch == b.elseBranch
     else:
       return false
-  of ekError:
-    return a.message == b.message
 
-proc asSource*(expr: Expression): string =
+proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format
   case expr.kind
   of ekNumber:
@@ -386,7 +375,15 @@ proc asSource*(expr: Expression): string =
     return
       asSource(expr.fun) & "(" & expr.arguments.mapIt(asSource(it)).join(", ") & ")"
   of ekBlock:
-    return "{" & expr.expressions.mapIt(asSource(it)).join("\n") & "}"
+    let indentation = " ".repeat(ident * 2)
+    if expr.expressions.len == 1:
+      return "{" & asSource(expr.expressions[0]) & "}"
+    else:
+      let innerIndent = " ".repeat((ident + 1) * 2)
+      return
+        "{" & "\n" &
+        expr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") & "\n" &
+        indentation & "}"
   of ekFunc:
     return "|" & expr.params.join(", ") & "| " & asSource(expr.body)
   of ekVector:
@@ -403,5 +400,3 @@ proc asSource*(expr: Expression): string =
     if expr.elseBranch != nil:
       src.add(" else " & asSource(expr.elseBranch))
     return src
-  of ekError:
-    return "error: " & expr.message

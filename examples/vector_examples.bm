@@ -1,92 +1,101 @@
 # Vector Operations Examples
-# ===========================
-# This file demonstrates various vector operations in the math CLI language.
-# Examples include vector creation, element-wise arithmetic, dot product calculations,
-# and using the higher-order functions all, any, and sum.
+# =========================
+# This file demonstrates various vector operations in BMath language.
 
 # [1] Vector Creation
-# Creating a vector of integers.
-integerVector = [1, 2, 3, 4, 5]  # A simple vector of integers.
+# -----------------
+# Creating vectors with literals
+intVector = [1, 2, 3, 4, 5]             # A vector of integers
+floatVector = [1.1, 2.2, 3.3, 4.4, 5.5] # A vector of floats
+mixedVector = [1, 2.5, 3, 4.5]          # A mixed vector
+emptyVector = []                        # An empty vector
 
-# Creating a vector of floats.
-floatVector = [1.1, 2.2, 3.3]     # A vector of floating-point numbers.
+# Creating vectors with the vec function
+zerosVector = vec(5, 0)               # [0, 0, 0, 0, 0]
+onesVector = vec(3, 1)                # [1, 1, 1]
 
-# Creating a vector using a lambda function.
-# This creates a vector of length 5 where each element is the index plus 1.
-indexVector = vec(5, |i| i + 1)    # Expected: [1, 2, 3, 4, 5]
+# Creating a vector using a generator function
+indexVector = vec(5, |i| i + 1)        # [1, 2, 3, 4, 5]
+squaresVector = vec(5, |i| i^2)        # [0, 1, 4, 9, 16]
 
-# [2] Element-wise Arithmetic Operations
-# Element-wise addition of two vectors.
+# [2] Vector Access and Information
+# -------------------------------
+# Getting vector length
+vectorLength = len(intVector)          # Expected: 5
+
+# Accessing elements
+firstElement = first(intVector)        # Expected: 1
+lastElement = last(intVector)          # Expected: 5
+thirdElement = nth(intVector, 2)       # Expected: 3 (0-based indexing)
+
+# [3] Element-wise Arithmetic
+# -------------------------
 vectorA = [1, 2, 3]
 vectorB = [4, 5, 6]
-vectorAddition = vectorA + vectorB  # Expected: [5, 7, 9]
 
-# Element-wise subtraction of two vectors.
-vectorSubtraction = vectorB - vectorA  # Expected: [3, 3, 3]
+# Addition and subtraction
+vectorSum = vectorA + vectorB         # Expected: [5, 7, 9]
+vectorDiff = vectorB - vectorA        # Expected: [3, 3, 3]
 
-# Scalar multiplication of a vector.
-scalarMultiplication = 2 * vectorA  # Expected: [2, 4, 6]
+# Scalar operations
+doubledVector = 2 * vectorA           # Expected: [2, 4, 6]
+halvedVector = vectorB / 2            # Expected: [2.0, 2.5, 3.0]
+poweredVector = vectorA ^ 2           # Expected: [1, 4, 9]
 
-# [3] Dot Product Calculation
-# Calculating the dot product of two vectors.
-# The dot product of [1, 2, 3] and [4, 5, 6] is 1*4 + 2*5 + 3*6 = 32.
-dotProductResult = dot(vectorA, vectorB)  # Expected: 32
+# [4] Vector Products
+# ----------------
+# Dot product
+dotProduct = dot(vectorA, vectorB)    # Expected: 32 (1*4 + 2*5 + 3*6)
 
-# [4] Mixing Integer and Float Vectors
-# Mixing integer and float vectors promotes results to float.
-mixedVector = vectorA + floatVector  # Expected: [2.1, 4.2, 6.3]
+# [5] Vector Operations with Mixed Types
+# -----------------------------------
+intAndFloatVector = intVector + floatVector  # Type promotion to float
+                                           # Only first 3 elements are added
 
-# [5] Vector Length and Accessing Elements
-# Accessing elements using the nth function.
-firstElement = first(integerVector)  # Expected: 1
-lastElement = last(integerVector)     # Expected: 5
-thirdElement = nth(integerVector, 2)  # Expected: 3 (0-based index)
+# [6] Higher-Order Functions with Vectors
+# ------------------------------------
+# Map: Apply a function to each element
+mappedVector = map(intVector, |x| x * 2)    # Expected: [2, 4, 6, 8, 10]
 
-# [6] Vector Size and Error Handling
-# Attempting to add vectors of different sizes will raise an error.
-# Uncommenting the following line will cause an error due to size mismatch.
-# errorExample = [1, 2] + [3, 4, 5]  # This will raise an error due to vector size mismatch.
+# Filter: Select elements that satisfy a predicate
+evenNumbers = filter(intVector, |x| x % 2 == 0)  # Expected: [2, 4]
 
-# [7] Higher-Order Functions Examples
+# Reduce: Combine elements using a binary function
+vectorSum = reduce(intVector, 0, |acc, x| acc + x)  # Expected: 15
 
-# Using map to double each element of integerVector.
-doubledVector = map(integerVector, |x| x * 2)  # Expected: [2, 4, 6, 8, 10]
+# [7] Chaining Operations with Arrow Operator
+# ----------------------------------------
+processedVector = intVector -> \
+                 map(|x| x * 2) -> \
+                 filter(|x| x > 5) # Expected: [6, 8, 10]
 
-# Using filter to select only even numbers from integerVector.
-evenVector = filter(integerVector, |x| (x % 2) == 0)  # Expected: [2, 4]
+# [8] Complex Number Vectors
+# -----------------------
+complexVector = [3+4i, 1-2i, 5i]
+complexVectorSum = sum(complexVector)   # Expected: 4+7i
 
-# Using reduce to sum all elements of integerVector.
-reduceSum = reduce(integerVector, 0, |a, b| a + b)  # Expected: 15
+# [9] Boolean Vector Operations
+# --------------------------
+boolVector1 = [true, true, false]
+boolVector2 = [true, false, false]
 
-# [8] Examples for 'all', 'any', and 'sum'
+anyTrueResult = any(boolVector1)     # Expected: true
+allTrueResult = all(boolVector1)     # Expected: false
+allFalseResult = all([false, false, false])  # Expected: false
 
-# Using sum to compute the total of a vector of values.
-totalSum = sum(integerVector)  # Expected: 15
+# [10] Nested Vectors
+# ----------------
+nestedVector = [[1, 2], [3, 4], [5, 6]]
+firstInnerVector = first(nestedVector)  # Expected: [1, 2]
 
-# Creating a boolean vector
-booleanVector1 = [true, true, true]
-booleanVector2 = [true, false, true]
+# [11] Vector Manipulation Functions
+# --------------------------------
+# Merge: Combine two vectors into one
+vector1 = [1, 2, 3]
+vector2 = [4, 5, 6]
+mergedVector = merge(vector1, vector2)  # Expected: [1, 2, 3, 4, 5, 6]
 
-# Using all to check if all elements in booleanVector1 are true.
-allTrue1 = all(booleanVector1)  # Expected: true
-
-# Using all to check if all elements in booleanVector2 are true.
-allTrue2 = all(booleanVector2)  # Expected: false
-
-# Using any to check if any element in booleanVector1 is true.
-anyTrue1 = any(booleanVector1)  # Expected: true
-
-# Using any to check if any element in booleanVector2 is true.
-anyTrue2 = any(booleanVector2)  # Expected: true
-
-# Using any with a vector where all elements are false.
-booleanVector3 = [false, false, false]
-anyTrue3 = any(booleanVector3)  # Expected: false
-
-# [9] Chaining Operations '->'
-# Chaining operations using the '->' operator.
-chainedResult = integerVector -> map(|x| x * 2) -> filter(|x| (x % 4) == 0) -> collect  # Expected: [4, 8]
-
-# [10] Complex Vectors
-complexVector = [3+4i, 1-2i, 0+1i]   # A vector of complex numbers
-complexVectorSum = sum(complexVector)   # Expected: (3+4i)+(1-2i)+(0+1i) = 4+3i
+# Slice: Extract a portion of a vector
+numbers = [10, 20, 30, 40, 50]
+firstThree = slice(numbers, 3)          # Expected: [10, 20, 30]
+middleSlice = slice(numbers, 1, 4)      # Expected: [20, 30, 40]

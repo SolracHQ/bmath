@@ -1,13 +1,18 @@
 # Formal Design Document for Math CLI Language
 
 ## Overview
-This document formally defines the syntax and semantics of a math CLI language focused on pure mathematical expressions. Every source line is an expression, except for block expressions, which group multiple expressions enclosed in curly braces (`{ }`) and evaluate to the value of their last expression. Unlike many languages, the language omits constructs such as strings or a nil value. Functions are defined inline, and lambda expressions can have optional arguments. If parameters are provided, they are listed as identifiers separated by commas between pipes; an expression must always follow the closing pipe.
+This document defines the syntax and semantics of a mathematical command-line interface language. BMath is designed with a clear philosophy:
 
-The language now also supports chaining function calls using the arrow operator (->) as syntactic sugar. In addition, a new lazy-evaluated data type, seq, is introduced alongside the traditional vec type.
+- **Expression-oriented**: Every construct is an expression that returns a value
+- **Mathematical focus**: Optimized for mathematical operations and numerical computations
+- **Simplicity**: Minimal syntax with powerful semantics
+- **Consistency**: No "void" or "nil" values - everything evaluates to something concrete
+
+The language operates primarily on expressions, with every source line (outside blocks) treated as a standalone expression. Functions are first-class citizens defined inline with optional parameters. The language supports both eager evaluation (vectors) and lazy evaluation (sequences) for collections.
 
 ## Formal Syntax
 
-The grammar is informally defined as follows:
+The grammar is defined as follows:
 
 ```
 expression       -> ( assignation | chain_expression )
@@ -35,7 +40,7 @@ unary            -> ("-")? primary
 
 primary          -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation | block | if_expression
 
-NUMBER          -> [0-9]* ("." [0-9]+)? ("i")?
+NUMBER          -> [0-9]* ("." [0-9]+)? ("e" [0-9]* ("." [0-9]+)?)? ("i")?
 
 functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" 
            | "(" expression ")" "(" ( expression ("," expression)* )? ")"
@@ -45,128 +50,183 @@ function         -> "|" ( ( IDENTIFIER ) ( "," IDENTIFIER )* )? "|" expression
 vector           -> "[" ( expression ("," expression)* )? "]"
 ```
 
-### Syntax Sugar: Arrow Operator for Chained Function Calls
+## Language Constructs
 
-Expressions using the arrow operator are transformed as follows: given an expression of the form  
-  A -> f(arg1, arg2, …)  
-it is rewritten to:  
-  f(A, arg1, arg2, …)
+### Block Expressions
+Block expressions group multiple expressions enclosed in curly braces `{ }`. They evaluate all contained expressions but return only the value of the last expression. Blocks create their own scope and can be used anywhere a primary expression is expected.
 
-For chained calls, such as:  
-  A -> f -> g(arg1)  
-the transformation produces:  
-  g(f(A), arg1)
-
-We choose the arrow operator over the dot notation for clarity.
-
-## Expression Semantics and Line Structure
-
-- Every line in the source (outside of a block) is treated as a standalone expression.
-- Block expressions, denoted by curly braces, consist of multiple expressions. All expressions are evaluated, but only the result of the last expression is produced as the block’s value.
-
-## Variable Scoping and Assignment
-
-- **Assignment:** Variables are assigned using `=`.
-- **Scope Behavior:**
-  - If an assignment targets a variable already declared in an outer scope, the inner assignment modifies the outer variable; shadowing does not occur. For example:
-  ```
-  a = 8
-  {
-    a = 9
-  }
-  a  // evaluates to 9 since the inner block alters the outer variable.
-  ```
-  - If a variable is not declared in any outer scope, an assignment within a block creates a new local variable:
-  ```
-  a = 8
-  {
-    b = 9
-  }
-  b  // error: variable 'b' does not exist in the outer scope.
-  ```
-  - The local keyword can be used to declare a variable as local:
-  ```
-  a = 8
-  {
-    local b = 9
-  }
-  b  // error: variable 'b' does not exist in the outer scope.
-  ```
-  - If a variable declared as local is already declared in an outer scope, the inner variable shadows the outer variable:
-  ```
-  a = 8
-  {
-    local a = 9
-  }
-  a  // evaluates to 8 since the inner block shadows the outer variable.
-  ```
-
-## Function Definition and Closure Behavior
-
-- **Function Definition:**  
-  Functions are first-class citizens and are defined inline as lambda expressions.  
-  For example, a lambda with parameters:
-  ```
-  myFunc = |x, y| x + y
-  ```
-  A lambda without parameters:
-  ```
-  inc = || a = a + 1
-  ```
-
-- **Closure Semantics:**  
-  Functions capture variable references, not static values. This means that changes to an external variable are observed in subsequent function calls:
-  ```
-  a = 1
-  inc = || a = a + 1
-  inc()  // updates a to 2
-  inc()  // updates a to 3
-  a      // now evaluates to 3
-  ```
-
-- **Closure Uniqueness:**
-  Since functions capture references to variables rather than copies, all functions referencing the same variable will observe the same changes:
-  ```
-  a = 1
-  inc = || a = a + 1
-  dec = || a = a - 1
+Example:
+```
+result = { 
   a = 5
-  inc()  // updates a to 6
-  dec()  // updates a to 5
-  a      // now evaluates to 5
-  ```
-  Function parameters are local by default, and they shadow outer variables:
-  ```
-  a = 1
-  inc = |a| a = a + 1
-  inc(5)  // updates a to 6
-  a       // now evaluates to 1
-  ```
+  b = 7
+  a * b  # This value (35) becomes the result of the block
+}
+```
 
-## Language Decisions
+Blocks can be used in place of grouped expressions:
+```
+{4 + 4} * 2  # Evaluates to 16
+```
 
-- Every source line outside of blocks is an expression.
-- Block expressions use newline separation without semicolons, and they evaluate to the result of their last expression.
-- Variable assignments in inner scopes modify outer variables if they exist; otherwise, they are local to the block. The specific local keyword can be used to declare a variable as local.
-- Functions capture and manipulate variable references rather than static values.
-  
-Additional Notes:
-- Syntactic Sugar for Chained Function Calls: The arrow operator (->) allows an expression on its left to be seamlessly passed as the first argument into a function call on its right. For example,  
-  ```
-  [1, 2, 3, 4] -> filter(|n| n % 2 == 0) -> map(|n| n^2) -> sum()
-  ```  
-  is equivalent to:  
-  ```
-  sum(map(filter([1, 2, 3, 4], |n| n % 2 == 0), |n| n^2))
-  ```
-- Lazy seq Data Type: A new lazy-evaluated sequence type is available via the constructor seq(size, generator), similar to vec. Operations such as map and filter now return a seq. To convert a seq to a vec, use the collect(seq) function.
+### If Expressions
+If expressions provide conditional logic and always evaluate to a value. They consist of:
+- An `if(condition)` followed by an expression to evaluate when the condition is true
+- Optional `elif(condition)` clauses with their corresponding expressions
+- An `else` clause with an expression that executes when all conditions are false
 
-## Note on Complex Numbers
+Example:
+```
+value = if(x > 0) 
+          x * 2
+        elif(x < 0) 
+          x * -1
+        else 0
+```
 
-Complex numbers are treated like other numbers but must end with "i". Note that due to operator precedence, expressions can behave differently than in pure math. For example:
-  
-  c1 = 4 + 3i  # parses as 4 plus 3i, which is correct  
-  c2 = 4+3i *2  # parses as 4 plus (3i * 2), yielding 4 + 6i  
-  c3 = (4 + 4i) * 2  # forces addition before multiplication, yielding 8 + 8i
+### Function Definition
+Functions are first-class values defined as lambda expressions. They capture their lexical environment as closures and can be assigned to variables or passed as arguments.
 
-This behavior occurs because the * operator has higher precedence than +.
+Functions with parameters:
+```
+square = |x| x * x
+add = |a, b| a + b
+```
+
+Functions without parameters:
+```
+getNextValue = || counter = counter + 1
+```
+
+### Chain Expressions (Arrow Operator)
+The arrow operator `->` provides syntactic sugar for function chaining. An expression of the form:
+```
+expr -> func(arg1, arg2)
+```
+is desugared to:
+```
+func(expr, arg1, arg2)
+```
+
+This enables readable pipelines:
+```
+[1, 2, 3, 4] -> filter(|n| n % 2 == 0) -> map(|n| n^2) -> sum()
+```
+
+## Evaluation and Scoping Rules
+
+### Evaluation Order
+- Expressions are evaluated strictly left-to-right
+- In function calls, the function expression is resolved first, then all arguments are evaluated in order, and finally the function is called
+
+### Scoping Rules
+- Only block expressions and functions create their own scopes
+- Variables in inner scopes can access and modify variables from outer scopes
+- The `local` keyword creates a new variable that shadows any existing variable with the same name
+- Function parameters are local by default and shadow outer variables with the same name
+
+## Lexical Structure
+
+### Tokens and Whitespace
+- Whitespace (spaces, tabs) has no semantic meaning except to separate tokens
+- Line breaks (`\n`) serve as expression separators outside of blocks
+- The backslash character (`\`) at the end of a line allows for multi-line expressions
+- Comments begin with `#` and continue to the end of the line
+
+### Identifiers
+Identifiers must start with a letter (uppercase or lowercase) or underscore, followed by any number of letters, digits, or underscores. They are case-sensitive.
+
+Valid identifiers: `x`, `_temp`, `myVariable`, `PI`
+
+### Multi-line Expressions
+Besides blocks, other constructs that can span multiple lines include:
+- Grouped expressions with parentheses: `(a + b + c)`
+- Vector expressions: `[1, 2, 3, 4]`
+- Function calls with multiple arguments
+
+## Data Types
+
+### Numbers
+- Integers: `42`, `-7`
+- Floating-point: `3.14`, `-0.5`
+- Complex numbers: `3i`, `4+2i`, `1.5i`
+
+### Complex Numbers
+Complex numbers are represented as regular numbers with an `i` suffix. Due to operator precedence, expressions with complex numbers might behave differently than in mathematical notation:
+
+```
+c1 = 4 + 3i  # parses as 4 plus 3i, which is correct  
+c2 = 4+3i *2  # parses as 4 plus (3i * 2), yielding 4 + 6i  
+c3 = (4 + 4i) * 2  # forces addition before multiplication, yielding 8 + 8i
+```
+
+### Collections
+BMath provides two collection types: vectors and sequences, each with different evaluation strategies and use cases.
+
+#### Vectors
+Vectors are eagerly evaluated collections where all elements are computed immediately. They're created using square brackets notation or the `vec` function:
+
+```
+# Direct vector creation with values
+myVector = [1, 2, 3, 4]
+
+# Create a vector of size 5 filled with the value 0
+zeros = vec(5, 0)  
+
+# Create a vector with a generator function
+squares = vec(10, |i| i^2)  # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+```
+
+Vectors support common operations like indexing, length calculation, and mathematical operations:
+
+```
+v = [1, 2, 3, 4]
+v[0]      # Access first element (returns 1)
+len(v)    # Get vector length (returns 4)
+v * 2     # Scalar multiplication [2, 4, 6, 8]
+```
+
+#### Sequences
+Sequences are lazily evaluated collections where elements are computed only when needed. BMath supports both finite and infinite sequences:
+
+##### Finite Sequences
+```
+# Create a sequence of 5 elements
+finiteSeq = sequence(5, |i| i * 3)  # Represents [0, 3, 6, 9, 12]
+
+# Create a sequence from a vector
+fromVector = sequence([1, 2, 3])
+```
+
+##### Infinite Sequences
+```
+# Infinite sequence of a constant value
+ones = sequence(1)  # Represents [1, 1, 1, ...]
+
+# Infinite sequence of generated values
+naturals = sequence(|i| i)  # Represents [0, 1, 2, ...]
+```
+
+Sequences support transformation operations that are also lazily evaluated:
+
+```
+# Create a sequence, filter it, map it, and then collect the results
+evenSquares = sequence(10, |i| i) -> filter(|n| n % 2 == 0) -> map(|n| n^2) -> collect()
+# Results in [0, 4, 16, 36, 64]
+```
+
+Sequences can be consumed using iteration functions:
+
+```
+seq = sequence(5, |i| i * 2)
+hasNext(seq)  # Check if more elements exist
+next(seq)     # Get the next element
+collect(seq)  # Convert entire sequence to a vector
+```
+
+For a complete reference of vector and sequence operations, see the [Standard Library Documentation](stdlib.md).
+
+### Booleans
+- `true` and `false` literals
+- Result of comparison operations: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- Combined with logical operators: `&` (and), `|` (or)

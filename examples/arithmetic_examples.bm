@@ -1,82 +1,89 @@
-# Arithmetic Examples in Math CLI Language
-# ==========================================
-# This file showcases basic arithmetic operations such as addition, subtraction,
-# multiplication, division, exponentiation, and modulus. Each operation is explained
-# with examples and expected results.
+# Arithmetic Examples in BMath Language
+# ====================================
+# This file showcases basic and advanced arithmetic operations.
 
-# [1] Addition
-additionExample = 5 + 3                     # Adding two numbers
-# Expected result: 8
+# [1] Basic Arithmetic Operations
+# ------------------------------
+# Addition
+addResult = 5 + 3                     # Expected: 8
 
-# [2] Subtraction
-subtractionExample = 10 - 4                  # Subtracting one number from another
-# Expected result: 6
+# Subtraction
+subResult = 10 - 4                     # Expected: 6
 
-# [3] Multiplication
-multiplicationExample = 7 * 6                 # Multiplying two numbers
-# Expected result: 42
+# Multiplication
+mulResult = 7 * 6                      # Expected: 42
 
-# [4] Division
-divisionExample = 20 / 5                      # Dividing one number by another
-# Expected result: 4.0
+# Division (always returns float)
+divResult = 20 / 5                     # Expected: 4.0
 
-# [5] Exponentiation
-exponentiationExample = 2 ^ 3                 # Raising a number to a power
-# Expected result: 8
+# Integer Division with floor
+intDivResult = floor(17 / 5)           # Expected: 3
 
-# [6] Modulus
-modulusExample = 29 % 5                       # Finding the remainder of a division
-# Expected result: 4
+# Exponentiation
+expResult = 2 ^ 3                      # Expected: 8
 
-# [7] Combined Operations
-combinedExample = (5 + 3) * (10 - 2) / 2     # Combining multiple operations
-# Expected result: 32.0
+# Modulus (remainder)
+modResult = 17 % 5                     # Expected: 2
 
-# [8] Edge Cases
-# Division by zero should raise an exception.
-# Uncommenting the following line will cause an error.
-# divisionByZeroExample = 10 / 0              # This will raise an exception
+# [2] Order of Operations
+# ----------------------
+orderedResult = 2 + 3 * 4              # Expected: 14 (multiplication before addition)
+groupedResult = (2 + 3) * 4            # Expected: 20 (parentheses force order)
 
-# [9] Using Variables in Arithmetic
+# [3] Complex Expressions
+# ----------------------
+complexCalc = (5 + 3) * (10 - 2) / 2   # Expected: 32.0
+nestedCalc = ((4 + 6) / 2) ^ 2         # Expected: 25.0
+
+# [4] Mathematical Functions
+# -------------------------
+squareRoot = sqrt(16)                  # Expected: 4.0
+cubeRoot = pow(27, 1/3)                # Expected: 3.0
+absValue = abs(-42)                    # Expected: 42
+
+# Rounding functions
+roundUp = ceil(3.2)                    # Expected: 4
+roundDown = floor(3.8)                 # Expected: 3
+roundedValue = round(3.5)              # Expected: 4
+
+# [5] Working with Variables
+# -------------------------
 a = 15
 b = 4
-variableExample = a - b                       # Using variables in arithmetic
-# Expected result: 11
+varSum = a + b                         # Expected: 19
+varDiff = a - b                        # Expected: 11
+varProd = a * b                        # Expected: 60
+varDiv = a / b                         # Expected: 3.75
 
-# [10] Chained Assignments
-chainAssignedA = chainAssignedB = 5           # Chain assignment
-additionChain = chainAssignedA + chainAssignedB  # Adding two chained variables
-# Expected result: 10
+# [6] Scientific Notation
+# ---------------------
+largeNum = 1e5                         # Expected: 100000.0
+smallNum = 1.5e-4                      # Expected: 0.00015
+combinedSci = largeNum + smallNum      # Expected: 100000.00015
 
-# [11] Arithmetic with Scientific Notation
-sciNotationExample = 1e3 + 2e2                # Adding numbers in scientific notation
-# Expected result: 1200.0
+# [7] Complex Number Arithmetic
+# ---------------------------
+# Basic complex number literals
+complex1 = 3 + 4i                      # Complex number (3+4i)
+complex2 = 1 - 2i                      # Complex number (1-2i)
 
-# [12] Complex Arithmetic Expression
-complexExpression = (3 + 2) * (4 - 1) ^ 2    # A more complex arithmetic expression
-# Expected result: 45.0
+# Complex number operations
+complexAdd = complex1 + complex2       # Expected: 4+2i
+complexSub = complex1 - complex2       # Expected: 2+6i
+complexMul = complex1 * complex2       # Expected: 11-2i
+complexDiv = complex1 / complex2       # Expected: -0.2+2.4i
 
-# [13] Using core Functions
-# Example of using the pow function for exponentiation
-powExample = pow(3, 4)                       # 3 raised to the power of 4
-# Expected result: 81
+# Complex number functions
+complexSqrt = sqrt(-9)                 # Expected: 3i
+complexAbs = abs(complex1)             # Expected: 5.0 (magnitude: √(3²+4²))
 
-# Example of using the sqrt function
-sqrtExample = sqrt(16)                       # Square root of 16
-# Expected result: 4.0
+# [8] Error Handling Examples
+# -------------------------
+# Division by zero is an error (commented to prevent execution)
+# errorDiv = 10 / 0                    # Will raise a division by zero error
 
-# Example of using the round function
-roundExample = round(3.6)                     # Rounding a number
-# Expected result: 4
-
-# Example of using the floor function
-floorExample = floor(3.9)                     # Floor of a number
-# Expected result: 3
-
-# Example of using the ceil function
-ceilExample = ceil(3.1)                       # Ceiling of a number
-# Expected result: 4
-
-# [14] Complex Arithmetic Operations
-complexAddExample = (3+4i) + (1-2i)      # Expected: 4+2i
-complexMulExample = (3+4i) * (1-2i)      # Expected: 11-2i
+# [9] Mixed Type Arithmetic (Type Promotion)
+# ----------------------------------------
+intPlusFlt = 5 + 2.5                   # Expected: 7.5 (int promoted to float)
+fltTimesInt = 2.5 * 4                  # Expected: 10.0
+mixedComplex = 3 + (2 + 3i)            # Expected: 5+3i (int promoted to complex)

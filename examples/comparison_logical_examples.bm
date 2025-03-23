@@ -1,0 +1,84 @@
+# Comparison and Logical Operators Examples
+# ========================================
+# This file demonstrates comparison operators and logical operations.
+
+# [1] Equality Operators
+# --------------------
+equalTest = 5 == 5                    # Expected: true
+notEqualTest = 5 != 6                 # Expected: true
+typePromotionEq = 5 == 5.0            # Expected: true (int/float comparison)
+
+# [2] Ordering Operators
+# --------------------
+lessThan = 3 < 5                      # Expected: true
+greaterThan = 10 > 2                  # Expected: true
+lessOrEqual1 = 5 <= 5                 # Expected: true
+lessOrEqual2 = 3 <= 5                 # Expected: true
+greaterOrEqual1 = 5 >= 5              # Expected: true
+greaterOrEqual2 = 10 >= 7             # Expected: true
+
+# [3] Logical Operators
+# -------------------
+andOperator = true & true             # Expected: true
+andFalse = true & false               # Expected: false
+orOperator = false | true             # Expected: true
+orFalse = false | false               # Expected: false
+notOperator = !false                  # Expected: true
+notTrue = !true                       # Expected: false
+
+# [4] Combined Logical Expressions
+# ------------------------------
+combined1 = (5 > 3) & (10 != 5)       # Expected: true
+combined2 = (5 > 3) | (10 == 5)       # Expected: true
+combined3 = (5 < 3) | (10 == 5)       # Expected: false
+
+# [5] Complex Logical Chains
+# ------------------------
+complexChain = (5 > 3) & ((10 > 5) | (2 == 3))  # Expected: true
+nestedLogic = !((5 < 3) | !(7 > 4))             # Expected: true
+
+# [6] Using Comparisons with Variables
+# ----------------------------------
+x = 10
+y = 20
+z = 10
+xEqualsY = x == y                     # Expected: false
+xEqualsZ = x == z                     # Expected: true
+xLessY = x < y                        # Expected: true
+
+# [7] Comparisons in Conditionals
+# -----------------------------
+conditionalValue = if(x < y) 0 else 1  # Expected: 0
+
+# [8] Vector Comparison
+# ------------------
+v1 = [1, 2, 3]
+v2 = [1, 2, 3]
+v3 = [4, 5, 6]
+vectorsEqual = v1 == v2               # Expected: true
+vectorsDifferent = v1 != v3           # Expected: true
+
+# [9] Boolean Vectors and Logical Operations
+# ---------------------------------------
+boolVec1 = [true, false, true]
+boolVec2 = [true, true, true]
+
+# Using "all" to check if all elements are true
+allTrue1 = all(boolVec1)              # Expected: false
+allTrue2 = all(boolVec2)              # Expected: true
+
+# Using "any" to check if any element is true
+anyTrue1 = any(boolVec1)              # Expected: true
+anyTrue2 = any([false, false, false]) # Expected: false
+
+# [10] Type Limitations
+# ------------------
+# Note: Complex numbers cannot be compared with < > <= >=
+# The following would cause errors (commented out):
+# complexComp = (3+4i) > (1+2i)       # Error: Complex numbers cannot be compared
+
+# [11] Edge Cases
+# ------------
+edgeCase1 = (0 == -0)                 # Expected: true
+edgeCase2 = (1e-10 == 0)              # Expected: false
+edgeCase3 = (1e-10 > 0)               # Expected: true

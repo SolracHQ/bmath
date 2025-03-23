@@ -1,5 +1,5 @@
-import unittest, math, strutils
-import ../src/pipeline/lexer
+import unittest, math
+import ../src/pipeline/lexer/lexer
 import ../src/pipeline/parser/parser
 import ../src/pipeline/parser/optimizer
 import ../src/types/expression
@@ -51,15 +51,6 @@ suite "Optimizer Tests":
     let optimized = optimize(opt, ast)
     check optimized.kind == ekNumber
     check optimized.nValue.iValue == 100
-
-  test "Division by Zero Generates Error Expression":
-    var l = newLexer("10 / 0")
-    let tokens = tokenizeExpression(l)
-    var ast = parse(tokens)
-    var opt = newOptimizer()
-    let optimized = optimize(opt, ast)
-    check optimized.kind == ekError
-    check optimized.message.contains("Division by zero")
 
   test "Boolean Operation Folding":
     var l = newLexer("true & false")

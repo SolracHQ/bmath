@@ -1,7 +1,7 @@
 import std/[tables, sets, sequtils, math]
-import fusion/matching
 import ../../types/[expression, number]
 from ../interpreter/environment import CORE_NAMES
+import ../../logging
 
 type
   AbortOptimization = object of ValueError
@@ -159,11 +159,7 @@ proc optimizeAssign(optimizer: var Optimizer, node: Expression): Expression {.in
   let name = node.ident
   let value = optimize(optimizer, node.expr)
   let vValue = exprToVirtualValue(value, optimizer)
-  let local =
-    try:
-      setValue(optimizer.env, name, node.isLocal, vValue)
-    except AbortOptimization as e:
-      return newErrorExpr(node.position, e.msg)
+  let local = setValue(optimizer.env, name, node.isLocal, vValue)
   return newAssignExpr(node.position, name, value, local)
 
 proc optimizeIdent(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
@@ -180,9 +176,6 @@ proc optimizeBlock(optimizer: var Optimizer, node: Expression): Expression {.inl
   for expr in node.expressions:
     let optimized = optimize(optimizer, expr)
     case optimized.kind
-    of ekError:
-      optimizer.env = oldEnv
-      return optimized
     of ekNumber, ekTrue, ekFalse:
       discard
     of ekAssign:
@@ -207,11 +200,7 @@ template optimizeBinary(
   ## Optimize binary operations that are not division
   proc innerProc(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
     let left = optimize(optimizer, node.left)
-    if left.kind == ekError:
-      return left
     let right = optimize(optimizer, node.right)
-    if right.kind == ekError:
-      return right
 
     when kd in {ekAdd, ekSub, ekMul, ekPow, ekGt, ekLt, ekGe, ekLe}:
       if not (left.kind == ekNumber):
@@ -223,10 +212,10 @@ template optimizeBinary(
       # check right is not zero
       const zero = newNumber(0)
       if right.kind == ekNumber and right.nValue == zero:
-        return newErrorExpr(node.position, "Division by zero")
+        raise
+          newException(AbortOptimization, "Division by zero in expression: " & $node)
 
-    case (left.kind, right.kind)
-    of (ekNumber, ekNumber):
+    if left.kind == ekNumber and right.kind == ekNumber:
       return newLiteralExpr(node.position, `op`(left.nValue, right.nValue))
     else:
       return newBinaryExpr(node.position, kd, left, right)
@@ -238,8 +227,6 @@ proc optimizeBooleanBinary(
 ): Expression =
   ## Optimize boolean binary operations
   let left = optimize(optimizer, node.left)
-  if left.kind == ekError:
-    return left
 
   if left.kind == ekFalse and kd == ekAnd:
     return left
@@ -247,8 +234,6 @@ proc optimizeBooleanBinary(
     return left
 
   let right = optimize(optimizer, node.right)
-  if right.kind == ekError:
-    return right
 
   if right.kind == ekFalse and kd == ekAnd:
     return right
@@ -266,8 +251,6 @@ proc optimizeFunction(
     for param in node.params:
       discard optimizer.env.setValue(param, true, unoptimized())
     let body = optimize(optimizer, node.body)
-    if body.kind == ekError:
-      return body
     return newFuncExpr(node.position, node.params, body)
   finally:
     optimizer.env = oldEnv
@@ -282,8 +265,6 @@ proc optimizeFuncInvoke(
   var allOptimized = true
   for i in 0 ..< node.arguments.len:
     let arg = optimize(optimizer, node.arguments[i])
-    if arg.kind == ekError:
-      return arg
     if not isOptimized(arg):
       allOptimized = false
     result.arguments.add(arg)
@@ -297,7 +278,7 @@ proc optimizeFuncInvoke(
         of ekFunc:
           exprToVirtualValue(node.fun, optimizer)
         else:
-          return newErrorExpr(node.position, "Value is not a function")
+          raise newException(AbortOptimization, "Invalid function call")
       if funValue.kind == vvkFunction:
         optimizer.env = newVirtualEnv(funValue.env)
         for i, arg in node.arguments:
@@ -305,8 +286,6 @@ proc optimizeFuncInvoke(
             funValue.params[i], true, exprToVirtualValue(arg, optimizer)
           )
         let body = optimize(optimizer, funValue.body)
-        if body.kind == ekError:
-          return body
         if isOptimized(body):
           return body
         return
@@ -316,8 +295,6 @@ proc optimizeFuncInvoke(
 proc optimizeNegate(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
   ## Optimize negation operations
   result = optimize(optimizer, node.operand)
-  if result.kind == ekError:
-    return
   case result.kind
   of ekNumber:
     result.nValue = -result.nValue
@@ -326,9 +303,7 @@ proc optimizeNegate(optimizer: var Optimizer, node: Expression): Expression {.in
 
 proc optimizeNot(optimizer: var Optimizer, node: Expression): Expression {.inline.} =
   ## Optimize negation operations
-  let value = optimize(optimizer, node.expr)
-  if value.kind == ekError:
-    return value
+  let value = optimize(optimizer, node.operand)
   case value.kind
   of ekTrue:
     return newLiteralExpr(node.position, false)
@@ -344,8 +319,6 @@ proc optimizeIf(optimizer: var Optimizer, node: Expression): Expression {.inline
   var allOptimized = true
   for branch in node.branches:
     let condition = optimize(optimizer, branch.condition)
-    if condition.kind == ekError:
-      return condition
     if condition.kind == ekTrue and allOptimized:
       return optimize(optimizer, branch.then)
     if condition.kind == ekFalse:
@@ -409,11 +382,10 @@ proc optimizeExpression(optimizer: var Optimizer, node: Expression): Expression 
     return optimizeNot(optimizer, node)
   of ekIf:
     return optimizeIf(optimizer, node)
-  else:
-    return node
 
 proc optimize*(optimizer: var Optimizer, node: Expression): Expression =
   try:
     optimizeExpression(optimizer, node)
   except AbortOptimization as e:
-    newErrorExpr(node.position, e.msg)
+    debug("Optimization aborted: ", e.msg)
+    return node

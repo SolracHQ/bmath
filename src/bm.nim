@@ -11,6 +11,7 @@
 ## 4. Output result
 import std/terminal
 import cli, engine, types/[errors, value]
+import pipeline/lexer/errors
 
 proc handleHelp() =
   echo HELP

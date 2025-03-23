@@ -1,40 +1,70 @@
+## environment.nim - Environment Management Module
+##
+## Provides the hierarchical variable scope and function binding system:
+## - Lookup of variables and functions in nested lexical scopes
+## - Registration and validation of native Nim functions
+## - Core built-in mathematical and utility functions
+## - Environment creation and manipulation
+##
+## The environment system implements lexical scoping with parent-child
+## relationships between environments, allowing for variable shadowing
+## and proper closure behavior.
+
 import std/[sets, tables, macros]
-import corelib
-import ../../types/[value, errors, expression]
+import stdlib/[arithmetic, trigonometry, vector, sequence, itertools]
+import ../../types/[value, expression]
+import errors
+
+from math import E, PI
 
 const CORE_NAMES* = toHashSet(
   [
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
-    "last", "sin", "cos", "tan", "log", "exp", "len", "map", "filter", "reduce", "sum",
-    "any", "all", "collect", "seq", "skip", "hasNext", "next",
+    "last", "sin", "cos", "tan", "cot", "sec", "csc", "log", "exp", "len", "map",
+    "filter", "reduce", "sum", "any", "all", "collect", "seq", "skip", "hasNext",
+    "next", "e", "pi", "abs", "merge", "slice", "take", "zip",
   ]
 )
 
 macro native(call: untyped): Value =
   ## Creates a NativeFunc from function call syntax.
   ## 
+  ## This macro simplifies wrapping Nim functions as native functions
+  ## in the interpreter, automatically validating argument counts and
+  ## generating appropriate error messages.
+  ## 
   ## Usage:
-  ##   native(pow(a, b))  # Creates NativeFunc with argc=2
-  let funcSym = call[0]
+  ##   native(pow(a, b))  # Creates a NativeFunc that expects exactly 2 arguments
+  ##   native(sqrt(x))    # Creates a NativeFunc that expects exactly 1 argument
+  ##
+  ## Params:
+  ##   call: untyped - A function call expression to wrap as a native function
+  ##
+  ## Returns:
+  ##   Value - A vkNativeFunc value that performs argument validation before
+  ##           calling the wrapped function
+  let funcSym: NimNode = call[0]
+  let funcName = $funcSym
   let callArgs = call.len - 1
   let param = ident("args")
-  let evaluator = ident("evaluator")
   # Generate argument unpacking
   var funcCall = newCall(funcSym)
   for i in 0 ..< callArgs:
     funcCall.add:
       quote:
-        `evaluator`(`param`[`i`])
+        `param`[`i`]
 
   # Construct NativeFunc using quote for clarity
   result = quote:
     Value(
       kind: vkNativeFunc,
-      nativeFunc: NativeFunc(
-        argc: `callArgs`,
-        fun: proc(`param`: openArray[Expression], `evaluator`: Evaluator): Value =
-          `funcCall`,
-      ),
+      nativeFn: proc(`param`: openArray[Value], _: FnInvoker): Value =
+        if `callArgs` != `param`.len:
+          raise newInvalidArgumentError(
+            "Invalid number of arguments for function `" & `funcName` & "`" &
+              " expected " & $`callArgs` & " got " & $`param`.len
+          )
+        `funcCall`,
     )
 
 # global environment contains all the built-in functions
@@ -47,20 +77,24 @@ let global = Environment(
       "sqrt": native(sqrt(number)),
       "floor": native(floor(number)),
       "ceil": native(ceil(number)),
+      "abs": native(abs(number)),
       "round": native(round(number)),
       "dot": native(dotProduct(vector, vector)),
       "nth": native(nth(vector, number)),
       "first": native(first(vector)),
       "last": native(last(vector)),
-      "vec": newValue(NativeFunc(argc: 2, fun: createVector)),
-      "seq": newValue(NativeFunc(argc: 2, fun: createSeq)),
-      "map": newValue(NativeFunc(argc: 2, fun: map)),
-      "filter": newValue(NativeFunc(argc: 2, fun: filter)),
-      "reduce": newValue(NativeFunc(argc: 3, fun: reduce)),
+      "vec": Value(kind: vkNativeFunc, nativeFn: vec),
+      "seq": Value(kind: vkNativeFunc, nativeFn: sequence),
+      "map": Value(kind: vkNativeFunc, nativeFn: itertools.map),
+      "filter": Value(kind: vkNativeFunc, nativeFn: itertools.filter),
+      "reduce": Value(kind: vkNativeFunc, nativeFn: itertools.reduce),
       "collect": native(collect(sequence)),
       "sin": native(sin(number)),
       "cos": native(cos(number)),
       "tan": native(tan(number)),
+      "cot": native(cot(number)),
+      "sec": native(sec(number)),
+      "csc": native(csc(number)),
       "log": native(log(number, base)),
       "exp": native(exp(number)),
       "len": native(len(vector)),
@@ -70,29 +104,78 @@ let global = Environment(
       "skip": native(skip(sequence, number)),
       "hasNext": native(hasNext(sequence)),
       "next": native(next(sequence)),
+      "e": newValue(E),
+      "pi": newValue(PI),
+      "merge": native(merge(vector, vector)),
+      "slice": Value(kind: vkNativeFunc, nativeFn: slice),
+      "take": native(take(sequence, number)),
+      "zip": native(zip(sequence, sequence)),
     }
   ),
 )
 
 proc newEnv*(parent: Environment = nil): Environment =
-  if parent == nil:
-    return global
+  ## Creates a new environment with an optional parent.
+  ##
+  ## If no parent is provided, creates an environment with the global environment
+  ## as its parent. The global environment contains all built-in functions and constants.
+  ## Using parent environments establishes proper lexical scoping for variable lookup.
+  ##
+  ## Params:
+  ##   parent: Environment - (optional) The parent environment for lexical scoping (default is nil)
+  ##
+  ## Returns:
+  ##   Environment - A new environment instance with the appropriate parent chain
   new(result)
-  result.parent = parent
+  if parent == nil:
+    result.parent = global
+  else:
+    result.parent = parent
 
 proc `[]`*(env: Environment, name: string): Value =
+  ## Retrieves a value by name from the environment.
+  ##
+  ## Searches the current environment and traverses up the parent chain
+  ## for a variable with the given name, implementing lexical scoping rules.
+  ##
+  ## Params:
+  ##   env: Environment - The environment to start the search in
+  ##   name: string - The name of the variable to retrieve
+  ##
+  ## Returns:
+  ##   Value - The value associated with the given name
+  ##
+  ## Raises:
+  ##   UndefinedVariableError - If the variable doesn't exist in any accessible scope
   var currentEnv = env
   while currentEnv != nil:
     if name in currentEnv.values:
       return currentEnv.values[name]
     currentEnv = currentEnv.parent
-  raise newException(BMathError, "Variable '" & name & "' is not defined")
+  raise newUndefinedVariableError(name)
 
 proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
+  ## Sets or creates a variable in the environment.
+  ##
+  ## By default, attempts to update an existing variable in the current
+  ## or parent environments (lexical scoping). If local=true, always creates or
+  ## updates the variable in the current environment regardless of parent scopes.
+  ##
+  ## Params:
+  ##   env: Environment - The environment to modify
+  ##   name: string - The name of the variable to set
+  ##   local: bool - (optional) If true, forces creation in the current environment only (default is false)
+  ##   value: Value - The value to assign to the variable
+  ##
+  ## Raises:
+  ##   ValueError - If trying to write to a nil environment (programming error)
+  ##   ReservedNameError - If trying to modify a built-in/reserved name in CORE_NAMES
   if env == nil:
+    # If this is reached, it means there's a bug in the interpreter
+    # because the environment should never be nil.
     raise newException(ValueError, "Trying to write on a nil environment")
   if name in CORE_NAMES:
-    raise newException(BMathError, "Cannot overwrite the reserved name '" & name & "'")
+    raise newReservedNameError(name)
   if local:
     env.values[name] = value
     return
@@ -103,11 +186,3 @@ proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
       return
     current = current.parent
   env.values[name] = value
-
-proc hasKey*(env: Environment, name: string): bool =
-  if env == nil:
-    return false
-  elif name in env.values:
-    return true
-  else:
-    return env.parent.hasKey(name)

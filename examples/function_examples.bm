@@ -1,51 +1,103 @@
-# Function Examples in Math CLI Language
-# =======================================
-# This file demonstrates functions in the math CLI language.
-# It covers basic function definitions, higher-order functions, recursion,
-# first-class functions, inline lambdas and composition.
+# Function Examples in BMath Language
+# =================================
+# This file demonstrates function definition and usage.
 
-# [1] Basic Function Definition and Invocation
-# ----------------------------------------------
-# Define a function that adds two numbers.
-addFunction = |x, y| x + y
-resultAdd = addFunction(5, 3)  # Expected output: 8
+# [1] Basic Function Definition
+# ---------------------------
+# Define a function that adds two numbers
+add = |a, b| a + b
 
-# [2] Higher-Order Functions
-# --------------------------
-# Define a higher-order function that applies a given function to a number.
-applyFunction = |fn, num| fn(num)
-squareFunction = |x| x ^ 2
-resultSquare = applyFunction(squareFunction, 5)  # Expected output: 25
+# Function invocation
+result1 = add(5, 3)                 # Expected: 8
 
-# [3] Function Returning Another Function
-# -----------------------------------------
-# Define a function that returns an adder function, which adds a specific increment.
-makeAdder = |increment| |x| x + increment
-addFive = makeAdder(5)
-resultAddFive = addFive(10)  # Expected output: 15
+# Function without parameters
+getPI = || 3.14159
+piValue = getPI()                   # Expected: 3.14159
 
-# [4] Recursive Function Example
-# -------------------------------
-# Calculate the factorial of a number using recursion.
-factorialFunction = |n| if (n == 0) 1 else n * factorialFunction(n - 1)
-factorialOfFive = factorialFunction(5)  # Expected output: 120
+# [2] Lambda Functions
+# ------------------
+# Inline lambda (anonymous function)
+square = |x| x * x
+cube = |x| x ^ 3
 
-# [5] Using Functions as First-Class Citizens
-# -------------------------------------------
-# Define a function that applies another function to each element of a list.
-applyToList = |fn, list| vec(len(list), |i| fn(nth(list, i)))
-numbers = [1, 2, 3, 4]
-squaredNumbers = applyToList(squareFunction, numbers)  # Expected output: [1, 4, 9, 16]
+# Using inline lambdas in expressions
+inlineResult = (|x| x * 2)(5)       # Expected: 10
 
-# [6] Inline Lambda Invocation
-# ----------------------------
-# Use an inline lambda to compute the cube of a number.
-cubeResult = (|x| x ^ 3)(3)  # Expected output: 27
-
-# [7] Function Composition
+# [3] Higher-Order Functions
 # ------------------------
-# Compose two functions: one doubles a number, then adds three.
-doubleFunction = |x| x * 2
-addThreeFunction = |x| x + 3
-composeFunctions = |x| addThreeFunction(doubleFunction(x))
-resultCompose = composeFunctions(4)  # Expected output: 11
+# Function that takes a function as parameter
+applyTwice = |f, x| f(f(x))
+doubleSquared = applyTwice(|x| x * 2, 3)  # Expected: 12
+
+# Function that returns a function
+makeMultiplier = |factor| |x| x * factor
+doubler = makeMultiplier(2)
+tripler = makeMultiplier(3)
+doubled = doubler(7)                # Expected: 14
+tripled = tripler(7)                # Expected: 21
+
+# [4] Closures
+# ----------
+# Functions capture their environment
+makeCounter = || {
+  count = 0
+  |increment| {
+    count = count + increment
+    count
+  }
+}
+
+counter1 = makeCounter()
+counter2 = makeCounter()
+count1 = counter1(1)                # Expected: 1
+count1 = counter1(2)                # Expected: 3
+count2 = counter2(5)                # Expected: 5 (separate environment)
+
+# [5] Function Composition
+# ----------------------
+# Compose two functions
+doubleIt = |x| x * 2
+addFive = |x| x + 5
+doubleThenAdd = |x| addFive(doubleIt(x))
+result2 = doubleThenAdd(7)          # Expected: 19 (7*2 + 5)
+
+# [6] Recursive Functions
+# ---------------------
+# Factorial function using recursion
+factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
+fact5 = factorial(5)                # Expected: 120
+
+# Fibonacci function using recursion
+fibonacci = |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
+fib6 = fibonacci(6)                 # Expected: 8
+
+# [7] Functions with Block Bodies
+# -----------------------------
+# Function with multi-line block body
+calculateStats = |numbers| {
+  _sum = reduce(numbers, 0, |acc, n| acc + n)
+  mean = _sum / len(numbers)
+  
+  # Return multiple values as a vector
+  [_sum, mean]
+}
+
+stats = calculateStats([1, 2, 3, 4, 5])  # Expected: [15, 3.0]
+
+# [8] Partial Application
+# --------------------
+# Simulate partial application of arguments
+partial = |f, x| |y| f(x, y)
+addToFive = partial(add, 5)
+result3 = addToFive(10)             # Expected: 15
+
+# [9] Function Chaining with Arrow Operator
+# ---------------------------------------
+doubleAndSquare = |x| x -> doubleIt -> square
+result4 = doubleAndSquare(3)        # Expected: 36 ((3*2)²)
+
+# [10] Function with Variable Number of Terms
+# ----------------------------------------
+# Simulate handling multiple terms using a vector argument
+sumAll = |numbers| reduce(numbers, 0, |_sum, n| _sum + n)
+result5 = sum([1, 2, 3, 4, 5])   # Expected: 15
