@@ -12,20 +12,14 @@ type
 
   InvalidExpressionError* = object of ParserError ## Raised when an expression is invalid
 
-# Create a new UnexpectedTokenError with given position and message
-template newUnexpectedTokenError*(
-    message: string, pos: Position = Position()
-): ref UnexpectedTokenError =
-  (ref UnexpectedTokenError)(position: pos, msg: message)
+# Create a new UnexpectedTokenError with given message and position in stack
+template newUnexpectedTokenError*(message: string, pos: Position): ref UnexpectedTokenError =
+  (ref UnexpectedTokenError)(msg: message, stack: @[pos])
 
-# Create a new MissingTokenError with given position and message
-template newMissingTokenError*(
-    message: string, pos: Position = Position()
-): ref MissingTokenError =
-  (ref MissingTokenError)(position: pos, msg: message)
+# Create a new MissingTokenError with given message and position in stack
+template newMissingTokenError*(message: string, pos: Position): ref MissingTokenError =
+  (ref MissingTokenError)(msg: message, stack: @[pos])
 
-# Create a new InvalidExpressionError with given position and message
-template newInvalidExpressionError*(
-    message: string, pos: Position = Position()
-): ref InvalidExpressionError =
-  (ref InvalidExpressionError)(position: pos, msg: message)
+# Create a new InvalidExpressionError with given message and position in stack
+template newInvalidExpressionError*(message: string, pos: Position): ref InvalidExpressionError =
+  (ref InvalidExpressionError)(msg: message, stack: @[pos])

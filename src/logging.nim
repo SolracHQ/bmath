@@ -1,16 +1,18 @@
 ## logging.nim
 
-import std/[times, strformat]
-import types/[errors]
+import std/strformat
+import types/errors
 import pipeline/lexer/errors
 
 proc logError*(error: ref BMathError, context: string) =
   ## Central error logging with context
-  let timeStamp = now().format("HH:mm:ss'.'fff")
   const RED = "\x1b[31m"
   const RESET = "\x1b[0m"
-  stderr.writeLine fmt"{timeStamp} [{context} {RED}ERROR{RESET}] {error.position}: {error.msg}"
-  #when defined(debug): stderr.writeLine error.getStackTrace
+  stderr.writeLine fmt"[{RED}{error.name}{RESET}] {error.msg}"
+  stderr.writeLine fmt"{RED}Stack Trace{RESET}:"
+  while error.stack.len > 0:
+    let pos = error.stack.pop()
+    stderr.writeLine fmt"  - {pos.line}:{pos.column}"
 
 when defined(debug):
   import std/strutils
@@ -19,8 +21,7 @@ when defined(debug):
     const CYAN = "\x1b[36m"
     const RESET = "\x1b[0m"
     for line in msg.splitLines():
-      let timeStamp = now().format("HH:mm:ss'.'fff")
-      stderr.writeLine fmt"{timeStamp} [{CYAN}DEBUG{RESET}] {line}"
+      stderr.writeLine fmt"[{CYAN}DEBUG{RESET}] {line}"
 
   template debug*(args: varargs[string, `$`]) =
     ## Debug logging with multiple arguments

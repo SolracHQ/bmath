@@ -12,20 +12,14 @@ type
 
   InvalidNumberFormatError* = object of LexerError ## Raised when a number is malformed
 
-# Create a new IncompleteInputError with given position and message
-template newIncompleteInputError*(
-    message: string, pos: Position = Position()
-): ref IncompleteInputError =
-  (ref IncompleteInputError)(position: pos, msg: message)
+# Create a new IncompleteInputError with given message and position in stack
+template newIncompleteInputError*(message: string, pos: Position): ref IncompleteInputError =
+  (ref IncompleteInputError)(msg: message, stack: @[pos])
 
-# Create a new UnexpectedCharacterError with given position and message
-template newUnexpectedCharacterError*(
-    message: string, pos: Position = Position()
-): ref UnexpectedCharacterError =
-  (ref UnexpectedCharacterError)(position: pos, msg: message)
+# Create a new UnexpectedCharacterError with given message and position in stack
+template newUnexpectedCharacterError*(message: string, pos: Position): ref UnexpectedCharacterError =
+  (ref UnexpectedCharacterError)(msg: message, stack: @[pos])
 
-# Create a new InvalidNumberFormatError with given position and message
-template newInvalidNumberFormatError*(
-    message: string, pos: Position = Position()
-): ref InvalidNumberFormatError =
-  (ref InvalidNumberFormatError)(position: pos, msg: message)
+# Create a new InvalidNumberFormatError with given message and position in stack
+template newInvalidNumberFormatError*(message: string, pos: Position): ref InvalidNumberFormatError =
+  (ref InvalidNumberFormatError)(msg: message, stack: @[pos])

@@ -13,7 +13,7 @@
 ## environment that tracks variable bindings and their values.
 
 import std/[sequtils]
-import ../../types/[value, expression, position]
+import ../../types/[value, expression]
 import ../../types/errors
 import ./errors
 import environment
@@ -60,8 +60,7 @@ proc evalFunctionCall(
     funValue: Value,
     args: openArray[Value],
     env: Environment,
-    pos: Position,
-): Value =
+): Value {.inline.} =
   ## Dispatches a function value (native or user-defined) with the given arguments.
   ##
   ## Parameters:
@@ -69,7 +68,6 @@ proc evalFunctionCall(
   ##   funValue: Value - The function value to be applied.
   ##   args: openArray[Value] - The arguments to pass to the function.
   ##   env: Environment - The current execution environment.
-  ##   pos: Position - The position in the source code for error reporting.
   ##
   ## Returns:
   ##   Value - The result of the function application.
@@ -80,24 +78,24 @@ proc evalFunctionCall(
   if funValue.kind == vkNativeFunc:
     let native = funValue.nativeFn
     let invoker = proc(function: Value, args: openArray[Value]): Value =
-      interpreter.evalFunctionCall(function, args, env, pos)
+      interpreter.evalFunctionCall(function, args, env)
     return native(args, invoker)
   elif funValue.kind == vkFunction:
     let fun = funValue.function
     if args.len != fun.params.len:
       raise newInvalidArgumentError(
-        "Function expects " & $(fun.params.len) & " arguments, got " & $(args.len), pos
+        "Function expects " & $(fun.params.len) & " arguments, got " & $(args.len)
       )
     let funcEnv = newEnv(parent = fun.env)
     for i, param in fun.params.pairs:
       funcEnv[param, true] = args[i]
     return interpreter.evalValue(fun.body, funcEnv)
   else:
-    raise newTypeError("Provided value is not callable", pos)
+    raise newTypeError("Provided value is not callable")
 
 proc evalFunInvoke(
     interpreter: Interpreter, node: Expression, env: Environment
-): Value =
+): Value {.inline.} =
   ## Evaluates a function invocation when the callee has already been computed.
   ##
   ## Parameters:
@@ -110,18 +108,21 @@ proc evalFunInvoke(
   ##
   ## Raises:
   ##   TypeError - If the callee is not a function.
-  let callee = interpreter.evalValue(node.fun, env)
-  if callee.kind != vkFunction and callee.kind != vkNativeFunc:
-    raise newTypeError("Value is not a function", node.position)
-  return evalFunctionCall(
-    interpreter,
-    callee,
-    node.arguments.mapIt(interpreter.evalValue(it, env)),
-    env,
-    node.position,
-  )
+  try:
+    let callee = interpreter.evalValue(node.fun, env)
+    if callee.kind != vkFunction and callee.kind != vkNativeFunc:
+      raise newTypeError("Value is not a function")
+    return evalFunctionCall(
+      interpreter,
+      callee,
+      node.arguments.mapIt(interpreter.evalValue(it, env)),
+      env,
+    )
+  except BMathError as e:
+    e.stack.add(node.position)
+    raise e
 
-proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value =
+proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Value {.inline.} =
   ## Evaluates a block of expressions and returns the last computed value.
   ##
   ## Parameters:
@@ -131,13 +132,16 @@ proc evalBlock(interpreter: Interpreter, node: Expression, env: Environment): Va
   ##
   ## Returns:
   ##   Value - The last computed value in the block.
-  var blockEnv = newEnv(parent = env)
-  var lastVal: Value
-  for expr in node.expressions:
-    lastVal = interpreter.evalValue(expr, blockEnv)
-  return lastVal
+  try:
+    var blockEnv = newEnv(parent = env)
+    var lastVal: Value
+    for expr in node.expressions:
+      lastVal = interpreter.evalValue(expr, blockEnv)
+    return lastVal
+  except BMathError as e:
+    raise e
 
-proc evalFunc(interpreter: Interpreter, node: Expression, env: Environment): Value =
+proc evalFunc(interpreter: Interpreter, node: Expression, env: Environment): Value {.inline.} =
   ## Evaluates a function definition.
   ##
   ## Parameters:
@@ -226,21 +230,21 @@ proc evalValue(
       for branch in node.branches:
         let condition = interpreter.evalValue(branch.condition, env)
         if condition.kind != vkBool:
-          raise newTypeError(
-            "Expected boolean condition, got " & $condition.kind,
-            branch.condition.position,
+          raise (ref TypeError)(
+            msg: "Expected boolean condition, got " & $condition.kind,
+            stack: @[branch.condition.position],
           )
         if condition.boolean:
           return interpreter.evalValue(branch.then, env)
       return interpreter.evalValue(node.elseBranch, env)
   except BMathError as e:
-    if e.position == Position():
-      e.position = node.position
+    if e.stack.len == 0:
+      e.stack.add(node.position)
     raise e
 
 proc eval*(
     interpreter: Interpreter, node: Expression, environment: Environment = nil
-): LabeledValue =
+): LabeledValue {.inline.} =
   ## Top-level evaluation returns a LabeledValue.
   ## If the node is an assignment, the label is preserved.
   ##

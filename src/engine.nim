@@ -29,7 +29,6 @@ proc newEngine*(replMode: bool = false): Engine =
 
 iterator run*(engine: Engine, source: string): LabeledValue =
   ## Executes source while maintaining interpreter state
-  # debug("Running source: ", source)
   var lexer = newLexer(source)
 
   while not lexer.atEnd:

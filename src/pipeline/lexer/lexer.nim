@@ -30,7 +30,7 @@ type
 type Lexer* = object ## State container for lexical analysis process
   source: string ## Input string being processed
   current: int ## Current parsing position in the string
-  line, col: int ## Current line and column position
+  line*, col: int ## Current line and column position
   stack: seq[StackableElement] ## Stack for nested structures
   skipNewline: bool ## Flag to skip newline tokens
 
@@ -121,7 +121,6 @@ proc handleClosing*(
   ##   openingChar: char - the opening character.
   ##   closingChar: char - the closing character.
   ##   closingTokenKind: TokenKind - token kind to return upon successful match.
-  ## Returns: TokenKind - the token kind corresponding to the closing.
   if lexer.stack.len != 0:
     let stackable = lexer.stack.pop
     if stackable.kind == expected:
@@ -352,20 +351,20 @@ proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
         let last = lexer.stack.pop
         case last.kind
         of skCurly:
-          raise (ref IncompleteInputError)(
-            msg: "Unmatched '{' at " & $last.position, position: last.position
+          raise newIncompleteInputError(
+            "Unmatched '{' at " & $last.position, last.position
           )
         of skParen:
-          raise (ref IncompleteInputError)(
-            msg: "Unmatched '(' at " & $last.position, position: last.position
+          raise newIncompleteInputError(
+            "Unmatched '(' at " & $last.position, last.position
           )
         of skSquare:
-          raise (ref IncompleteInputError)(
-            msg: "Unmatched '[' at " & $last.position, position: last.position
+          raise newIncompleteInputError(
+            "Unmatched '[' at " & $last.position, last.position
           )
         of skIf:
-          raise (ref IncompleteInputError)(
-            msg: "Unmatched 'if' at " & $last.position, position: last.position
+          raise newIncompleteInputError(
+            "Unmatched 'if' at " & $last.position, last.position
           )
       break
     result.add(token)
