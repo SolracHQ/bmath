@@ -13,7 +13,10 @@ import
   pipeline/parser/parser,
   pipeline/interpreter/interpreter,
   logging,
-  types/[value, errors, expression]
+  types/[value, errors]
+
+when defined(debug):
+  import types/expression
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter

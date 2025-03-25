@@ -15,10 +15,7 @@ The language operates primarily on expressions, with every source line (outside 
 The grammar is defined as follows:
 
 ```
-expression       -> ( assignation | chain_expression )
-
-chain_expression -> simple_expression ( "->" functionInvocation )*
-simple_expression-> ( assignation | block | if_expression | boolean )
+expression       -> assignation
 
 block            -> "{" expression ( "\n" expression )* "}"
 
@@ -34,7 +31,9 @@ term             -> factor ( ("+" | "-") factor )*
 
 factor           -> power ( ("*" | "/") power )*
 
-power            -> unary ("^" unary)*
+power            -> chain_expression ("^" chain_expression)*
+
+chain_expression -> unary ( "->" unary )*
 
 unary            -> ("-")? primary
 

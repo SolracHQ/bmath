@@ -4,7 +4,7 @@
 ## It includes fundamental types for values, tokens, AST nodes, and errors, along with their
 ## string representation implementations.
 
-import std/[strutils, tables, sequtils]
+import std/[strutils, tables, sequtils, complex]
 
 import position, expression, number
 export Position
@@ -77,6 +77,8 @@ template newValue*[T](n: T): Value =
   when n is SomeInteger:
     Value(kind: vkNumber, number: newNumber(n))
   elif n is SomeFloat:
+    Value(kind: vkNumber, number: newNumber(n))
+  elif n is Complex[float]:
     Value(kind: vkNumber, number: newNumber(n))
   elif n is Number:
     Value(kind: vkNumber, number: n)
