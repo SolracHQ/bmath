@@ -1,5 +1,8 @@
 import macros
 
+import ../../../types/number
+import ../errors
+
 macro captureNumericError*(procDef: untyped): untyped =
   ## This macro is used as a pragma on arithmetic functions.
   ## It wraps the function body in a try-except block to capture

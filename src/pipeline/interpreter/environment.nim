@@ -10,8 +10,8 @@
 ## relationships between environments, allowing for variable shadowing
 ## and proper closure behavior.
 
-import std/[sets, tables, macros]
-import stdlib/[arithmetic, trigonometry, vector, sequence, itertools]
+import std/[sets, tables, macros, complex]
+import stdlib/[arithmetic, trigonometry, vector, sequence, itertools, comparison]
 import ../../types/[value, expression]
 import errors
 
@@ -22,7 +22,7 @@ const CORE_NAMES* = toHashSet(
     "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
     "last", "sin", "cos", "tan", "cot", "sec", "csc", "log", "exp", "len", "map",
     "filter", "reduce", "sum", "any", "all", "collect", "seq", "skip", "hasNext",
-    "next", "e", "pi", "abs", "merge", "slice", "take", "zip",
+    "next", "e", "pi", "i", "abs", "merge", "slice", "take", "zip", "min", "max",
   ]
 )
 
@@ -106,10 +106,13 @@ let global = Environment(
       "next": native(next(sequence)),
       "e": newValue(E),
       "pi": newValue(PI),
+      "i": newValue(complex[float](0.0, 1.0)),
       "merge": native(merge(vector, vector)),
       "slice": Value(kind: vkNativeFunc, nativeFn: slice),
       "take": native(take(sequence, number)),
       "zip": native(zip(sequence, sequence)),
+      "min": Value(kind: vkNativeFunc, nativeFn: min),
+      "max": Value(kind: vkNativeFunc, nativeFn: max),
     }
   ),
 )
@@ -174,7 +177,7 @@ proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
     # If this is reached, it means there's a bug in the interpreter
     # because the environment should never be nil.
     raise newException(ValueError, "Trying to write on a nil environment")
-  if name in CORE_NAMES:
+  if name in CORE_NAMES and not local:
     raise newReservedNameError(name)
   if local:
     env.values[name] = value

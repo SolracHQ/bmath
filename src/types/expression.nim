@@ -81,7 +81,6 @@ type
       operand*: Expression ## Operand for unary negation
     of ekIdent:
       name*: string ## Identifier name
-      distance*: int = -1 ## Distance to the identifier
     of ekAssign:
       ident*: string ## Target identifier for assignment
       expr*: Expression ## Assigned expression

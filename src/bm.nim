@@ -28,14 +28,20 @@ proc handleFile(filePath: string) =
     echo result
 
 proc handleRepl() =
+  let isatty = stdin.isatty
+
+  # Handle non-interactive input as a script
+  if not isatty:
+    handleExpression(stdin.readAll())
+    return
+
   let engine = newEngine(replMode = true)
+
+  # Interactive REPL mode
   var input: string
   var incompleteMode = false
-  let isatty = stdin.isatty
   while true:
-    if not isatty:
-      discard # not interactive
-    elif not incompleteMode:
+    if not incompleteMode:
       stdout.write "bm> "
     else:
       stdout.write "... "
@@ -46,10 +52,7 @@ proc handleRepl() =
       else:
         input = stdin.readLine()
       for result in engine.run(input):
-        if isatty:
-          echo "==> ", result
-        else:
-          echo result
+        echo "==> ", result
       incompleteMode = false
     except IncompleteInputError:
       incompleteMode = true

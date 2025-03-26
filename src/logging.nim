@@ -13,6 +13,8 @@ proc logError*(error: ref BMathError, context: string) =
   while error.stack.len > 0:
     let pos = error.stack.pop()
     stderr.writeLine fmt"  - {pos.line}:{pos.column}"
+  when defined(debug):
+    stderr.write error.getStackTrace()
 
 when defined(debug):
   import std/strutils

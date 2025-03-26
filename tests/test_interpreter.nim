@@ -240,3 +240,120 @@ suite "Interpreter tests":
     ## Test exp(0) = 1
     let expZero = evalString("exp(0)").number.fValue
     check abs(expZero - 1.0) < 1e-10
+
+  test "Function defined and called within a block":
+    ## This tests defining and calling a function inside a block
+    let res = evalString("""
+      {
+        a = |x| if(x == 2) 2 else x
+        a(3)
+      }
+    """)
+    check res.number.iValue == 3
+    
+    let res2 = evalString("""
+      {
+        a = |x| if(x == 2) 2 else x
+        a(2)
+      }
+    """)
+    check res2.number.iValue == 2
+
+  test "Arrow operator chaining with addition":
+    ## Tests arrow operator usage with literals and combining multiple arrow operations
+    let res = evalString("""
+      double = |x| x + x
+      4->double + 4->double
+    """)
+    check res.number.iValue == 16  # (4+4) + (4+4)
+    
+    let res2 = evalString("""
+      double = |x| x * 2
+      increment = |x| x + 1
+      5->double->increment  # Should be (5*2)+1 = 11
+    """)
+    check res2.number.iValue == 11
+
+  test "Nested functions with closures":
+    ## Tests defining functions that return other functions, with closure capturing
+    let res = evalString("""
+      makeAdder = |x| |y| x + y
+      add5 = makeAdder(5)
+      add5(10)
+    """)
+    check res.number.iValue == 15
+    
+    let res2 = evalString("""
+      counter = || {
+        count = 0
+        || {
+          count = count + 1
+          count
+        }
+      }
+      c = counter()
+      local first = c()
+      second = c()
+      second
+    """)
+    check res2.number.iValue == 2
+
+  test "Complex arrow chaining with multiple transformations":
+    ## Tests elaborate arrow chaining with multiple functions
+    let res = evalString("""
+      double = |x| x * 2
+      increment = |x| x + 1
+      square = |x| x * x
+      5->double->increment->square  # (5*2+1)² = 11² = 121
+    """)
+    check res.number.iValue == 121
+
+  test "Arrow operator with vector operations":
+    ## Tests arrow operator with vector transformations
+    let res = evalString("""
+      [1, 2, 3, 4]->map(|x| x * 2)->filter(|x| x > 4)
+    """)
+    check res.vector.len == 2
+    check res.vector[0].number.iValue == 6
+    check res.vector[1].number.iValue == 8
+
+  test "Nested conditionals with arrows and vectors":
+    ## Tests combining conditionals, arrows and vector operations
+    let res = evalString("""
+      classifier = |x| if(x > 10) 1 elif(x > 5) 2 else 3
+      result = 15->classifier
+      result
+    """)
+    check res.number.iValue == 1
+    
+    let res2 = evalString("""
+      process = |x| if(x > 5) x * 2 else x
+      [3, 6, 9]->map(process)  # [3, 12, 18]
+    """)
+    check res2.vector.len == 3
+    check res2.vector[0].number.iValue == 3
+    check res2.vector[1].number.iValue == 12
+    check res2.vector[2].number.iValue == 18
+
+  test "Arrow operator with block expressions":
+    ## Tests using block expressions with arrow operators
+    let res = evalString("""
+      double = |x| x * 2
+      {5 + 5}->double  # (5+5)*2 = 20
+    """)
+    check res.number.iValue == 20
+
+  test "Complex multi-line expressions with nested transformations":
+    ## Tests complex multi-line expressions with nested transformations
+    let res = evalString("""
+      result = {
+        transformer = |x| {
+          doubled = x * 2
+          squared = doubled * doubled
+          if(squared > 100) squared else doubled
+        }
+        [3, 7, 11]->map(transformer)
+      }
+      result->nth(2)  # For 11: doubled=22, squared=484, returns 484
+    """)
+    check res.number.iValue == 484

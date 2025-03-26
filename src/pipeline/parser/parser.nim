@@ -209,7 +209,6 @@ proc parseIf(parser: var Parser): Expression =
     )
   cleanUpNewlines()
   elseBranch = parser.parseExpression()
-  cleanUpNewlines()
   result = newIfExpr(pos, branches, elseBranch)
 
 proc parsePrimary(parser: var Parser): Expression =
@@ -262,12 +261,24 @@ proc parseUnary(parser: var Parser): Expression =
   else:
     return parser.parsePrimary()
 
+proc parseChain(parser: var Parser): Expression =
+  ## Parses chained expressions
+  result = parser.parseUnary()
+  while parser.match({tkChain}):
+    # parse chain operator
+    let prev = parser.previous()
+    let right = parser.parsePrimary()
+    if right.kind == ekFuncInvoke:
+      result = newFuncInvokeExpr(prev.position, right.fun, @[result] & right.arguments)
+    else:
+      result = newFuncInvokeExpr(prev.position, right, @[result])
+
 proc parsePower(parser: var Parser): Expression =
   ## Parses power operations
-  result = parser.parseUnary()
+  result = parser.parseChain()
   while parser.match({tkPow}):
     let prev = parser.previous()
-    let right = parser.parseUnary()
+    let right = parser.parseChain()
     # power constant folding: if both operands are numbers, return the result directly
     result = newBinaryExpr(prev.position, ekPow, result, right)
   return result
@@ -373,18 +384,6 @@ proc parseAssignment(parser: var Parser): Expression =
 
 proc parseExpression(parser: var Parser): Expression {.inline.} =
   result = parser.parseAssignment()
-  while parser.match({tkChain}):
-    # parse chain operator
-    let prev = parser.previous()
-    let right = parser.parsePrimary()
-    if right.kind != ekFuncInvoke and right.kind != ekIdent:
-      raise newInvalidExpressionError(
-        "Expected function call after '->' but got '" & $right.kind & "'", prev.position
-      )
-    if right.kind == ekFuncInvoke:
-      result = newFuncInvokeExpr(prev.position, right.fun, @[result] & right.arguments)
-    else:
-      result = newFuncInvokeExpr(prev.position, right, @[result])
 
 proc parse*(tokens: seq[Token]): Expression =
   var parser = newParser(tokens)
