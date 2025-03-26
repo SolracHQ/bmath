@@ -165,24 +165,31 @@ proc min*(args: openArray[Value], invoker: FnInvoker): Value =
   ##
   ## Returns:
   ## - The minimum value found
-  
+
   if args.len == 0:
     raise newInvalidArgumentError("min requires at least one argument but got: 0")
 
   if args.len == 1 and (args[^1].kind == vkFunction or args[^1].kind == vkNativeFunc):
     raise newInvalidArgumentError("cannot return the minimum of a function")
-  
+
   # Check if last argument is a comparison function
-  let hasCustomCompare = args.len >= 2 and (args[^1].kind == vkFunction or args[^1].kind == vkNativeFunc)
-  let comparisonFn = if hasCustomCompare: some(args[^1]) else: none(Value)
-  
+  let hasCustomCompare =
+    args.len >= 2 and (args[^1].kind == vkFunction or args[^1].kind == vkNativeFunc)
+  let comparisonFn =
+    if hasCustomCompare:
+      some(args[^1])
+    else:
+      none(Value)
+
   # Define our comparison function
-  let isLess = 
+  let isLess =
     if comparisonFn.isSome:
       proc(a, b: Value): bool =
         let isLess = invoker(comparisonFn.unsafeGet, [a, b])
         if isLess.kind != vkBool:
-          raise newTypeError("Comparison function must return a boolean value but got: " & $isLess.kind)
+          raise newTypeError(
+            "Comparison function must return a boolean value but got: " & $isLess.kind
+          )
         isLess.boolean
     else:
       proc(a, b: Value): bool =
@@ -190,48 +197,55 @@ proc min*(args: openArray[Value], invoker: FnInvoker): Value =
         try:
           (a < b).boolean
         except TypeError:
-          raise newTypeError("Values must be numbers for default min comparison but got: " & $a.kind & ", " & $b.kind)
-  
+          raise newTypeError(
+            "Values must be numbers for default min comparison but got: " & $a.kind &
+              ", " & $b.kind
+          )
+
   # Case 1/4: Single vector argument [with optional compare function]
   if args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkVector:
     let vec = args[0].vector
     if vec.len == 0:
       raise newInvalidArgumentError("Cannot find minimum in empty vector")
-    
+
     var minVal = vec[0]
-    for i in 1..<vec.len:
+    for i in 1 ..< vec.len:
       if isLess(vec[i], minVal):
         minVal = vec[i]
-    
+
     return minVal
-  
+
   # Case 2/5: Single sequence argument [with optional compare function]
   elif args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkSeq:
     var sequence = args[0]
     var minVal: Value
     var initialized = false
-    
+
     for val in iter(sequence):
       if not initialized:
         minVal = val
         initialized = true
       elif isLess(val, minVal):
         minVal = val
-    
+
     if not initialized:
       raise newInvalidArgumentError("Cannot find minimum in empty sequence")
-    
+
     return minVal
-  
+
   # Case 3/6: Multiple arguments [with optional compare function at the end]
   else:
-    let argsEnd = if hasCustomCompare: args.len - 1 else: args.len
-    
+    let argsEnd =
+      if hasCustomCompare:
+        args.len - 1
+      else:
+        args.len
+
     var minVal = args[0]
-    for i in 1..<argsEnd:
+    for i in 1 ..< argsEnd:
       if isLess(args[i], minVal):
         minVal = args[i]
-    
+
     return minVal
 
 proc max*(args: openArray[Value], invoker: FnInvoker): Value =
@@ -256,24 +270,31 @@ proc max*(args: openArray[Value], invoker: FnInvoker): Value =
   ##
   ## Returns:
   ## - The maximum value found
-  
+
   if args.len == 0:
     raise newInvalidArgumentError("max requires at least one argument but got: 0")
 
   if args.len == 1 and (args[^1].kind == vkFunction or args[^1].kind == vkNativeFunc):
     raise newInvalidArgumentError("cannot return the maximum of a function")
-  
+
   # Check if last argument is a comparison function
-  let hasCustomCompare = args.len >= 2 and (args[^1].kind == vkFunction or args[^1].kind == vkNativeFunc)
-  let comparisonFn = if hasCustomCompare: some(args[^1]) else: none(Value)
-  
+  let hasCustomCompare =
+    args.len >= 2 and (args[^1].kind == vkFunction or args[^1].kind == vkNativeFunc)
+  let comparisonFn =
+    if hasCustomCompare:
+      some(args[^1])
+    else:
+      none(Value)
+
   # Define our comparison function
-  let isGreater = 
+  let isGreater =
     if comparisonFn.isSome:
       proc(a, b: Value): bool =
         let isGreater = invoker(comparisonFn.unsafeGet, [a, b])
         if isGreater.kind != vkBool:
-          raise newTypeError("Comparison function must return a boolean value but got: " & $isGreater.kind)
+          raise newTypeError(
+            "Comparison function must return a boolean value but got: " & $isGreater.kind
+          )
         isGreater.boolean
     else:
       proc(a, b: Value): bool =
@@ -281,46 +302,53 @@ proc max*(args: openArray[Value], invoker: FnInvoker): Value =
         try:
           (a > b).boolean
         except TypeError:
-          raise newTypeError("Values must be numbers for default max comparison but got: " & $a.kind & ", " & $b.kind)
-  
+          raise newTypeError(
+            "Values must be numbers for default max comparison but got: " & $a.kind &
+              ", " & $b.kind
+          )
+
   # Case 1/4: Single vector argument [with optional compare function]
   if args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkVector:
     let vec = args[0].vector
     if vec.len == 0:
       raise newInvalidArgumentError("Cannot find maximum in empty vector")
-    
+
     var maxVal = vec[0]
-    for i in 1..<vec.len:
+    for i in 1 ..< vec.len:
       if isGreater(vec[i], maxVal):
         maxVal = vec[i]
-    
+
     return maxVal
-  
+
   # Case 2/5: Single sequence argument [with optional compare function]
   elif args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkSeq:
     var sequence = args[0]
     var maxVal: Value
     var initialized = false
-    
+
     for val in iter(sequence):
       if not initialized:
         maxVal = val
         initialized = true
       elif isGreater(val, maxVal):
         maxVal = val
-    
+
     if not initialized:
       raise newInvalidArgumentError("Cannot find maximum in empty sequence")
-    
+
     return maxVal
-  
+
   # Case 3/6: Multiple arguments [with optional compare function at the end]
   else:
-    let argsEnd = if hasCustomCompare: args.len - 1 else: args.len
-    
+    let argsEnd =
+      if hasCustomCompare:
+        args.len - 1
+      else:
+        args.len
+
     var maxVal = args[0]
-    for i in 1..<argsEnd:
+    for i in 1 ..< argsEnd:
       if isGreater(args[i], maxVal):
         maxVal = args[i]
-    
+
     return maxVal

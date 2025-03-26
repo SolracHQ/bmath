@@ -123,6 +123,7 @@ This enables readable pipelines:
 - Variables in inner scopes can access and modify variables from outer scopes
 - The `local` keyword creates a new variable that shadows any existing variable with the same name
 - Function parameters are local by default and shadow outer variables with the same name
+- **Warning**: While the language allows shadowing core names with local variables, this is strongly discouraged at the top level of a program as it permanently removes access to those core functions/values within that scope. If necessary, limit such shadowing to small, well-defined block scopes where the impact is contained and temporary.
 
 ## Lexical Structure
 

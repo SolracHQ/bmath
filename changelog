@@ -1,5 +1,30 @@
 # Changelog
 
+## Version 0.9.0
+- Removed AST optimizer after benchmarking with hyperfine and valgrind/callgrind:
+  - Performance impact was significantly negative (1.9x to 2.6x slower)
+  - Eliminated redundant code paths that effectively required maintaining two interpreters
+- Added support for chain operator (`->`) with correct precedence (resolves [#9](https://github.com/SolracHQ/bmath/issues/9)):
+  - Enables fluent transformation pipelines with proper nested call handling
+  - Fully integrated with all expression types including blocks and conditionals
+- Implemented min and max functions with support for custom comparators:
+  - Support for various input forms: multiple values, vectors, and sequences
+  - Optional custom comparison functions for flexible sorting criteria
+- Added complex number literal `i` as a built-in constant:
+  - Simplified complex number creation and manipulation
+  - Enhanced consistency with mathematical notation
+- Enhanced variable scoping:
+  - Allow local variables to shadow core names and constants
+  - Improved lexical scoping behavior in nested blocks
+- Fixed if-expression handling in blocks (resolves [#11](https://github.com/SolracHQ/bmath/issues/11))
+- Improved REPL functionality:
+  - Process non-interactive stdin as script in REPL mode (resolves [#10](https://github.com/SolracHQ/bmath/issues/10))
+  - Better support for piped input and scriptability
+- Documentation improvements:
+  - Split stdlib documentation into separate topic files
+  - Updated vector operation documentation for /, %, and ^ operators
+  - Added comprehensive documentation for mathematical constants
+
 ## Version 0.8.0
 - Revamped error handling system with specific error types replacing generic errors:
   - Interpreter errors: DivideByZeroError, TypeError, UnsupportedTypeError, InvalidArgumentError, etc.

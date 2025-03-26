@@ -29,14 +29,14 @@ proc handleFile(filePath: string) =
 
 proc handleRepl() =
   let isatty = stdin.isatty
-  
+
   # Handle non-interactive input as a script
   if not isatty:
     handleExpression(stdin.readAll())
     return
 
   let engine = newEngine(replMode = true)
-  
+
   # Interactive REPL mode
   var input: string
   var incompleteMode = false
