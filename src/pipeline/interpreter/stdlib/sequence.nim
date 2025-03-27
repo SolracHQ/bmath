@@ -1,6 +1,6 @@
 ## sequence.nim
 
-import ../../../types/[value, number]
+import ../../../types/[value, number, vector]
 import ../errors
 
 proc sequence*(values: openArray[Value], invoker: FnInvoker): Value =
@@ -33,12 +33,12 @@ proc sequence*(values: openArray[Value], invoker: FnInvoker): Value =
 
       resultSeq.generator = Generator(
         atEnd: proc(): bool =
-          index >= vec.len,
+          index >= vec.size,
         next: proc(peek: bool = false): Value =
-          if index >= vec.len:
+          if index >= vec.size:
             raise newSequenceExhaustedError(
               "Sequence exhausted: attempted to access beyond the end of sequence derived from vector of length " &
-                $vec.len
+                $vec.size
             )
           result = vec[index]
           if not peek:
@@ -178,27 +178,23 @@ proc take*(sequence: Value, n: Value): Value =
         $n.number.iValue
     )
 
-  var resultSeq = Sequence(transformers: sequence.sequence.transformers)
+  result = sequence
   var taken = 0
-  let limit = n.number.iValue
-  let originalGenerator = sequence.sequence.generator
-
-  resultSeq.generator = Generator(
-    atEnd: proc(): bool =
-      taken >= limit or originalGenerator.atEnd(),
-    next: proc(peek: bool = false): Value =
-      if taken >= limit:
-        raise newSequenceExhaustedError(
-          "Sequence exhausted: attempted to access beyond the end of taken sequence of length " &
-            $limit
-        )
-      result = originalGenerator.next(peek)
-      if not peek:
-        inc taken
-    ,
+  var limit = n.number.iValue
+  let originalAtEnd = result.sequence.generator.atEnd
+  result.sequence.generator.atEnd = proc(): bool =
+    taken >= limit or originalAtEnd()
+  result.sequence.transformers.add(
+    Transformer(
+      kind: tkFilter,
+      fun: proc(value: Value): Value =
+        if taken < limit:
+          taken += 1
+          newValue(true)
+        else:
+          newValue(false),
+    )
   )
-
-  result = Value(kind: vkSeq, sequence: resultSeq)
 
 proc hasNext*(sequence: Value): Value =
   ## Check if a sequence has a next element
@@ -240,7 +236,7 @@ proc next*(sequence: Value): Value =
 
   sequence.sequence.generator.next()
 
-iterator iter*(sequence: Value): Value =
+iterator items*(sequence: Sequence): Value =
   ## Iterate over a sequence, applying any transformers
   ##
   ## Parameters:
@@ -248,7 +244,6 @@ iterator iter*(sequence: Value): Value =
   ##
   ## Yields:
   ## - Each transformed value from the sequence
-  var sequence = sequence.sequence
   while not sequence.generator.atEnd():
     var next = sequence.generator.next()
     block transformations:
@@ -265,7 +260,7 @@ iterator iter*(sequence: Value): Value =
             break transformations
       yield next
 
-proc collect*(sequence: Value): Value =
+proc collect*(s: Value): Value =
   ## Collect a sequence into a vector
   ##
   ## Parameters:
@@ -276,14 +271,21 @@ proc collect*(sequence: Value): Value =
   ##
   ## Returns:
   ## - A vector containing all elements of the sequence
-  if sequence.kind != vkSeq:
-    raise newTypeError(
-      "collect expects a sequence as argument, but got a " & $sequence.kind
-    )
+  if s.kind != vkSeq:
+    raise newTypeError("collect expects a sequence as argument, but got a " & $s.kind)
 
-  result = Value(kind: vkVector, vector: @[])
-  for item in iter(sequence):
-    result.vector.add(item)
+  # First, collect all elements to determine the size
+  var elements: seq[Value] = @[]
+  for item in s.sequence:
+    elements.add(item)
+
+  # Create a vector of the right size and populate it
+  result = Value(kind: vkVector)
+  result.vector = newVector[Value](elements.len)
+
+  # Fill the vector with collected elements
+  for i in 0 ..< elements.len:
+    result.vector[i] = elements[i]
 
 proc zip*(seq1: Value, seq2: Value): Value =
   ## Create a sequence by pairing elements from two sequences
@@ -329,7 +331,10 @@ proc zip*(seq1: Value, seq2: Value): Value =
       let val2 = gen2.next(peek)
 
       # Pair them in a vector
-      result = Value(kind: vkVector, vector: @[val1, val2]),
+      result = Value(kind: vkVector)
+      result.vector = newVector[Value](2)
+      result.vector[0] = val1
+      result.vector[1] = val2,
   )
 
   result = Value(kind: vkSeq, sequence: resultSeq)

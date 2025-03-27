@@ -13,7 +13,7 @@
 ## environment that tracks variable bindings and their values.
 
 import std/[sequtils]
-import ../../types/[value, expression]
+import ../../types/[value, expression, vector]
 import ../../types/errors
 import ./errors
 import environment
@@ -208,8 +208,10 @@ proc evalValue(
     of ekOr:
       return binOp(node, `or`)
     of ekVector:
-      return
-        Value(kind: vkVector, vector: node.values.mapIt(interpreter.evalValue(it, env)))
+      var vector = newVector[Value](node.values.len)
+      for i in 0 ..< node.values.len:
+        vector[i] = interpreter.evalValue(node.values[i], env)
+      return Value(kind: vkVector, vector: vector)
     of ekNeg:
       return -interpreter.evalValue(node.operand, env)
     of ekNot:

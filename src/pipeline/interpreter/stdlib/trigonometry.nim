@@ -1,6 +1,6 @@
 ## trigonometry.nim
 
-import ../../../types/[value, number]
+import ../../../types/[value, number, vector]
 import ../errors
 import utils
 
@@ -20,9 +20,9 @@ proc cos*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(cos(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(cos(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = cos(a.vector[i])
   else:
     raise newTypeError("cos expects a number or vector as argument")
 
@@ -42,9 +42,9 @@ proc sin*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(sin(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(sin(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = sin(a.vector[i])
   else:
     raise newTypeError("sin expects a number or vector as argument")
 
@@ -64,9 +64,9 @@ proc tan*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(tan(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(tan(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = tan(a.vector[i])
   else:
     raise newTypeError("tan expects a number or vector as argument")
 
@@ -86,9 +86,9 @@ proc cot*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(cot(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(cot(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = cot(a.vector[i])
   else:
     raise newTypeError("cot expects a number or vector as argument")
 
@@ -108,9 +108,9 @@ proc sec*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(sec(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(sec(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = sec(a.vector[i])
   else:
     raise newTypeError("sec expects a number or vector as argument")
 
@@ -130,9 +130,9 @@ proc csc*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(csc(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(csc(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = csc(a.vector[i])
   else:
     raise newTypeError("csc expects a number or vector as argument")
 
@@ -153,9 +153,9 @@ proc log*(a: Value, base: Value): Value {.inline, captureNumericError.} =
     return newValue(log(a.number, base.number))
   elif a.kind == vkVector and base.kind == vkNumber:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(log(val, base))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = log(a.vector[i], base)
   else:
     raise newTypeError("log expects a number/vector and a number as arguments")
 
@@ -175,8 +175,8 @@ proc exp*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(exp(a.number))
   elif a.kind == vkVector:
     result = Value(kind: vkVector)
-    result.vector = newSeqOfCap[Value](a.vector.len)
-    for val in a.vector:
-      result.vector.add(exp(val))
+    result.vector = newVector[Value](a.vector.size)
+    for i in 0 ..< a.vector.size:
+      result.vector[i] = exp(a.vector[i])
   else:
     raise newTypeError("exp expects a number or vector as argument")

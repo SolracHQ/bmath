@@ -92,7 +92,7 @@ ceilValue = ceil(3.2)              # Expected: 4
 # --------------------------
 intVector = [1, 2, 3]
 floatVector = [1.5, 2.5, 3.5]
-complexVector = [1+1i, 2+2i, 3+3i]
+complexVector = [1+i, 2+2i, 3+3i]
 
 mixedVectorSum = intVector + floatVector  # Element-wise addition with promotion
 

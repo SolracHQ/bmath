@@ -69,7 +69,11 @@ template newUndefinedVariableError*(name: string): ref UndefinedVariableError =
 
 template newReservedNameError*(name: string): ref ReservedNameError =
   ## Creates a new ReservedNameError for attempts to modify reserved names
-  (ref ReservedNameError)(msg: "Cannot overwrite the reserved name '" & name & "'")
+  (ref ReservedNameError)(
+    msg:
+      "Cannot overwrite the reserved name '" & name &
+      "', for local shadowing use local keyword"
+  )
 
 template newSequenceExhaustedError*(
     message: string = "Sequence has been exhausted"

@@ -25,14 +25,6 @@ This section covers operations specific to vectors.
   dot([1, 2, 3], [4, 5, 6])
   ```
 
-- **nth**  
-  Retrieves the element at the specified index from a vector.  
-  **Accepted Types:** A vector and an integer index value.  
-  **Example:** 
-  ```bm
-  nth([10, 20, 30], 1)
-  ```
-
 - **first**  
   Retrieves the first element of a vector.  
   **Accepted Types:** A single vector.  
@@ -76,3 +68,12 @@ This section covers operations specific to vectors.
   slice([10, 20, 30, 40, 50], 3)  # output: [10, 20, 30]
   slice([10, 20, 30, 40, 50], 1, 4)  # output: [20, 30, 40]
   ```
+
+- **set**  
+  Sets the value at a specific index in a vector and returns the previous value.  
+  **Accepted Types:** A vector, an integer index, and a value to set.  
+  **Example:** 
+  ```bm
+  set([10, 20, 30], 1, 99)  # modifies the vector to [10, 99, 30] and returns 20
+  ```
+

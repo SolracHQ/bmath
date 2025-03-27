@@ -2,7 +2,7 @@ import unittest, math, complex
 import ../src/pipeline/interpreter/[interpreter, errors]
 import ../src/pipeline/parser/[parser]
 import ../src/pipeline/lexer/[lexer, errors]
-import ../src/types/value
+import ../src/types/[value, vector]
 
 proc evalString(s: string): Value =
   var interpreter = newInterpreter()
@@ -313,7 +313,7 @@ suite "Interpreter tests":
     let res = evalString("""
       [1, 2, 3, 4]->map(|x| x * 2)->filter(|x| x > 4)
     """)
-    check res.vector.len == 2
+    check res.vector.size == 2
     check res.vector[0].number.iValue == 6
     check res.vector[1].number.iValue == 8
 
@@ -330,7 +330,7 @@ suite "Interpreter tests":
       process = |x| if(x > 5) x * 2 else x
       [3, 6, 9]->map(process)  # [3, 12, 18]
     """)
-    check res2.vector.len == 3
+    check res2.vector.size == 3
     check res2.vector[0].number.iValue == 3
     check res2.vector[1].number.iValue == 12
     check res2.vector[2].number.iValue == 18
@@ -357,3 +357,84 @@ suite "Interpreter tests":
       result->nth(2)  # For 11: doubled=22, squared=484, returns 484
     """)
     check res.number.iValue == 484
+
+  test "Sequence creation and access":
+    ## Tests creating sequences and accessing elements
+    let res = evalString("""
+      finiteSeq = seq(5, |i| i * 2)
+      finiteSeq->nth(3)  # Should be 6
+    """)
+    check res.number.iValue == 6
+    
+    let vecRes = evalString("""
+      vectorSeq = seq([1, 2, 3, 4, 5])
+      vectorSeq->nth(2)  # Should be 3
+    """)
+    check vecRes.number.iValue == 3
+
+  test "Sequence transformations":
+    ## Tests sequence mapping and filtering
+    let mapRes = evalString("""
+      numbers = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
+      doubled = numbers->map(|x| x * 2)->collect
+      doubled->nth(3)  # Should be 8
+    """)
+    check mapRes.number.iValue == 8
+    
+    let filterRes = evalString("""
+      numbers = seq(8, |i| i)  # [0, 1, 2, 3, 4, 5, 6, 7]
+      evens = numbers->filter(|x| x % 2 == 0)->collect
+      evens->len
+    """)
+    check filterRes.number.iValue == 4
+
+  test "Sequence reductions":
+    ## Tests sequence reduction operations
+    let sumRes = evalString("""
+      seq(5, |i| i + 1)->sum  # 1+2+3+4+5 = 15
+    """)
+    check sumRes.number.iValue == 15
+    
+    let productRes = evalString("""
+      seq(5, |i| i + 1)->reduce(1, |acc, x| acc * x)  # 5! = 120
+    """)
+    check productRes.number.iValue == 120
+
+  test "Complex sequence operations":
+    ## Tests chaining multiple sequence operations
+    let complexRes = evalString("""
+      processedSeq = seq(|i| i) ->\  # Infinite sequence of natural numbers
+                    map(|x| x * x) ->\  # Square the numbers
+                    filter(|x| x % 2 == 0) ->\  # Keep only even squares
+                    map(|x| x / 2) ->\  # Divide by 2
+                    take(5) ->\  # Take first 5 elements
+                    collect    # Convert to vector
+      processedSeq->nth(4)  # Should be 32
+    """)
+    check complexRes.number.fvalue == 32
+    
+    let zipRes = evalString("""
+      zipped = seq(3, |i| i)->zip(seq(3, |i| i * 10))->collect
+      zipped->nth(1)->nth(1)  # Should be 10
+    """)
+    check zipRes.number.iValue == 10
+
+  test "Custom sequence operations":
+    ## Tests custom sequence transformation functions
+    let runningAvgRes = evalString("""
+      runningAvg = |numbers| {
+        _sum = 0
+        seq(len(numbers), |i| {
+          _sum = _sum + nth(numbers, i)
+          _sum / (i + 1)
+        })->collect
+      }
+      avgResult = runningAvg([2, 4, 6, 8, 10])
+      avgResult->nth(4)  # Should be 6.0
+    """)
+    check runningAvgRes.number.fValue == 6.0
+
+  test "Sequence error handling":
+    ## Tests error cases for sequences
+    expect InvalidArgumentError:
+      discard evalString("seq(5, |i| i)->nth(10)")  # Out of bounds access

@@ -11,7 +11,7 @@ This index provides links to all sections of the standard library documentation.
 - [Trigonometric and Mathematical Functions](trigonometric.md)
 - [Vector Operations](vector-operations.md)
 - [Sequence Operations](sequence-operations.md)
-- [Iteration Utilities](iteration.md)
+- [Functional Utilities](functional.md)
 
 ## General Notes
 

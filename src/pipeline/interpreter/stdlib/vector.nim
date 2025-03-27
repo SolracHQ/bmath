@@ -1,6 +1,6 @@
 ## vector.nim
 
-import ../../../types/[value, number]
+import ../../../types/[value, number, vector]
 import arithmetic
 import ../errors
 
@@ -40,16 +40,16 @@ proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Initialize the result as a vector
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](size.number.iValue)
+  result.vector = newVector[Value](size.number.iValue)
 
   if args[1].kind == vkFunction or args[1].kind == vkNativeFunc:
     # If the second argument is a function, apply it to each index
     for i in 0 ..< size.number.iValue:
-      result.vector.add(invoker(args[1], [newValue(i)]))
+      result.vector[i] = invoker(args[1], [newValue(i)])
   else:
     # If the second argument is a value, repeat it for each index
     for i in 0 ..< size.number.iValue:
-      result.vector.add(args[1])
+      result.vector[i] = args[1]
 
 proc dotProduct*(a, b: Value): Value =
   ## Compute the dot product of two vectors
@@ -74,38 +74,6 @@ proc dotProduct*(a, b: Value): Value =
     )
   return a.vector * b.vector
 
-proc nth*(vector: Value, index: Value): Value =
-  ## Get the nth element of a vector
-  ##
-  ## Parameters:
-  ## - vector: A vector value to extract an element from
-  ## - index: An integer index to access the vector element
-  ##
-  ## Raises:
-  ## - TypeError: If vector is not a vector or index is not an integer
-  ## - InvalidArgumentError: If the index is out of bounds
-  ##
-  ## Returns:
-  ## - The value at the specified index in the vector
-  if vector.kind != vkVector:
-    raise newTypeError(
-      "nth expects a vector as the first argument, but got a " & $vector.kind
-    )
-  if index.kind != vkNumber or (index.kind == vkNumber and index.number.kind != nkInt):
-    raise newTypeError(
-      "nth expects an integer as the second argument, but got " & (
-        if index.kind == vkNumber: "a " & $index.number.kind & " number"
-        else: "a " & $index.kind
-      )
-    )
-  if index.number.iValue < 0 or index.number.iValue >= vector.vector.len:
-    raise newInvalidArgumentError(
-      "Index out of bounds for nth: index " & $index.number.iValue &
-        " is outside valid range [0, " & $(vector.vector.len - 1) &
-        "] for vector of length " & $vector.vector.len
-    )
-  result = vector.vector[index.number.iValue]
-
 proc first*(vector: Value): Value =
   ## Get the first element of a vector
   ##
@@ -118,9 +86,10 @@ proc first*(vector: Value): Value =
   ##
   ## Returns:
   ## - The first element of the vector
+  stderr.writeLine vector.vector.size
   if vector.kind != vkVector:
     raise newTypeError("first expects a vector argument, but got a " & $vector.kind)
-  if vector.vector.len == 0:
+  if vector.vector.size == 0:
     raise newInvalidArgumentError("Cannot get first element: vector is empty")
   result = vector.vector[0]
 
@@ -138,9 +107,9 @@ proc last*(vector: Value): Value =
   ## - The last element of the vector
   if vector.kind != vkVector:
     raise newTypeError("last expects a vector argument, but got a " & $vector.kind)
-  if vector.vector.len == 0:
+  if vector.vector.size == 0:
     raise newInvalidArgumentError("Cannot get last element: vector is empty")
-  result = vector.vector[^1]
+  result = vector.vector[vector.vector.size - 1]
 
 proc len*(vector: Value): Value =
   ## Get the length of a vector
@@ -155,7 +124,7 @@ proc len*(vector: Value): Value =
   ## - The number of elements in the vector as a numeric value
   if vector.kind != vkVector:
     raise newTypeError("len expects a vector argument, but got a " & $vector.kind)
-  result = newValue(vector.vector.len)
+  result = newValue(vector.vector.size)
 
 proc merge*(a, b: Value): Value =
   ## Concatenate two vectors into a single new vector
@@ -181,15 +150,15 @@ proc merge*(a, b: Value): Value =
     )
 
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.vector.len + b.vector.len)
+  result.vector = newVector[Value](a.vector.size + b.vector.size)
 
   # Add all elements from first vector
-  for item in a.vector:
-    result.vector.add(item)
+  for i in 0 ..< a.vector.size:
+    result.vector[i] = a.vector[i]
 
   # Add all elements from second vector
-  for item in b.vector:
-    result.vector.add(item)
+  for i in 0 ..< b.vector.size:
+    result.vector[a.vector.size + i] = b.vector[i]
 
 proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
   ## Create a new vector that is a slice of an existing vector
@@ -240,11 +209,11 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
     endIndex = args[1].number.iValue
 
     # Check that endIndex is within bounds
-    if endIndex < 0 or endIndex > source.vector.len:
+    if endIndex < 0 or endIndex > source.vector.size:
       raise newInvalidArgumentError(
         "End index out of bounds for slice: index " & $endIndex &
-          " is outside valid range [0, " & $source.vector.len & "] for vector of length " &
-          $source.vector.len
+          " is outside valid range [0, " & $source.vector.size &
+          "] for vector of length " & $source.vector.size
       )
   else:
     # Both start and end indices provided
@@ -267,17 +236,17 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
     endIndex = args[2].number.iValue
 
     # Check that indices are within bounds
-    if startIndex < 0 or startIndex >= source.vector.len:
+    if startIndex < 0 or startIndex >= source.vector.size:
       raise newInvalidArgumentError(
         "Start index out of bounds for slice: index " & $startIndex &
-          " is outside valid range [0, " & $(source.vector.len - 1) &
-          "] for vector of length " & $source.vector.len
+          " is outside valid range [0, " & $(source.vector.size - 1) &
+          "] for vector of length " & $source.vector.size
       )
-    if endIndex < 0 or endIndex > source.vector.len:
+    if endIndex < 0 or endIndex > source.vector.size:
       raise newInvalidArgumentError(
         "End index out of bounds for slice: index " & $endIndex &
-          " is outside valid range [0, " & $source.vector.len & "] for vector of length " &
-          $source.vector.len
+          " is outside valid range [0, " & $source.vector.size &
+          "] for vector of length " & $source.vector.size
       )
 
   # Validate that start index is less than end index
@@ -289,5 +258,44 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Create the result vector
   result = Value(kind: vkVector)
-  # Use Nim's slice operation to create the new vector
-  result.vector = source.vector[startIndex ..< endIndex]
+  # Create a new vector with the slice elements
+  result.vector = newVector[Value](endIndex - startIndex)
+
+  # Copy elements from source to result
+  for i in 0 ..< (endIndex - startIndex):
+    result.vector[i] = source.vector[startIndex + i]
+
+proc set*(vector, index, value: Value): Value =
+  ## Set the value at a specific index in a vector
+  ##
+  ## Parameters:
+  ## - vector: The vector to modify
+  ## - index: The index at which to set the value
+  ## - value: The value to set at the specified index
+  ##
+  ## Raises:
+  ## - TypeError: If the first argument is not a vector or if the second argument is not an integer
+  ## - InvalidArgumentError: If the index is out of bounds for the vector
+  ##
+  ## Returns:
+  ## - The previously set value at the specified index
+
+  if vector.kind != vkVector:
+    raise newTypeError(
+      "set expects a vector as the first argument, but got a " & $vector.kind
+    )
+  if index.kind != vkNumber or index.number.kind != nkInt:
+    raise newTypeError(
+      "set expects an integer as the second argument, but got a " & (
+        if index.kind == vkNumber: "a " & $index.number.kind & " number"
+        else: "a " & $index.kind
+      )
+    )
+  if index.number.iValue < 0 or index.number.iValue >= vector.vector.size:
+    raise newInvalidArgumentError(
+      "Index out of bounds for set: index " & $index.number.iValue &
+        " is outside valid range [0, " & $(vector.vector.size - 1) &
+        "] for vector of length " & $vector.vector.size
+    )
+  result = vector.vector[index.number.iValue]
+  vector.vector[index.number.iValue] = value

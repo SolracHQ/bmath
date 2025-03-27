@@ -62,10 +62,10 @@ derivResult = derivative(sqFunc, 3, 0.0001)  # Expected: ~6.0
 # Numerical integration (simple trapezoidal rule)
 integrate = |f, a, b, steps| {
   h = (b - a) / steps
-  _sum = (f(a) + f(b)) / 2
-  i = 1
-  _sum = seq(steps - 1, |i|f(a + i * h)) -> reduce(_sum, |acc, x| acc + x)
-  _sum * h
+  local sum = (f(a) + f(b)) / 2
+  local i = 1
+  sum = seq(steps - 1, |i|f(a + i * h)) -> reduce(sum, |acc, x| acc + x)
+  sum * h
 }
 
 # Example: Integrate x^2 from 0 to 1 (expected analytical result: 1/3)

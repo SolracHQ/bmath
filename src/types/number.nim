@@ -32,7 +32,7 @@ type
   ComplexCeilFloorRoundError* = object of NumericError
     ## Raised when ceil/floor/round is attempted with complex numbers
 
-proc newNumber*[T](value: T): Number {.inline.} =
+template newNumber*(value: typed): Number =
   ## Creates a new Number object based on the type of value
   when value is SomeInteger:
     Number(kind: nkInt, iValue: value.int)

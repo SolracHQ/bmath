@@ -1,7 +1,7 @@
 ## comparison.nim
 
 import utils, sequence
-import ../../../types/[value, number]
+import ../../../types/[value, number, vector]
 import ../errors
 
 proc `<`*(a, b: Value): Value {.inline, captureNumericError.} =
@@ -129,11 +129,11 @@ proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber and b.kind == vkNumber:
     result = newValue(a.number == b.number)
   elif a.kind == vkVector and b.kind == vkVector:
-    if a.vector.len != b.vector.len:
+    if a.vector.size != b.vector.size:
       result = newValue(false)
     else:
       var eq = true
-      for i in 0 ..< a.vector.len:
+      for i in 0 ..< a.vector.size:
         if (a.vector[i] != b.vector[i]).boolean:
           eq = false
           break
@@ -205,11 +205,11 @@ proc min*(args: openArray[Value], invoker: FnInvoker): Value =
   # Case 1/4: Single vector argument [with optional compare function]
   if args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkVector:
     let vec = args[0].vector
-    if vec.len == 0:
+    if vec.size == 0:
       raise newInvalidArgumentError("Cannot find minimum in empty vector")
 
     var minVal = vec[0]
-    for i in 1 ..< vec.len:
+    for i in 1 ..< vec.size:
       if isLess(vec[i], minVal):
         minVal = vec[i]
 
@@ -217,11 +217,11 @@ proc min*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Case 2/5: Single sequence argument [with optional compare function]
   elif args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkSeq:
-    var sequence = args[0]
+    var sequence = args[0].sequence
     var minVal: Value
     var initialized = false
 
-    for val in iter(sequence):
+    for val in sequence:
       if not initialized:
         minVal = val
         initialized = true
@@ -310,11 +310,11 @@ proc max*(args: openArray[Value], invoker: FnInvoker): Value =
   # Case 1/4: Single vector argument [with optional compare function]
   if args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkVector:
     let vec = args[0].vector
-    if vec.len == 0:
+    if vec.size == 0:
       raise newInvalidArgumentError("Cannot find maximum in empty vector")
 
     var maxVal = vec[0]
-    for i in 1 ..< vec.len:
+    for i in 1 ..< vec.size:
       if isGreater(vec[i], maxVal):
         maxVal = vec[i]
 
@@ -322,11 +322,11 @@ proc max*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Case 2/5: Single sequence argument [with optional compare function]
   elif args.len == 1 + (if hasCustomCompare: 1 else: 0) and args[0].kind == vkSeq:
-    var sequence = args[0]
+    var sequence = args[0].sequence
     var maxVal: Value
     var initialized = false
 
-    for val in iter(sequence):
+    for val in sequence:
       if not initialized:
         maxVal = val
         initialized = true
