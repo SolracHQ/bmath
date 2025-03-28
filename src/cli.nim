@@ -29,7 +29,9 @@ type
 
   InputError* = object of ValueError
 
-import strformat
+import std/[strformat, parsecfg, streams]
+
+const VERSION = staticRead("../bmath.nimble").newStringStream.loadConfig().getSectionValue("", "version")
 
 const
   RESET: string = "\x1B[0m"
@@ -42,7 +44,7 @@ const
 
 const HELP* =
   fmt"""
-{BOLD}{CYAN}Basic Math CLI{RESET}
+{BOLD}{CYAN}Basic Math CLI v{VERSION}{RESET}
 {BOLD}{YELLOW}Usage:{RESET}
   bm {MAGENTA}[options]{RESET} {MAGENTA}[expression]{RESET}
 

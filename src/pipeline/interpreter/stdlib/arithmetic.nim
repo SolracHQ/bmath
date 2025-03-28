@@ -1,6 +1,6 @@
 ## arithmetic.nim
 
-import ../../../types/[value, number]
+import ../../../types/[value, number, vector]
 import ../errors
 import utils
 
@@ -11,7 +11,7 @@ proc `+`*(a, b: Value): Value {.inline.}
 proc `+=`*(a: var Value, b: Value) {.inline.} =
   a = a + b
 
-proc `+`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
+proc `+`*(a, b: Vector[Value]): Value {.inline, captureNumericError.} =
   ## Add two vectors together
   ## 
   ## Parameters:
@@ -24,12 +24,12 @@ proc `+`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ## 
   ## Returns:
   ## - a new Value object with the result of the addition
-  if a.len != b.len:
-    raise newVectorLengthMismatchError(a.len, b.len)
+  if a.size != b.size:
+    raise newVectorLengthMismatchError(a.size, b.size)
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.len)
-  for i in 0 ..< a.len:
-    result.vector.add(a[i] + b[i])
+  result.vector = newVector[Value](a.size)
+  for i in 0 ..< a.size:
+    result.vector[i] = a[i] + b[i]
 
 proc `+`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Add two values together
@@ -54,7 +54,7 @@ proc `+`*(a, b: Value): Value {.inline, captureNumericError.} =
 # ----- Subtraction procedures -----
 proc `-`*(a, b: Value): Value {.inline.}
 
-proc `-`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
+proc `-`*(a, b: Vector[Value]): Value {.inline, captureNumericError.} =
   ## Subtract two vectors
   ##
   ## Parameters:
@@ -67,12 +67,12 @@ proc `-`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the subtraction
-  if a.len != b.len:
-    raise newVectorLengthMismatchError(a.len, b.len)
+  if a.size != b.size:
+    raise newVectorLengthMismatchError(a.size, b.size)
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.len)
-  for i in 0 ..< a.len:
-    result.vector.add(a[i] - b[i])
+  result.vector = newVector[Value](a.size)
+  for i in 0 ..< a.size:
+    result.vector[i] = a[i] - b[i]
 
 proc `-`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Subtract two values
@@ -98,7 +98,7 @@ proc `-`*(a, b: Value): Value {.inline, captureNumericError.} =
 
 proc `*`*(a, b: Value): Value {.inline.}
 
-proc `*`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
+proc `*`*(a, b: Vector[Value]): Value {.inline, captureNumericError.} =
   ## Make dot product of two vectors
   ##
   ## Parameters:
@@ -111,13 +111,13 @@ proc `*`*(a, b: openArray[Value]): Value {.inline, captureNumericError.} =
   ##
   ## Returns:
   ## - a new Value object with the result of the multiplication
-  if a.len != b.len:
-    raise newVectorLengthMismatchError(a.len, b.len)
+  if a.size != b.size:
+    raise newVectorLengthMismatchError(a.size, b.size)
   result = newValue(0)
-  for i in 0 ..< a.len:
+  for i in 0 ..< a.size:
     result = result + a[i] * b[i]
 
-proc `*`*(a: Value, b: openArray[Value]): Value {.inline, captureNumericError.} =
+proc `*`*(a: Value, b: Vector[Value]): Value {.inline, captureNumericError.} =
   ## Multiply a number with a vector
   ##
   ## Parameters:
@@ -130,9 +130,9 @@ proc `*`*(a: Value, b: openArray[Value]): Value {.inline, captureNumericError.} 
   ## Raises:
   ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](b.len)
-  for i in 0 ..< b.len:
-    result.vector.add(a * b[i])
+  result.vector = newVector[Value](b.size)
+  for i in 0 ..< b.size:
+    result.vector[i] = a * b[i]
 
 proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Multiply two values
@@ -162,7 +162,7 @@ proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
 
 proc `/`*(a, b: Value): Value {.inline.}
 
-proc `/`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} =
+proc `/`*(a: Vector[Value], b: Value): Value {.inline, captureNumericError.} =
   ## Divide a vector by a number
   ##
   ## Parameters:
@@ -175,9 +175,9 @@ proc `/`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} 
   ## Raises:
   ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.len)
-  for i in 0 ..< a.len:
-    result.vector.add(a[i] / b)
+  result.vector = newVector[Value](a.size)
+  for i in 0 ..< a.size:
+    result.vector[i] = a[i] / b
 
 proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Divide two values
@@ -208,7 +208,7 @@ proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
 
 proc `%`*(a, b: Value): Value {.inline.}
 
-proc `%`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} =
+proc `%`*(a: Vector[Value], b: Value): Value {.inline, captureNumericError.} =
   ## Modulus of a vector by a number
   ##
   ## Parameters:
@@ -221,9 +221,9 @@ proc `%`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} 
   ## Raises:
   ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.len)
-  for i in 0 ..< a.len:
-    result.vector.add(a[i] % b)
+  result.vector = newVector[Value](a.size)
+  for i in 0 ..< a.size:
+    result.vector[i] = a[i] % b
 
 proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Modulus of two values
@@ -254,7 +254,7 @@ proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
 
 proc `^`*(a, b: Value): Value {.inline.}
 
-proc `^`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} =
+proc `^`*(a: Vector[Value], b: Value): Value {.inline, captureNumericError.} =
   ## Exponentiation of a vector by a number
   ##
   ## Parameters:
@@ -267,9 +267,9 @@ proc `^`*(a: openArray[Value], b: Value): Value {.inline, captureNumericError.} 
   ## Raises:
   ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.len)
-  for i in 0 ..< a.len:
-    result.vector.add(a[i] ^ b)
+  result.vector = newVector[Value](a.size)
+  for i in 0 ..< a.size:
+    result.vector[i] = a[i] ^ b
 
 proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Exponentiation of two values
@@ -294,7 +294,7 @@ proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
 # ----- Unary procedures -----
 proc `-`*(a: Value): Value {.inline.}
 
-proc `-`*(a: openArray[Value]): Value {.inline, captureNumericError.} =
+proc `-`*(a: Vector[Value]): Value {.inline, captureNumericError.} =
   ## Negate a vector
   ##
   ## Parameters:
@@ -306,8 +306,8 @@ proc `-`*(a: openArray[Value]): Value {.inline, captureNumericError.} =
   ## Raises:
   ## - ArithmeticError: for numeric calculation errors
   result = Value(kind: vkVector)
-  result.vector = newSeqOfCap[Value](a.len)
-  for i in 0 ..< a.len:
+  result.vector = newVector[Value](a.size)
+  for i in 0 ..< a.size:
     result.vector[i] = -a[i]
 
 proc `-`*(a: Value): Value {.inline, captureNumericError.} =

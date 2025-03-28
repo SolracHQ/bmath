@@ -11,6 +11,6 @@
 - [Trigonometric and Mathematical Functions](stdlib/trigonometric.md)
 - [Vector Operations](stdlib/vector-operations.md)
 - [Sequence Operations](stdlib/sequence-operations.md)
-- [Iteration Utilities](stdlib/iteration.md)
+- [Functional Utilities](stdlib/functional.md)
 
 For a complete overview of all functions, see the [Standard Library Index](stdlib/index.md).

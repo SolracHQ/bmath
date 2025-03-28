@@ -6,7 +6,7 @@
 
 import std/[strutils, tables, sequtils, complex]
 
-import position, expression, number
+import position, expression, number, vector
 export Position
 
 type
@@ -40,7 +40,7 @@ type
     of vkFunction:
       function*: Function ## User-defined function storage when kind is `vkFunction`
     of vkVector:
-      vector*: seq[Value] ## Vector storage when kind is `vkVector`
+      vector*: Vector[Value] ## Vector storage when kind is `vkVector`
     of vkSeq:
       sequence*: Sequence ## Sequence storage when kind is `vkSeq`
 
@@ -132,7 +132,7 @@ proc `$`*(value: Value): string =
   of vkFunction:
     "|" & value.function.params.join(", ") & "| " & value.function.body.asSource
   of vkVector:
-    "[" & value.vector.mapIt($it).join(", ") & "]"
+    "[" & value.vector.toSeq.mapIt($it).join(", ") & "]"
   of vkSeq:
     "<seq>"
 
@@ -162,6 +162,6 @@ when defined(showSize):
     echo "   ├─ vkFunction variant"
     echo "   │  └─ Function pointer size: ", sizeof(ref Function), " bytes"
     echo "   ├─ vkVector variant"
-    echo "   │  └─ Vector component (seq): ", sizeof(seq[Value]), " bytes"
+    echo "   │  └─ Vector component: ", sizeof(Vector[Value]), " bytes"
     echo "   └─ vkSeq variant"
     echo "      └─ Sequence pointer size: ", sizeof(ref Sequence), " bytes"

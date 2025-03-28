@@ -11,20 +11,12 @@
 ## and proper closure behavior.
 
 import std/[sets, tables, macros, complex]
-import stdlib/[arithmetic, trigonometry, vector, sequence, itertools, comparison]
+import
+  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control]
 import ../../types/[value, expression]
 import errors
 
 from math import E, PI
-
-const CORE_NAMES* = toHashSet(
-  [
-    "pow", "exit", "sqrt", "floor", "ceil", "round", "dot", "vec", "nth", "first",
-    "last", "sin", "cos", "tan", "cot", "sec", "csc", "log", "exp", "len", "map",
-    "filter", "reduce", "sum", "any", "all", "collect", "seq", "skip", "hasNext",
-    "next", "e", "pi", "i", "abs", "merge", "slice", "take", "zip", "min", "max",
-  ]
-)
 
 macro native(call: untyped): Value =
   ## Creates a NativeFunc from function call syntax.
@@ -72,23 +64,23 @@ let global = Environment(
   parent: nil,
   values: toTable(
     {
-      "exit": native(quit()),
+      # Program Control
+      "exit": Value(kind: vkNativeFunc, nativeFn: exit),
+
+      # Mathematical Constants
+      "pi": newValue(PI),
+      "e": newValue(E),
+      "i": newValue(complex[float](0.0, 1.0)),
+
+      # Basic Arithmetic and Math Functions
       "pow": native(`^`(number, number)),
       "sqrt": native(sqrt(number)),
       "floor": native(floor(number)),
       "ceil": native(ceil(number)),
       "abs": native(abs(number)),
       "round": native(round(number)),
-      "dot": native(dotProduct(vector, vector)),
-      "nth": native(nth(vector, number)),
-      "first": native(first(vector)),
-      "last": native(last(vector)),
-      "vec": Value(kind: vkNativeFunc, nativeFn: vec),
-      "seq": Value(kind: vkNativeFunc, nativeFn: sequence),
-      "map": Value(kind: vkNativeFunc, nativeFn: itertools.map),
-      "filter": Value(kind: vkNativeFunc, nativeFn: itertools.filter),
-      "reduce": Value(kind: vkNativeFunc, nativeFn: itertools.reduce),
-      "collect": native(collect(sequence)),
+
+      # Trigonometric Functions
       "sin": native(sin(number)),
       "cos": native(cos(number)),
       "tan": native(tan(number)),
@@ -97,20 +89,35 @@ let global = Environment(
       "csc": native(csc(number)),
       "log": native(log(number, base)),
       "exp": native(exp(number)),
+
+      # Vector Operations
+      "vec": Value(kind: vkNativeFunc, nativeFn: vec),
       "len": native(len(vector)),
       "sum": native(sum(vector)),
-      "any": native(any(vector)),
-      "all": native(all(vector)),
-      "skip": native(skip(sequence, number)),
-      "hasNext": native(hasNext(sequence)),
-      "next": native(next(sequence)),
-      "e": newValue(E),
-      "pi": newValue(PI),
-      "i": newValue(complex[float](0.0, 1.0)),
+      "dot": native(dotProduct(vector, vector)),
+      "first": native(first(vector)),
+      "last": native(last(vector)),
       "merge": native(merge(vector, vector)),
       "slice": Value(kind: vkNativeFunc, nativeFn: slice),
+      "set": native(set(vector, number, value)),
+
+      # Sequence Operations
+      "seq": Value(kind: vkNativeFunc, nativeFn: sequence),
+      "collect": native(collect(sequence)),
+      "skip": native(skip(sequence, number)),
       "take": native(take(sequence, number)),
+      "hasNext": native(hasNext(sequence)),
+      "next": native(next(sequence)),
       "zip": native(zip(sequence, sequence)),
+
+      # Functional Programming Utilities
+      "map": Value(kind: vkNativeFunc, nativeFn: map),
+      "filter": Value(kind: vkNativeFunc, nativeFn: filter),
+      "reduce": Value(kind: vkNativeFunc, nativeFn: reduce),
+      "any": native(any(vector)),
+      "all": native(all(vector)),
+      "nth": native(nth(vector, number)),
+      "at": native(nth(vector, number)), # Alias for nth
       "min": Value(kind: vkNativeFunc, nativeFn: min),
       "max": Value(kind: vkNativeFunc, nativeFn: max),
     }
@@ -177,15 +184,15 @@ proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
     # If this is reached, it means there's a bug in the interpreter
     # because the environment should never be nil.
     raise newException(ValueError, "Trying to write on a nil environment")
-  if name in CORE_NAMES and not local:
-    raise newReservedNameError(name)
   if local:
     env.values[name] = value
     return
   var current = env
-  while current != nil:
+  while current != nil and current != global:
     if current.values.hasKey(name):
       current.values[name] = value
       return
     current = current.parent
+  if current == global and name in global.values:
+    raise newReservedNameError(name)
   env.values[name] = value

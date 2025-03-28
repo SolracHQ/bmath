@@ -1,5 +1,27 @@
 # Changelog
 
+## Version 0.10.0
+- Redesigned vector internal representation to modify by reference:
+  - Implemented custom vector type with fixed-size memory allocation
+  - Added set function to modify vector elements at specific indices
+  - Prevented common errors by disallowing dynamic size changes after creation
+- Fixed bug in sequence take method (resolves [#13](https://github.com/SolracHQ/bmath/issues/13)):
+  - Fixed issue where take(n) didn't account for elements filtered out in sequence operations
+  - Implemented improved filter tracking to ensure the requested number of elements are collected
+  - Enhanced sequence pipeline processing with proper element count maintenance
+  - Corrected premature sequence exhaustion during chained transformations
+- Enhanced nth functionality to work seamlessly with sequences:
+  - Implemented consistent behavior between vector and sequence indexing
+  - Added progressive element consumption for sequence traversal
+- Added 'at' as an intuitive alias for the nth function:
+  - Created consistent semantic interface for indexing operations
+  - Maintained full compatibility with existing code using nth
+  - Improved code readability when accessing collection elements
+- Improved exit function to accept optional exit code parameter:
+  - Added support for specifying custom exit codes when terminating execution
+  - Updated documentation to reflect new parameter option
+  - Maintained backward compatibility with parameterless calls
+
 ## Version 0.9.0
 - Removed AST optimizer after benchmarking with hyperfine and valgrind/callgrind:
   - Performance impact was significantly negative (1.9x to 2.6x slower)

@@ -21,12 +21,12 @@ squaresVector = vec(5, |i| i^2)        # [0, 1, 4, 9, 16]
 # [2] Vector Access and Information
 # -------------------------------
 # Getting vector length
-vectorLength = len(intVector)          # Expected: 5
+vectorLength = intVector->len          # Expected: 5
 
 # Accessing elements
-firstElement = first(intVector)        # Expected: 1
-lastElement = last(intVector)          # Expected: 5
-thirdElement = nth(intVector, 2)       # Expected: 3 (0-based indexing)
+firstElement = intVector->first        # Expected: 1
+lastElement = intVector->last          # Expected: 5
+thirdElement = intVector->nth(2)       # Expected: 3 (0-based indexing)
 
 # [3] Element-wise Arithmetic
 # -------------------------
@@ -45,7 +45,7 @@ poweredVector = vectorA ^ 2           # Expected: [1, 4, 9]
 # [4] Vector Products
 # ----------------
 # Dot product
-dotProduct = dot(vectorA, vectorB)    # Expected: 32 (1*4 + 2*5 + 3*6)
+dotProduct = vectorA->dot(vectorB)    # Expected: 32 (1*4 + 2*5 + 3*6)
 
 # [5] Vector Operations with Mixed Types
 # -----------------------------------
@@ -55,13 +55,13 @@ intAndFloatVector = intVector + floatVector  # Type promotion to float
 # [6] Higher-Order Functions with Vectors
 # ------------------------------------
 # Map: Apply a function to each element
-mappedVector = map(intVector, |x| x * 2)    # Expected: [2, 4, 6, 8, 10]
+mappedVector = intVector->map(|x| x * 2)    # Expected: [2, 4, 6, 8, 10]
 
 # Filter: Select elements that satisfy a predicate
-evenNumbers = filter(intVector, |x| x % 2 == 0)  # Expected: [2, 4]
+evenNumbers = intVector->filter(|x| x % 2 == 0)  # Expected: [2, 4]
 
 # Reduce: Combine elements using a binary function
-vectorSum = reduce(intVector, 0, |acc, x| acc + x)  # Expected: 15
+vectorSum = intVector->reduce(0, |acc, x| acc + x)  # Expected: 15
 
 # [7] Chaining Operations with Arrow Operator
 # ----------------------------------------
@@ -72,30 +72,30 @@ processedVector = intVector -> \
 # [8] Complex Number Vectors
 # -----------------------
 complexVector = [3+4i, 1-2i, 5i]
-complexVectorSum = sum(complexVector)   # Expected: 4+7i
+complexVectorSum = complexVector->sum   # Expected: 4+7i
 
 # [9] Boolean Vector Operations
 # --------------------------
 boolVector1 = [true, true, false]
 boolVector2 = [true, false, false]
 
-anyTrueResult = any(boolVector1)     # Expected: true
-allTrueResult = all(boolVector1)     # Expected: false
-allFalseResult = all([false, false, false])  # Expected: false
+anyTrueResult = boolVector1->any     # Expected: true
+allTrueResult = boolVector1->all     # Expected: false
+allFalseResult = [false, false, false]->all  # Expected: false
 
 # [10] Nested Vectors
 # ----------------
 nestedVector = [[1, 2], [3, 4], [5, 6]]
-firstInnerVector = first(nestedVector)  # Expected: [1, 2]
+firstInnerVector = nestedVector->first  # Expected: [1, 2]
 
 # [11] Vector Manipulation Functions
 # --------------------------------
 # Merge: Combine two vectors into one
 vector1 = [1, 2, 3]
 vector2 = [4, 5, 6]
-mergedVector = merge(vector1, vector2)  # Expected: [1, 2, 3, 4, 5, 6]
+mergedVector = vector1->merge(vector2)  # Expected: [1, 2, 3, 4, 5, 6]
 
 # Slice: Extract a portion of a vector
 numbers = [10, 20, 30, 40, 50]
-firstThree = slice(numbers, 3)          # Expected: [10, 20, 30]
-middleSlice = slice(numbers, 1, 4)      # Expected: [20, 30, 40]
+firstThree = numbers->slice(3)          # Expected: [10, 20, 30]
+middleSlice = numbers->slice(1, 4)      # Expected: [20, 30, 40]
