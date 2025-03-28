@@ -102,10 +102,10 @@ perfectSquares = naturalNumbers -> \
 # ---------------------------
 # Create a sequence of running average
 runningAvg = |numbers| {
-  _sum = 0
+  local sum = 0
   seq(len(numbers), |i| {
-    _sum = _sum + nth(numbers, i)
-    _sum / (i + 1)
+    sum = sum + nth(numbers, i)
+    sum / (i + 1)
   }) -> collect
 }
 

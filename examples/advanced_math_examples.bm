@@ -74,13 +74,13 @@ intResult = integrate(sqFunc, 0, 1, 100000)  # Expected: ~0.333
 # [6] Statistical Functions
 # ----------------------
 # Calculate mean of a vector
-mean = |values| sum(values) / len(values)
+mean = |values| values->sum / values->len
 meanExample = mean([2, 4, 6, 8, 10])  # Expected: 6.0
 
 # Calculate variance
 variance = |values| {
   m = mean(values)
-  squaredDiffs = map(values, |x| (x - m)^2)
+  squaredDiffs = values->map(|x| (x - m)^2)
   mean(squaredDiffs)
 }
 varianceExample = variance([2, 4, 6, 8, 10])  # Expected: 8.0
@@ -101,12 +101,12 @@ binomialExample = binomial(7, 3)  # Expected: 35
 # [8] Working with Vectors in Advanced Math
 # --------------------------------------
 # Calculate the magnitude (length) of a vector
-magnitude = |vector| sqrt(reduce(map(vector, |x| x^2), 0, |a, b| a + b))
+magnitude = |vector| sqrt(vector->map(|x| x^2)->reduce(0, |a, b| a + b))
 magExample = magnitude([3, 4])  # Expected: 5.0
 
 # Normalize a vector (make it unit length)
 normalize = |vector| {
   mag = magnitude(vector)
-  map(vector, |x| x / mag)
+  vector->map(|x| x / mag)
 }
 normExample = normalize([3, 4])  # Expected: [0.6, 0.8]

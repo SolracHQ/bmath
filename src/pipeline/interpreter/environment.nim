@@ -184,15 +184,15 @@ proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
     # If this is reached, it means there's a bug in the interpreter
     # because the environment should never be nil.
     raise newException(ValueError, "Trying to write on a nil environment")
-  if name in global.values and not local and name notin env.values:
-    raise newReservedNameError(name)
   if local:
     env.values[name] = value
     return
   var current = env
-  while current != nil:
+  while current != nil and current != global:
     if current.values.hasKey(name):
       current.values[name] = value
       return
     current = current.parent
+  if current == global and name in global.values:
+    raise newReservedNameError(name)
   env.values[name] = value

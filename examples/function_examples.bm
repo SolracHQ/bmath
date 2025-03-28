@@ -75,11 +75,11 @@ fib6 = fibonacci(6)                 # Expected: 8
 # -----------------------------
 # Function with multi-line block body
 calculateStats = |numbers| {
-  _sum = reduce(numbers, 0, |acc, n| acc + n)
-  mean = _sum / len(numbers)
+  local sum = numbers->reduce(0, |acc, n| acc + n)
+  mean = sum / numbers->len
   
   # Return multiple values as a vector
-  [_sum, mean]
+  [sum, mean]
 }
 
 stats = calculateStats([1, 2, 3, 4, 5])  # Expected: [15, 3.0]
@@ -99,5 +99,5 @@ result4 = doubleAndSquare(3)        # Expected: 36 ((3*2)²)
 # [10] Function with Variable Number of Terms
 # ----------------------------------------
 # Simulate handling multiple terms using a vector argument
-sumAll = |numbers| reduce(numbers, 0, |_sum, n| _sum + n)
-result5 = sum([1, 2, 3, 4, 5])   # Expected: 15
+sumAll = |numbers| numbers->reduce(0, |sum, n| sum + n)
+result5 = [1, 2, 3, 4, 5]->sum   # Expected: 15
