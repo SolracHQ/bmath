@@ -140,9 +140,7 @@ Future enhancements will include:
 
 ## ToDo
 
-- Implement try-catch expression functionality for error handling
-- Improve UI for error reporting to highlight the exact location of errors in source code
-- Continue expanding the standard library with useful mathematical functions
+See the [ToDo](TODO.md) file for a list of planned features and improvements.
 
 ## Development
 
@@ -157,9 +155,8 @@ Future enhancements will include:
 1. **CLI Parsing:** Process command-line arguments.
 2. **Lexical Analysis:** Tokenize source code.
 3. **Syntax Parsing:** Construct the abstract syntax tree.
-4. **AST Optimization:** Optimize the AST.
-5. **AST Evaluation:** Execute the expressions.
-6. **Output:** Display results or error messages.
+4. **AST Evaluation:** Execute the expressions.
+5. **Output:** Display results or error messages.
 
 ## Changelog
 
