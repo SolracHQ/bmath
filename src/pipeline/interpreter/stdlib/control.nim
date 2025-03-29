@@ -28,7 +28,7 @@ proc exit*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # If an argument is provided, check that it's an integer
   if args.len == 1:
-    if args[0].kind != vkNumber or args[0].number.kind != nkInt:
+    if args[0].kind != vkNumber or args[0].number.kind != nkInteger:
       raise newTypeError(
         "exit expects an integer value for the exit code, but got " & (
           if args[0].kind == vkNumber: "a " & $args[0].number.kind & " number"
@@ -36,7 +36,7 @@ proc exit*(args: openArray[Value], invoker: FnInvoker): Value =
         )
       )
 
-    exitCode = args[0].number.iValue
+    exitCode = args[0].number.integer
 
   # Exit the program with the specified exit code
   quit(exitCode)

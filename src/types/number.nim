@@ -5,18 +5,18 @@ import errors
 
 type
   NumberKind* = enum
-    nkInt ## Integer number
-    nkFloat ## Floating-point number
+    nkInteger ## Integer number
+    nkReal ## Floating-point number
     nkComplex ## Complex number
 
   Number* = object
     case kind*: NumberKind
-    of nkInt:
-      iValue*: int ## Integer value
-    of nkFloat:
-      fValue*: float ## Floating-point value
+    of nkInteger:
+      integer*: int ## Integer value
+    of nkReal:
+      real*: float ## Floating-point value
     of nkComplex:
-      cValue*: Complex[float] ## Complex number value
+      complex*: Complex[float] ## Complex number value
 
   NumericError* = object of BMathError
 
@@ -35,48 +35,48 @@ type
 template newNumber*(value: typed): Number =
   ## Creates a new Number object based on the type of value
   when value is SomeInteger:
-    Number(kind: nkInt, iValue: value.int)
+    Number(kind: nkInteger, integer: value.int)
   elif value is SomeFloat:
-    Number(kind: nkFloat, fValue: value.float)
+    Number(kind: nkReal, real: value.float)
   elif value is Complex[float]:
     if value.im == 0.0:
-      Number(kind: nkFloat, fValue: value.re)
+      Number(kind: nkReal, real: value.re)
     else:
-      Number(kind: nkComplex, cValue: value)
+      Number(kind: nkComplex, complex: value)
   else:
     {.error: "Unsupported type for Number".}
 
 template newNumber*(re: SomeFloat, im: SomeFloat): Number =
   ## Creates a new Number object from real and imaginary parts
-  Number(kind: nkComplex, cValue: complex(re.float, im.float))
+  Number(kind: nkComplex, complex: complex(re.float, im.float))
 
 const ZERO* = newNumber(0)
 
 proc isZero*(n: Number): bool {.inline.} =
   ## Checks if a Number object is zero
   case n.kind
-  of nkInt:
-    return n.iValue == 0
-  of nkFloat:
-    return n.fValue == 0.0
+  of nkInteger:
+    return n.integer == 0
+  of nkReal:
+    return n.real == 0.0
   of nkComplex:
-    return n.cValue.re == 0.0 and n.cValue.im == 0.0
+    return n.complex.re == 0.0 and n.complex.im == 0.0
 
 template toComplex(n: Number): Complex[float] =
   case n.kind
-  of nkInt:
-    complex(n.iValue.float, 0.0)
-  of nkFloat:
-    complex(n.fValue, 0.0)
+  of nkInteger:
+    complex(n.integer.float, 0.0)
+  of nkReal:
+    complex(n.real, 0.0)
   of nkComplex:
-    n.cValue
+    n.complex
 
 template toFloat(n: Number): float =
   case n.kind
-  of nkInt:
-    n.iValue.float
-  of nkFloat:
-    n.fValue
+  of nkInteger:
+    n.integer.float
+  of nkReal:
+    n.real
   of nkComplex:
     raise (ref NumericError)(msg: "Cannot convert complex number to float")
 
@@ -89,10 +89,10 @@ proc `+`*(a, b: Number): Number {.inline.} =
   ## only operations between int values will return int.
   if a.kind == nkComplex or b.kind == nkComplex:
     return newNumber(toComplex(a) + toComplex(b))
-  elif a.kind == nkFloat or b.kind == nkFloat:
+  elif a.kind == nkReal or b.kind == nkReal:
     return newNumber(toFloat(a) + toFloat(b))
   else:
-    return newNumber(a.iValue + b.iValue)
+    return newNumber(a.integer + b.integer)
 
 proc `-`*(a, b: Number): Number {.inline.} =
   ## Subtracts two Number objects
@@ -103,20 +103,20 @@ proc `-`*(a, b: Number): Number {.inline.} =
   ## only operations between int values will return int.
   if a.kind == nkComplex or b.kind == nkComplex:
     return newNumber(toComplex(a) - toComplex(b))
-  elif a.kind == nkFloat or b.kind == nkFloat:
+  elif a.kind == nkReal or b.kind == nkReal:
     return newNumber(toFloat(a) - toFloat(b))
   else:
-    return newNumber(a.iValue - b.iValue)
+    return newNumber(a.integer - b.integer)
 
 proc `-`*(a: Number): Number {.inline.} =
   ## Negates a Number object
   case a.kind
-  of nkInt:
-    return newNumber(-a.iValue)
-  of nkFloat:
-    return newNumber(-a.fValue)
+  of nkInteger:
+    return newNumber(-a.integer)
+  of nkReal:
+    return newNumber(-a.real)
   of nkComplex:
-    return newNumber(-a.cValue)
+    return newNumber(-a.complex)
 
 proc `*`*(a, b: Number): Number {.inline.} =
   ## Multiplies two Number objects
@@ -127,10 +127,10 @@ proc `*`*(a, b: Number): Number {.inline.} =
   ## only operations between int values will return int.
   if a.kind == nkComplex or b.kind == nkComplex:
     return newNumber(toComplex(a) * toComplex(b))
-  elif a.kind == nkFloat or b.kind == nkFloat:
+  elif a.kind == nkReal or b.kind == nkReal:
     return newNumber(toFloat(a) * toFloat(b))
   else:
-    return newNumber(a.iValue * b.iValue)
+    return newNumber(a.integer * b.integer)
 
 proc `/`*(a, b: Number): Number {.inline.} =
   ## Divides two Number objects
@@ -144,10 +144,10 @@ proc `/`*(a, b: Number): Number {.inline.} =
 
   if a.kind == nkComplex or b.kind == nkComplex:
     return newNumber(toComplex(a) / toComplex(b))
-  elif a.kind == nkFloat or b.kind == nkFloat:
+  elif a.kind == nkReal or b.kind == nkReal:
     return newNumber(toFloat(a) / toFloat(b))
   else:
-    return newNumber(a.iValue / b.iValue)
+    return newNumber(a.integer / b.integer)
 
 proc `%`*(a, b: Number): Number {.inline.} =
   ## Modulus operation for two Number objects
@@ -164,10 +164,10 @@ proc `%`*(a, b: Number): Number {.inline.} =
     raise (ref ComplexModulusError)(
       msg: "Modulus operation not supported for complex numbers"
     )
-  elif a.kind == nkFloat or b.kind == nkFloat:
+  elif a.kind == nkReal or b.kind == nkReal:
     return newNumber(toFloat(a) mod toFloat(b))
   else:
-    return newNumber(a.iValue mod b.iValue)
+    return newNumber(a.integer mod b.integer)
 
 proc `^`*(a, b: Number): Number {.inline.} =
   ## Raises a Number object to the power of another
@@ -182,13 +182,13 @@ proc `^`*(a, b: Number): Number {.inline.} =
   ## - NumericError: for errors during power operation
   if a.kind == nkComplex or b.kind == nkComplex:
     return newNumber(toComplex(a).pow toComplex(b))
-  elif a.kind == nkFloat or b.kind == nkFloat:
+  elif a.kind == nkReal or b.kind == nkReal:
     return newNumber(toFloat(a) ^ toFloat(b))
   else:
-    if b.iValue < 0:
-      return newNumber(a.iValue.float ^ b.iValue.float)
+    if b.integer < 0:
+      return newNumber(a.integer.float ^ b.integer.float)
     else:
-      return newNumber(a.iValue ^ b.iValue)
+      return newNumber(a.integer ^ b.integer)
 
 proc sqrt*(n: Number): Number {.inline.} =
   ## Returns the square root of a Number object
@@ -196,16 +196,16 @@ proc sqrt*(n: Number): Number {.inline.} =
   ## Raises:
   ## - NumericError: for errors during square root calculation
   case n.kind
-  of nkInt:
-    if n.iValue < 0:
+  of nkInteger:
+    if n.integer < 0:
       return newNumber(sqrt(n.toComplex()))
-    return newNumber(sqrt(n.iValue.float))
-  of nkFloat:
-    if n.fValue < 0:
+    return newNumber(sqrt(n.integer.float))
+  of nkReal:
+    if n.real < 0:
       return newNumber(sqrt(n.toComplex()))
-    return newNumber(sqrt(n.fValue))
+    return newNumber(sqrt(n.real))
   of nkComplex:
-    return newNumber(sqrt(n.cValue))
+    return newNumber(sqrt(n.complex))
 
 proc `==`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for equality
@@ -217,12 +217,12 @@ proc sin*(n: Number): Number {.inline.} =
   ## Raises:
   ## - NumericError: for errors during sine calculation
   case n.kind
-  of nkInt:
-    return newNumber(sin(n.iValue.float))
-  of nkFloat:
-    return newNumber(sin(n.fValue))
+  of nkInteger:
+    return newNumber(sin(n.integer.float))
+  of nkReal:
+    return newNumber(sin(n.real))
   of nkComplex:
-    return newNumber(sin(n.cValue))
+    return newNumber(sin(n.complex))
 
 proc cos*(n: Number): Number {.inline.} =
   ## Returns the cosine of a Number object
@@ -230,12 +230,12 @@ proc cos*(n: Number): Number {.inline.} =
   ## Raises:
   ## - NumericError: for errors during cosine calculation
   case n.kind
-  of nkInt:
-    return newNumber(cos(n.iValue.float))
-  of nkFloat:
-    return newNumber(cos(n.fValue))
+  of nkInteger:
+    return newNumber(cos(n.integer.float))
+  of nkReal:
+    return newNumber(cos(n.real))
   of nkComplex:
-    return newNumber(cos(n.cValue))
+    return newNumber(cos(n.complex))
 
 proc tan*(n: Number): Number {.inline.} =
   ## Returns the tangent of a Number object
@@ -243,42 +243,42 @@ proc tan*(n: Number): Number {.inline.} =
   ## Raises:
   ## - NumericError: for errors during tangent calculation
   case n.kind
-  of nkInt:
-    return newNumber(tan(n.iValue.float))
-  of nkFloat:
-    return newNumber(tan(n.fValue))
+  of nkInteger:
+    return newNumber(tan(n.integer.float))
+  of nkReal:
+    return newNumber(tan(n.real))
   of nkComplex:
-    return newNumber(tan(n.cValue))
+    return newNumber(tan(n.complex))
 
 proc cot*(n: Number): Number {.inline.} =
   ## Returns the cotangent of a Number object
   case n.kind
-  of nkInt:
-    newNumber(cot(n.iValue.float))
-  of nkFloat:
-    newNumber(cot(n.fValue))
+  of nkInteger:
+    newNumber(cot(n.integer.float))
+  of nkReal:
+    newNumber(cot(n.real))
   of nkComplex:
-    return newNumber(cot(n.cValue))
+    return newNumber(cot(n.complex))
 
 proc sec*(n: Number): Number {.inline.} =
   ## Returns the secant of a Number object
   case n.kind
-  of nkInt:
-    newNumber(sec(n.iValue.float))
-  of nkFloat:
-    newNumber(sec(n.fValue))
+  of nkInteger:
+    newNumber(sec(n.integer.float))
+  of nkReal:
+    newNumber(sec(n.real))
   of nkComplex:
-    return newNumber(sec(n.cValue))
+    return newNumber(sec(n.complex))
 
 proc csc*(n: Number): Number {.inline.} =
   ## Returns the cosecant of a Number object
   case n.kind
-  of nkInt:
-    newNumber(csc(n.iValue.float))
-  of nkFloat:
-    newNumber(csc(n.fValue))
+  of nkInteger:
+    newNumber(csc(n.integer.float))
+  of nkReal:
+    newNumber(csc(n.real))
   of nkComplex:
-    return newNumber(csc(n.cValue))
+    return newNumber(csc(n.complex))
 
 proc log*(n: Number, base: Number): Number {.inline.} =
   ## Returns the natural logarithm of a Number object
@@ -296,10 +296,10 @@ proc ceil*(n: Number): Number {.inline.} =
   ## Raises:
   ## - ComplexCeilFloorRoundError: when attempting with complex numbers
   case n.kind
-  of nkInt:
+  of nkInteger:
     return n
-  of nkFloat:
-    return newNumber(ceil(n.fValue).int)
+  of nkReal:
+    return newNumber(ceil(n.real).int)
   of nkComplex:
     raise (ref ComplexCeilFloorRoundError)(
       msg: "Ceiling operation not supported for complex numbers"
@@ -308,12 +308,12 @@ proc ceil*(n: Number): Number {.inline.} =
 proc abs*(n: Number): Number {.inline.} =
   ## Returns the absolute value of a Number object
   case n.kind
-  of nkInt:
-    return newNumber(abs(n.iValue))
-  of nkFloat:
-    return newNumber(abs(n.fValue))
+  of nkInteger:
+    return newNumber(abs(n.integer))
+  of nkReal:
+    return newNumber(abs(n.real))
   of nkComplex:
-    return newNumber(abs(n.cValue))
+    return newNumber(abs(n.complex))
 
 proc floor*(n: Number): Number {.inline.} =
   ## Returns the floor of a Number object
@@ -321,10 +321,10 @@ proc floor*(n: Number): Number {.inline.} =
   ## Raises:
   ## - ComplexCeilFloorRoundError: when attempting with complex numbers
   case n.kind
-  of nkInt:
+  of nkInteger:
     return n
-  of nkFloat:
-    return newNumber(floor(n.fValue).int)
+  of nkReal:
+    return newNumber(floor(n.real).int)
   of nkComplex:
     raise (ref ComplexCeilFloorRoundError)(
       msg: "Floor operation not supported for complex numbers"
@@ -336,10 +336,10 @@ proc round*(n: Number): Number {.inline.} =
   ## Raises:
   ## - ComplexCeilFloorRoundError: when attempting with complex numbers
   case n.kind
-  of nkInt:
+  of nkInteger:
     return n
-  of nkFloat:
-    return newNumber(round(n.fValue).int)
+  of nkReal:
+    return newNumber(round(n.real).int)
   of nkComplex:
     raise (ref ComplexCeilFloorRoundError)(
       msg: "Round operation not supported for complex numbers"
@@ -351,12 +351,12 @@ proc exp*(n: Number): Number {.inline.} =
   ## Raises:
   ## - NumericError: for errors during exponential calculation
   case n.kind
-  of nkInt:
-    return newNumber(exp(n.iValue.float))
-  of nkFloat:
-    return newNumber(exp(n.fValue))
+  of nkInteger:
+    return newNumber(exp(n.integer.float))
+  of nkReal:
+    return newNumber(exp(n.real))
   of nkComplex:
-    return newNumber(exp(n.cValue))
+    return newNumber(exp(n.complex))
 
 proc `<`*(a, b: Number): bool {.inline.} =
   ## Compares two Number objects for less than
@@ -405,19 +405,19 @@ proc `>=`*(a, b: Number): bool {.inline.} =
 proc `$`*(n: Number): string {.inline.} =
   ## Returns string representation of a Number object
   case n.kind
-  of nkInt:
-    return $n.iValue
-  of nkFloat:
-    return $n.fValue
+  of nkInteger:
+    return $n.integer
+  of nkReal:
+    return $n.real
   of nkComplex:
-    if n.cValue.re == 0.0 and n.cValue.im == 0.0:
+    if n.complex.re == 0.0 and n.complex.im == 0.0:
       return "0"
-    elif n.cValue.re == 0.0:
-      return $n.cValue.im & "i"
-    elif n.cValue.im == 0.0:
-      return $n.cValue.re
+    elif n.complex.re == 0.0:
+      return $n.complex.im & "i"
+    elif n.complex.im == 0.0:
+      return $n.complex.re
     else:
-      if n.cValue.im < 0.0:
-        return $n.cValue.re & " - " & $(abs(n.cValue.im)) & "i"
+      if n.complex.im < 0.0:
+        return $n.complex.re & " - " & $(abs(n.complex.im)) & "i"
       else:
-        return $n.cValue.re & " + " & $n.cValue.im & "i"
+        return $n.complex.re & " + " & $n.complex.im & "i"

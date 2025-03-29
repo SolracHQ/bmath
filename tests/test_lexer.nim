@@ -9,9 +9,9 @@ suite "Lexer tests":
     while not l.atEnd:
       tokens.add l.next()
 
-    check tokens[0].nValue.iValue == 123
-    check tokens[1].nValue.fValue == 45.67
-    check tokens[2].nValue.fValue == 8e9
+    check tokens[0].nValue.integer == 123
+    check tokens[1].nValue.real == 45.67
+    check tokens[2].nValue.real == 8e9
 
   test "Tokenizing operators":
     var l = newLexer("+-*/^%")

@@ -22,16 +22,16 @@ suite "Parser tests":
     # now we expect an addition node and not a folded literal
     check ast.kind == ekAdd
     check ast.left.kind == ekNumber
-    check ast.left.nValue.iValue == 2
+    check ast.left.nValue.integer == 2
     check ast.right.kind == ekNumber
-    check ast.right.nValue.iValue == 3
+    check ast.right.nValue.integer == 3
 
   test "unary negation with constant folding":
     var lexer = newLexer("-4")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekNumber
-    check ast.nValue.iValue == -4
+    check ast.nValue.integer == -4
 
   test "unary negation without constant folding":
     var lexer = newLexer("-a")
@@ -47,7 +47,7 @@ suite "Parser tests":
     var ast = parse(tokens)
     # groups now simply return the inner expression
     check ast.kind == ekNumber
-    check ast.nValue.fValue == 5.8
+    check ast.nValue.real == 5.8
 
   test "power operation without constant folding":
     var lexer = newLexer("2 ^ 3")
@@ -56,9 +56,9 @@ suite "Parser tests":
     # expect a power node instead of a folded literal
     check ast.kind == ekPow
     check ast.left.kind == ekNumber
-    check ast.left.nValue.iValue == 2
+    check ast.left.nValue.integer == 2
     check ast.right.kind == ekNumber
-    check ast.right.nValue.iValue == 3
+    check ast.right.nValue.integer == 3
 
   test "multiplication without full constant folding":
     var lexer = newLexer("a * 3e0")
@@ -68,7 +68,7 @@ suite "Parser tests":
     check ast.left.kind == ekIdent
     check ast.left.name == "a"
     check ast.right.kind == ekNumber
-    check ast.right.nValue.fValue == 3.0
+    check ast.right.nValue.real == 3.0
 
   test "lambda function definition with block":
     ## Test that a lambda function with a block is parsed correctly.
@@ -103,11 +103,11 @@ suite "Parser tests":
     check ast.expr.kind == ekVector
     check ast.expr.values.len == 3
     check ast.expr.values[0].kind == ekNumber
-    check ast.expr.values[0].nValue.iValue == 1
+    check ast.expr.values[0].nValue.integer == 1
     check ast.expr.values[1].kind == ekNumber
-    check ast.expr.values[1].nValue.iValue == 2
+    check ast.expr.values[1].nValue.integer == 2
     check ast.expr.values[2].kind == ekNumber
-    check ast.expr.values[2].nValue.iValue == 3
+    check ast.expr.values[2].nValue.integer == 3
 
   test "vec function call parsing":
     var lexer = newLexer("v2 = vec(3, 4)")
@@ -121,9 +121,9 @@ suite "Parser tests":
     check ast.expr.fun.name == "vec"
     check ast.expr.arguments.len == 2
     check ast.expr.arguments[0].kind == ekNumber
-    check ast.expr.arguments[0].nValue.iValue == 3
+    check ast.expr.arguments[0].nValue.integer == 3
     check ast.expr.arguments[1].kind == ekNumber
-    check ast.expr.arguments[1].nValue.iValue == 4
+    check ast.expr.arguments[1].nValue.integer == 4
 
   test "parses well formed if expression with elif":
     let src = "if(a == b) 1 elif(a != b) 2 else 3"
@@ -133,7 +133,7 @@ suite "Parser tests":
     check ast.kind == ekIf
     check ast.branches.len == 2
     check ast.elseBranch.kind == ekNumber
-    check ast.elseBranch.nValue.iValue == 3
+    check ast.elseBranch.nValue.integer == 3
 
   test "parses well formed if expression without elif":
     let src = "if(a < b) 10 else 20"
@@ -257,10 +257,10 @@ suite "Parser tests":
     # Check that the argument to both functions is 4
     check ast.left.arguments.len == 1
     check ast.left.arguments[0].kind == ekNumber
-    check ast.left.arguments[0].nValue.iValue == 4
+    check ast.left.arguments[0].nValue.integer == 4
     check ast.right.arguments.len == 1
     check ast.right.arguments[0].kind == ekNumber
-    check ast.right.arguments[0].nValue.iValue == 4
+    check ast.right.arguments[0].nValue.integer == 4
 
   test "parses nested arrow operations":
     var lexer = newLexer("5->double->increment->square")
@@ -286,7 +286,7 @@ suite "Parser tests":
     check innerArg.fun.name == "double"
     check innerArg.arguments.len == 1
     check innerArg.arguments[0].kind == ekNumber
-    check innerArg.arguments[0].nValue.iValue == 5
+    check innerArg.arguments[0].nValue.integer == 5
 
   test "parses complex if-else inside function definition":
     var lexer = newLexer("|x| if(x > 10) 1 elif(x > 5) 2 else 3")
@@ -302,7 +302,7 @@ suite "Parser tests":
     check ast.body.kind == ekIf
     check ast.body.branches.len == 2
     check ast.body.elseBranch.kind == ekNumber
-    check ast.body.elseBranch.nValue.iValue == 3
+    check ast.body.elseBranch.nValue.integer == 3
     
     # Check conditions
     let firstCondition = ast.body.branches[0].condition
@@ -313,8 +313,8 @@ suite "Parser tests":
     # Check branch values are numbers
     let firstBranchValue = ast.body.branches[0].then
     check firstBranchValue.kind == ekNumber
-    check firstBranchValue.nValue.iValue == 1
+    check firstBranchValue.nValue.integer == 1
     
     let secondBranchValue = ast.body.branches[1].then
     check secondBranchValue.kind == ekNumber
-    check secondBranchValue.nValue.iValue == 2
+    check secondBranchValue.nValue.integer == 2

@@ -30,7 +30,7 @@ proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Evaluate the first argument to get the vector length
   let size = args[0]
-  if size.kind != vkNumber or (size.kind == vkNumber and size.number.kind != nkInt):
+  if size.kind != vkNumber or (size.kind == vkNumber and size.number.kind != nkInteger):
     raise newTypeError(
       "vec expects an integer value for the vector length, but got " & (
         if size.kind == vkNumber: "a " & $size.number.kind & " number"
@@ -40,15 +40,15 @@ proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Initialize the result as a vector
   result = Value(kind: vkVector)
-  result.vector = newVector[Value](size.number.iValue)
+  result.vector = newVector[Value](size.number.integer)
 
   if args[1].kind == vkFunction or args[1].kind == vkNativeFunc:
     # If the second argument is a function, apply it to each index
-    for i in 0 ..< size.number.iValue:
+    for i in 0 ..< size.number.integer:
       result.vector[i] = invoker(args[1], [newValue(i)])
   else:
     # If the second argument is a value, repeat it for each index
-    for i in 0 ..< size.number.iValue:
+    for i in 0 ..< size.number.integer:
       result.vector[i] = args[1]
 
 proc dotProduct*(a, b: Value): Value =
@@ -199,14 +199,14 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
   # Process arguments to determine startIndex and endIndex
   if args.len == 2:
     # Only end index provided - slice from 0 to endIndex
-    if args[1].kind != vkNumber or args[1].number.kind != nkInt:
+    if args[1].kind != vkNumber or args[1].number.kind != nkInteger:
       raise newTypeError(
         "slice expects an integer as the second argument, but got " & (
           if args[1].kind == vkNumber: "a " & $args[1].number.kind & " number"
           else: "a " & $args[1].kind
         )
       )
-    endIndex = args[1].number.iValue
+    endIndex = args[1].number.integer
 
     # Check that endIndex is within bounds
     if endIndex < 0 or endIndex > source.vector.size:
@@ -217,14 +217,14 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
       )
   else:
     # Both start and end indices provided
-    if args[1].kind != vkNumber or args[1].number.kind != nkInt:
+    if args[1].kind != vkNumber or args[1].number.kind != nkInteger:
       raise newTypeError(
         "slice expects an integer as the second argument, but got " & (
           if args[1].kind == vkNumber: "a " & $args[1].number.kind & " number"
           else: "a " & $args[1].kind
         )
       )
-    if args[2].kind != vkNumber or args[2].number.kind != nkInt:
+    if args[2].kind != vkNumber or args[2].number.kind != nkInteger:
       raise newTypeError(
         "slice expects an integer as the third argument, but got " & (
           if args[2].kind == vkNumber: "a " & $args[2].number.kind & " number"
@@ -232,8 +232,8 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
         )
       )
 
-    startIndex = args[1].number.iValue
-    endIndex = args[2].number.iValue
+    startIndex = args[1].number.integer
+    endIndex = args[2].number.integer
 
     # Check that indices are within bounds
     if startIndex < 0 or startIndex >= source.vector.size:
@@ -284,18 +284,18 @@ proc set*(vector, index, value: Value): Value =
     raise newTypeError(
       "set expects a vector as the first argument, but got a " & $vector.kind
     )
-  if index.kind != vkNumber or index.number.kind != nkInt:
+  if index.kind != vkNumber or index.number.kind != nkInteger:
     raise newTypeError(
       "set expects an integer as the second argument, but got a " & (
         if index.kind == vkNumber: "a " & $index.number.kind & " number"
         else: "a " & $index.kind
       )
     )
-  if index.number.iValue < 0 or index.number.iValue >= vector.vector.size:
+  if index.number.integer < 0 or index.number.integer >= vector.vector.size:
     raise newInvalidArgumentError(
-      "Index out of bounds for set: index " & $index.number.iValue &
+      "Index out of bounds for set: index " & $index.number.integer &
         " is outside valid range [0, " & $(vector.vector.size - 1) &
         "] for vector of length " & $vector.vector.size
     )
-  result = vector.vector[index.number.iValue]
-  vector.vector[index.number.iValue] = value
+  result = vector.vector[index.number.integer]
+  vector.vector[index.number.integer] = value
