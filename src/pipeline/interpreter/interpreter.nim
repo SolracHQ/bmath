@@ -175,10 +175,8 @@ proc evalValue(
     case node.kind
     of ekNumber:
       return newValue(node.nValue)
-    of ekTrue:
-      return Value(kind: vkBool, boolean: true)
-    of ekFalse:
-      return Value(kind: vkBool, boolean: false)
+    of ekBool:
+      return newValue(node.bValue)
     of ekAdd:
       return binOp(node, `+`)
     of ekSub:

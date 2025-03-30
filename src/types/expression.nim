@@ -13,8 +13,7 @@ type
     # Literals
     ekNumber ## Numeric literal (integer or float)
     ekVector ## Vector literal
-    ekTrue ## Boolean true literal
-    ekFalse ## Boolean false literal
+    ekBool ## Boolean literal (true or false)
 
     # Unary operations
     ekNeg ## Unary negation operation (-operand)
@@ -98,8 +97,8 @@ type
     of ekIf:
       branches*: seq[Condition]
       elseBranch*: Expression ## Else branch expression 
-    of ekTrue, ekFalse:
-      discard ## Kind is enough to determine the value
+    of ekBool:
+      bValue*: bool ## Boolean value
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
   ## Creates a new literal expression based on the type of value.
@@ -123,10 +122,7 @@ proc newNumberExpr*(pos: Position, value: Number): Expression {.inline.} =
   result = Expression(kind: ekNumber, position: pos, nValue: value)
 
 proc newBoolExpr*(pos: Position, value: bool): Expression {.inline.} =
-  if value:
-    return Expression(kind: ekTrue, position: pos)
-  else:
-    return Expression(kind: ekFalse, position: pos)
+  result = Expression(kind: ekBool, position: pos, bValue: value)
 
 proc newVectorExpr*(pos: Position, values: seq[Expression]): Expression {.inline.} =
   result = Expression(kind: ekVector, position: pos, values: values)
@@ -189,10 +185,8 @@ proc stringify(node: Expression, indent: int): string =
   case node.kind
   of ekNumber:
     result.add indentation & "number: " & $node.nValue & "\n"
-  of ekTrue:
-    result.add indentation & "true\n"
-  of ekFalse:
-    result.add indentation & "false\n"
+  of ekBool:
+    result.add indentation & "bool: " & $node.bValue & "\n"
   of eKAdd, eKSub, eKMul, eKDiv, eKMod, eKPow, eKEq, eKNe, eKLt, eKLe, eKGt, eKGe,
       eKAnd, eKOr:
     let kindStr = toLowerAscii($node.kind).substr(2)
@@ -267,8 +261,8 @@ proc `==`*(a, b: Expression): bool =
   case a.kind
   of ekNumber:
     return a.nValue == b.nValue
-  of ekTrue, ekFalse:
-    return true
+  of ekBool:
+    return a.bValue == b.bValue
   of ekAdd, ekSub, ekMul, ekDiv, ekPow, ekMod, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
       ekAnd, ekOr:
     return a.left == b.left and a.right == b.right
@@ -330,10 +324,8 @@ proc asSource*(expr: Expression, ident: int = 0): string =
   case expr.kind
   of ekNumber:
     return $expr.nValue
-  of ekTrue:
-    return "true"
-  of ekFalse:
-    return "false"
+  of ekBool:
+    return $expr.bValue
   of ekAdd:
     return asSource(expr.left) & " + " & asSource(expr.right)
   of ekSub:

@@ -26,7 +26,6 @@ proc `=trace`*[T](v: var VectorObj[T], env: pointer) =
   ## Params:
   ##   v: var VectorObj[T] - the vector being traced.
   ##   env: pointer - environment pointer for the GC.
-  stderr.writeLine "tracing vector"
   if v.p != nil:
     for i in 0 ..< v.len:
       `=trace`(v.p[i], env)

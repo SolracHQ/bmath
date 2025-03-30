@@ -16,13 +16,13 @@ suite "Parser tests":
     check ast.right.name == "b"
 
   test "addition of literals without constant folding":
-    var lexer = newLexer("2 + 3")
+    var lexer = newLexer("a + 3")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # now we expect an addition node and not a folded literal
     check ast.kind == ekAdd
-    check ast.left.kind == ekNumber
-    check ast.left.nValue.integer == 2
+    check ast.left.kind == ekIdent
+    check ast.left.name == "a"
     check ast.right.kind == ekNumber
     check ast.right.nValue.integer == 3
 
@@ -50,13 +50,13 @@ suite "Parser tests":
     check ast.nValue.real == 5.8
 
   test "power operation without constant folding":
-    var lexer = newLexer("2 ^ 3")
+    var lexer = newLexer("b ^ 3")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # expect a power node instead of a folded literal
     check ast.kind == ekPow
-    check ast.left.kind == ekNumber
-    check ast.left.nValue.integer == 2
+    check ast.left.kind == ekIdent
+    check ast.left.name == "b"
     check ast.right.kind == ekNumber
     check ast.right.nValue.integer == 3
 

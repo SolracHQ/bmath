@@ -86,7 +86,6 @@ proc first*(vector: Value): Value =
   ##
   ## Returns:
   ## - The first element of the vector
-  stderr.writeLine vector.vector.size
   if vector.kind != vkVector:
     raise newTypeError("first expects a vector argument, but got a " & $vector.kind)
   if vector.vector.size == 0:
