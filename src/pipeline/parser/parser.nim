@@ -189,7 +189,7 @@ proc parseBlock*(parser: var Parser): Expression =
   ## Params:
   ##   parser: var Parser - the parser to extract block from
   ##
-  ## Returns: Expression - the parsed block expression
+ ## Returns: Expression - the parsed block expression
   ##
   ## Raises:
   ##   MissingTokenError - if a newline or closing curly brace is expected but not found
@@ -271,17 +271,16 @@ proc parseIf*(parser: var Parser): Expression =
   
   # ----- OPTIMIZATION -----
   # If conditions are trivially boolean, return the first expression that is true
-  when not defined(disaibleOptimizations):
-    var allBool = true
-    for branch in branches:
-      if branch.condition.kind == ekBool:
-        if branch.condition.bValue:
-          return branch.then
-      else:
-        allBool = false
-    
-    if allBool:
-      return result.elseBranch
+  var allBool = true
+  for branch in branches:
+    if branch.condition.kind == ekBool:
+      if branch.condition.bValue:
+        return branch.then
+    else:
+      allBool = false
+  
+  if allBool:
+    return result.elseBranch
 
 proc parsePrimary*(parser: var Parser): Expression =
   ## Parses primary expressions: numbers, groups, identifiers, and function definitions.
@@ -351,12 +350,9 @@ proc parseUnary*(parser: var Parser): Expression =
     let pos = parser.previous().position
     let operand = parser.parseUnary()
     
-    when not defined(disaibleOptimizations):
-      case operand.kind
-      of ekNumber:
-        return newNumberExpr(pos, -operand.nValue)
-      else:
-        return newNegExpr(pos, operand)
+    case operand.kind
+    of ekNumber:
+      return newNumberExpr(pos, -operand.nValue)
     else:
       return newNegExpr(pos, operand)
       
@@ -364,15 +360,12 @@ proc parseUnary*(parser: var Parser): Expression =
     let pos = parser.previous().position
     let operand = parser.parseUnary()
     
-    when not defined(disaibleOptimizations):
-      case operand.kind
-      of ekBool:
-        if operand.bValue:
-          return newBoolExpr(pos, false)
-        else:
-          return newBoolExpr(pos, true)
+    case operand.kind
+    of ekBool:
+      if operand.bValue:
+        return newBoolExpr(pos, false)
       else:
-        return newNotExpr(pos, operand)
+        return newBoolExpr(pos, true)
     else:
       return newNotExpr(pos, operand)
       
@@ -406,12 +399,10 @@ proc parsePower*(parser: var Parser): Expression =
   while parser.match({tkPow}):
     let prev = parser.previous()
     let right = parser.parseChain()  
-    when not defined(disaibleOptimizations):
-      if result.kind == ekNumber and right.kind == ekNumber:
-        # Optimize by computing power at parse time when both operands are numbers
-        result = newNumberExpr(prev.position, result.nValue ^ right.nValue)
-      else:
-        result = newBinaryExpr(prev.position, ekPow, result, right)
+    
+    if result.kind == ekNumber and right.kind == ekNumber:
+      # Optimize by computing power at parse time when both operands are numbers
+      result = newNumberExpr(prev.position, result.nValue ^ right.nValue)
     else:
       result = newBinaryExpr(prev.position, ekPow, result, right)
   
@@ -430,27 +421,18 @@ proc parseFactor*(parser: var Parser): Expression =
     let right = parser.parsePower()
     
     if prev.kind == tkMul:
-      when not defined(disaibleOptimizations):
-        if result.kind == ekNumber and right.kind == ekNumber:
-          result = newNumberExpr(prev.position, result.nValue * right.nValue)
-        else:
-          result = newBinaryExpr(prev.position, ekMul, result, right)
+      if result.kind == ekNumber and right.kind == ekNumber:
+        result = newNumberExpr(prev.position, result.nValue * right.nValue)
       else:
         result = newBinaryExpr(prev.position, ekMul, result, right)
     elif prev.kind == tkDiv:
-      when not defined(disaibleOptimizations):
-        if result.kind == ekNumber and right.kind == ekNumber and not right.nValue.isZero():
-          result = newNumberExpr(prev.position, result.nValue / right.nValue)
-        else:
-          result = newBinaryExpr(prev.position, ekDiv, result, right)
+      if result.kind == ekNumber and right.kind == ekNumber and not right.nValue.isZero():
+        result = newNumberExpr(prev.position, result.nValue / right.nValue)
       else:
         result = newBinaryExpr(prev.position, ekDiv, result, right)
     elif prev.kind == tkMod:
-      when not defined(disaibleOptimizations):
-        if result.kind == ekNumber and result.nValue.kind != nkComplex and right.kind == ekNumber and not right.nValue.isZero():
-          result = newNumberExpr(prev.position, result.nValue % right.nValue)
-        else:
-          result = newBinaryExpr(prev.position, ekMod, result, right)
+      if result.kind == ekNumber and result.nValue.kind != nkComplex and right.kind == ekNumber and not right.nValue.isZero():
+        result = newNumberExpr(prev.position, result.nValue % right.nValue)
       else:
         result = newBinaryExpr(prev.position, ekMod, result, right)
 
@@ -466,19 +448,13 @@ proc parseTerm*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseFactor()
     if prev.kind == tkSub:
-      when not defined(disaibleOptimizations):
-        if result.kind == ekNumber and right.kind == ekNumber:
-          result = newNumberExpr(prev.position, result.nValue - right.nValue)
-        else:
-          result = newBinaryExpr(prev.position, ekSub, result, right)
+      if result.kind == ekNumber and right.kind == ekNumber:
+        result = newNumberExpr(prev.position, result.nValue - right.nValue)
       else:
         result = newBinaryExpr(prev.position, ekSub, result, right)
     elif prev.kind == tkAdd:
-      when not defined(disaibleOptimizations):
-        if result.kind == ekNumber and right.kind == ekNumber:
-          result = newNumberExpr(prev.position, result.nValue + right.nValue)
-        else:
-          result = newBinaryExpr(prev.position, ekAdd, result, right)
+      if result.kind == ekNumber and right.kind == ekNumber:
+        result = newNumberExpr(prev.position, result.nValue + right.nValue)
       else:
         result = newBinaryExpr(prev.position, ekAdd, result, right)
 
@@ -494,25 +470,15 @@ proc parseComparison*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseTerm()
     
-    when not defined(disaibleOptimizations):
-      if result.kind == ekNumber and right.kind == ekNumber and result.nValue.kind != nkComplex and right.nValue.kind != nkComplex:
-        if prev.kind == tkLt:
-          result = newBoolExpr(prev.position, result.nValue < right.nValue)
-        elif prev.kind == tkLe:
-          result = newBoolExpr(prev.position, result.nValue <= right.nValue)
-        elif prev.kind == tkGt:
-          result = newBoolExpr(prev.position, result.nValue > right.nValue)
-        elif prev.kind == tkGe:
-          result = newBoolExpr(prev.position, result.nValue >= right.nValue)
-      else:
-        if prev.kind == tkLt:
-          result = newBinaryExpr(prev.position, ekLt, result, right)
-        elif prev.kind == tkLe:
-          result = newBinaryExpr(prev.position, ekLe, result, right)
-        elif prev.kind == tkGt:
-          result = newBinaryExpr(prev.position, ekGt, result, right)
-        elif prev.kind == tkGe:
-          result = newBinaryExpr(prev.position, ekGe, result, right)
+    if result.kind == ekNumber and right.kind == ekNumber and result.nValue.kind != nkComplex and right.nValue.kind != nkComplex:
+      if prev.kind == tkLt:
+        result = newBoolExpr(prev.position, result.nValue < right.nValue)
+      elif prev.kind == tkLe:
+        result = newBoolExpr(prev.position, result.nValue <= right.nValue)
+      elif prev.kind == tkGt:
+        result = newBoolExpr(prev.position, result.nValue > right.nValue)
+      elif prev.kind == tkGe:
+        result = newBoolExpr(prev.position, result.nValue >= right.nValue)
     else:
       if prev.kind == tkLt:
         result = newBinaryExpr(prev.position, ekLt, result, right)
@@ -535,31 +501,25 @@ proc parseEquality*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseComparison()
     
-    when not defined(disaibleOptimizations):
-      # Optimize for numbers and booleans
-      if (result.kind == ekNumber and right.kind == ekNumber) or
-         (result.kind == ekBool and right.kind == ekBool) or
-         (result.kind == ekNumber and right.kind == ekBool) or
-         (result.kind == ekBool and right.kind == ekNumber):
-        
-        let areEqual = 
-          if result.kind == ekNumber and right.kind == ekNumber:
-            result.nValue == right.nValue
-          elif result.kind == ekBool and right.kind == ekBool:
-            result.bValue == right.bValue
-          elif result.kind == ekNumber and right.kind == ekBool: false
-          else: # result.kind == ekBool and right.kind == ekNumber
-            false
-            
-        if prev.kind == tkEq:
-          result = newBoolExpr(prev.position, areEqual)
-        else: # tkNe
-          result = newBoolExpr(prev.position, not areEqual)
-      else:
-        if prev.kind == tkEq:
-          result = newBinaryExpr(prev.position, ekEq, result, right)
-        else: # tkNe
-          result = newBinaryExpr(prev.position, ekNe, result, right)
+    # Optimize for numbers and booleans
+    if (result.kind == ekNumber and right.kind == ekNumber) or
+       (result.kind == ekBool and right.kind == ekBool) or
+       (result.kind == ekNumber and right.kind == ekBool) or
+       (result.kind == ekBool and right.kind == ekNumber):
+      
+      let areEqual = 
+        if result.kind == ekNumber and right.kind == ekNumber:
+          result.nValue == right.nValue
+        elif result.kind == ekBool and right.kind == ekBool:
+          result.bValue == right.bValue
+        elif result.kind == ekNumber and right.kind == ekBool: false
+        else: # result.kind == ekBool and right.kind == ekNumber
+          false
+          
+      if prev.kind == tkEq:
+        result = newBoolExpr(prev.position, areEqual)
+      else: # tkNe
+        result = newBoolExpr(prev.position, not areEqual)
     else:
       if prev.kind == tkEq:
         result = newBinaryExpr(prev.position, ekEq, result, right)
@@ -578,21 +538,15 @@ proc parseBoolean*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseEquality()
     
-    when not defined(disaibleOptimizations):
-      if result.kind == ekBool and right.kind == ekBool:
-        if prev.kind == tkAnd:
-          result = newBoolExpr(prev.position, result.bValue and right.bValue)
-        elif prev.kind == tkLine:
-          result = newBoolExpr(prev.position, result.bValue or right.bValue)
-      elif result.kind == ekBool and prev.kind == tkAnd and not result.bValue:
-        result = newBoolExpr(prev.position, false)
-      elif result.kind == ekBool and prev.kind == tkLine and result.bValue:
-        result = newBoolExpr(prev.position, true)
-      else:
-        if prev.kind == tkAnd:
-          result = newBinaryExpr(prev.position, ekAnd, result, right)
-        elif prev.kind == tkLine:
-          result = newBinaryExpr(prev.position, ekOr, result, right)
+    if result.kind == ekBool and right.kind == ekBool:
+      if prev.kind == tkAnd:
+        result = newBoolExpr(prev.position, result.bValue and right.bValue)
+      elif prev.kind == tkLine:
+        result = newBoolExpr(prev.position, result.bValue or right.bValue)
+    elif result.kind == ekBool and prev.kind == tkAnd and not result.bValue:
+      result = newBoolExpr(prev.position, false)
+    elif result.kind == ekBool and prev.kind == tkLine and result.bValue:
+      result = newBoolExpr(prev.position, true)
     else:
       if prev.kind == tkAnd:
         result = newBinaryExpr(prev.position, ekAnd, result, right)
