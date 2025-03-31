@@ -2,6 +2,7 @@ import std/[strutils, sequtils]
 
 import position
 import number
+import types
 
 type
   ExpressionKind* = enum
@@ -45,7 +46,7 @@ type
 
     # Function constructs
     ekFunc ## Function definition
-    ekFuncInvoke ## Function invocation 
+    ekFuncInvoke ## Function invocation
 
     # Block expression
     ekBlock ## Block expression (sequence of statements)
@@ -53,12 +54,22 @@ type
     # Control flow
     ekIf ## If-else conditional expression
 
+    # Type constructs
+    ekTypeCast ## Type casting expression
+
   Condition* = object
     ## Represents a condition in an if-elif expression.
     ##
     ## Contains the condition expression and the corresponding branch expression.
     condition*: Expression
     then*: Expression
+
+  Parameter* = object
+    ## Represents a function parameter.
+    ##
+    ## Contains the parameter name and its type.
+    name*: string
+    typ*: Type = AnyType
 
   Expression* = ref object
     ## Abstract Syntax Tree (AST) node (renamed to Expression).
@@ -84,6 +95,7 @@ type
       ident*: string ## Target identifier for assignment
       expr*: Expression ## Assigned expression
       isLocal*: bool ## Flag indicating if the assignment is to a local variable
+      typ*: Type = AnyType ## Type of the assigned expression
     of ekFuncInvoke:
       fun*: Expression ## Expression that evaluates to a function
       arguments*: seq[Expression] ## Arguments for the invocation
@@ -91,7 +103,7 @@ type
       expressions*: seq[Expression] ## Sequence of statements in the block
     of ekFunc:
       body*: Expression ## Function body expression
-      params*: seq[string] ## Function parameter names
+      params*: seq[Parameter] ## Function parameter names
     of ekVector:
       values*: seq[Expression] ## Elements of the vector literal
     of ekIf:
@@ -99,6 +111,9 @@ type
       elseBranch*: Expression ## Else branch expression 
     of ekBool:
       bValue*: bool ## Boolean value
+    of ekTypeCast:
+      target*: Type ## Type to cast to
+      value*: Expression ## Expression to cast
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
   ## Creates a new literal expression based on the type of value.
@@ -114,6 +129,10 @@ proc newLiteralExpr*[T](pos: Position, value: T): Expression =
     result = newVectorExpr(pos, value)
   else:
     raise newException(ValueError, "Invalid type for literal expression")
+
+proc newTypeCastExpr*(pos: Position, typ: Type, expr: Expression): Expression {.inline.} =
+  ## Creates a new type casting expression.
+  result = Expression(kind: ekTypeCast, position: pos, target: typ, value: expr)
 
 proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
   result = Expression(kind: ekNot, position: pos, operand: operand)
@@ -139,10 +158,10 @@ proc newIdentExpr*(pos: Position, name: string): Expression {.inline.} =
   result = Expression(kind: ekIdent, position: pos, name: name)
 
 proc newAssignExpr*(
-    pos: Position, ident: string, expr: Expression, isLocal: bool
+    pos: Position, ident: string, expr: Expression, isLocal: bool, typ: Type
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekAssign, position: pos, ident: ident, expr: expr, isLocal: isLocal
+    kind: ekAssign, position: pos, ident: ident, expr: expr, isLocal: isLocal, typ: typ
   )
 
 proc newFuncCallExpr*(
@@ -161,7 +180,7 @@ proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.in
   result = Expression(kind: ekBlock, position: pos, expressions: expressions)
 
 proc newFuncExpr*(
-    pos: Position, params: seq[string], body: Expression
+    pos: Position, params: seq[Parameter], body: Expression
 ): Expression {.inline.} =
   result = Expression(kind: ekFunc, position: pos, params: params, body: body)
 
@@ -175,6 +194,10 @@ proc newCondition*(
     conditionExpr: Expression, thenExpr: Expression
 ): Condition {.inline.} =
   Condition(condition: conditionExpr, then: thenExpr)
+
+proc newParameter*(name: string, typ: Type = AnyType): Parameter {.inline.} =
+  ## Creates a new function parameter with the given name and type.
+  Parameter(name: name, typ: typ)
 
 proc stringify(node: Expression, indent: int): string =
   ## Helper for AST string representation (internal use)
@@ -235,6 +258,10 @@ proc stringify(node: Expression, indent: int): string =
     if node.elseBranch != nil:
       result.add("\n" & indentation & "else:\n")
       result.add(node.elseBranch.stringify(indent + 2))
+  of eKTypeCast:
+    result.add indentation & "type cast:\n"
+    result.add(indentation & "  target: " & $node.target & "\n")
+    result.add(node.value.stringify(indent + 2))
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -246,78 +273,9 @@ proc `$`*(node: Expression): string =
       result.add("\n")
   result = result.strip
 
-proc `==`*(a, b: Expression): bool =
-  ## Compares two AST nodes for equality
-  if a.isNil and b.isNil:
-    return true
-  elif a.isNil or b.isNil:
-    return false
-  elif a.position != b.position:
-    return false
-  elif a.kind != b.kind:
-    return false
-  if a.kind != b.kind:
-    return false
-  case a.kind
-  of ekNumber:
-    return a.nValue == b.nValue
-  of ekBool:
-    return a.bValue == b.bValue
-  of ekAdd, ekSub, ekMul, ekDiv, ekPow, ekMod, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
-      ekAnd, ekOr:
-    return a.left == b.left and a.right == b.right
-  of ekNeg:
-    return a.operand == b.operand
-  of ekNot:
-    return a.operand == b.operand
-  of ekIdent:
-    return a.name == b.name
-  of ekAssign:
-    return a.ident == b.ident and a.expr == b.expr and a.isLocal == b.isLocal
-  of ekFuncInvoke:
-    if not (a.fun == b.fun):
-      return false
-    if a.arguments.len != b.arguments.len:
-      return false
-    for i in 0 ..< a.arguments.len:
-      if not (a.arguments[i] == b.arguments[i]):
-        return false
-    return true
-  of ekBlock:
-    if a.expressions.len != b.expressions.len:
-      return false
-    for i in 0 ..< a.expressions.len:
-      if not (a.expressions[i] == b.expressions[i]):
-        return false
-    return true
-  of ekFunc:
-    if a.params.len != b.params.len:
-      return false
-    for i in 0 ..< a.params.len:
-      if a.params[i] != b.params[i]:
-        return false
-    return a.body == b.body
-  of ekVector:
-    if a.values.len != b.values.len:
-      return false
-    for i in 0 ..< a.values.len:
-      if not (a.values[i] == b.values[i]):
-        return false
-    return true
-  of ekIf:
-    if a.branches.len != b.branches.len:
-      return false
-    for i in 0 ..< a.branches.len:
-      if not (a.branches[i].condition == b.branches[i].condition):
-        return false
-      if not (a.branches[i].then == b.branches[i].then):
-        return false
-    if a.elseBranch == nil and b.elseBranch == nil:
-      return true
-    elif a.elseBranch != nil and b.elseBranch != nil:
-      return a.elseBranch == b.elseBranch
-    else:
-      return false
+proc `$`(param: Parameter): string =
+  ## Returns string representation of function parameter
+  return param.name & ": " & $param.typ
 
 proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format
@@ -391,3 +349,5 @@ proc asSource*(expr: Expression, ident: int = 0): string =
     if expr.elseBranch != nil:
       src.add(" else " & asSource(expr.elseBranch))
     return src
+  of ekTypeCast:
+    return $expr.target & "(" & asSource(expr.value) & ")"

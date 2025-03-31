@@ -421,3 +421,19 @@ proc `$`*(n: Number): string {.inline.} =
         return $n.complex.re & " - " & $(abs(n.complex.im)) & "i"
       else:
         return $n.complex.re & " + " & $n.complex.im & "i"
+
+proc re*(n: Number): Number {.inline.} =
+  ## Returns the real part of a Number object as a Number
+  case n.kind
+  of nkInteger, nkReal:
+    return n
+  of nkComplex:
+    return newNumber(n.complex.re)
+
+proc im*(n: Number): Number {.inline.} =
+  ## Returns the imaginary part of a Number object as a Number
+  case n.kind
+  of nkInteger, nkReal:
+    return newNumber(0.int)
+  of nkComplex:
+    return newNumber(n.complex.im)

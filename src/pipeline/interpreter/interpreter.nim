@@ -85,7 +85,7 @@ proc evalFunctionCall(
       )
     let funcEnv = newEnv(parent = fun.env)
     for i, param in fun.params.pairs:
-      funcEnv[param, true] = args[i]
+      funcEnv[param.name, true] = args[i]
     return interpreter.evalValue(fun.body, funcEnv)
   else:
     raise newTypeError("Provided value is not callable")
@@ -235,6 +235,8 @@ proc evalValue(
         if condition.boolean:
           return interpreter.evalValue(branch.then, env)
       return interpreter.evalValue(node.elseBranch, env)
+    of ekTypeCast:
+      discard
   except BMathError as e:
     if e.stack.len == 0:
       e.stack.add(node.position)

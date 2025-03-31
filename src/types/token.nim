@@ -1,5 +1,7 @@
 import position
 import number
+import types
+import std/complex
 
 type
   TokenKind* = enum
@@ -55,6 +57,10 @@ type
     tkElif ## Elif keyword
     tkLocal ## Local keyword
 
+    # Types
+    tkType ## Type Value
+    tkColon ## Type separator ':'
+
     # Control tokens
     tkComma ## Argument separator ','
     tkNewline # End of expression marker for parser (due multiline blocks support)
@@ -73,6 +79,8 @@ type
       nValue*: Number ## Numeric value for tkNumber tokens
     of tkIdent:
       name*: string ## Identifier name for tkIdent tokens
+    of tkType:
+      typ*: Type ## Type value for tkType tokens
     else:
       discard
 
@@ -161,6 +169,11 @@ proc `$`*(token: Token): string =
     "elif"
   of tkLocal:
     "local"
+  # Types
+  of tkType:
+    $token.typ
+  of tkColon:
+    "':'"
   # Control tokens
   of tkComma:
     "','"

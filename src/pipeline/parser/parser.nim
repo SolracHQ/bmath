@@ -12,7 +12,7 @@
 ## - Block expressions for statement sequencing
 ## - Robust error detection with position tracking
 
-import ../../types/[expression, token, number]
+import ../../types/[expression, token, number, types]
 import errors
 
 type Parser = object
@@ -146,10 +146,17 @@ proc parseFunction(parser: var Parser): Expression =
   ## Raises:
   ##   UnexpectedTokenError - if an identifier is expected but not found
   ##   MissingTokenError - if a comma is expected but not found
-  var params: seq[string] = @[]
+  var params: seq[Parameter] = @[]
   while not parser.match({tkLine}):
     if parser.match({tkIdent}):
-      params.add(parser.previous().name)
+      let name = parser.previous().name
+      var typ: Type = AnyType
+      if parser.match({tkColon}):
+        if parser.match({tkType}):
+          typ = parser.previous().typ
+        else:
+          raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+      params.add(Parameter(name: name, typ: typ))
     else:
       raise newUnexpectedTokenError(
         "Expected identifier but got '" & $parser.previous().kind & "'",
@@ -184,16 +191,12 @@ proc parseVector*(parser: var Parser): Expression =
   return newVectorExpr(pos, values)
 
 proc parseBlock*(parser: var Parser): Expression =
-  ## Parses block expressions
-  ##
-  ## Params:
-  ##   parser: var Parser - the parser to extract block from
-  ##
- ## Returns: Expression - the parsed block expression
+  ## Returns: Expression - the parsed block expression
   ##
   ## Raises:
   ##   MissingTokenError - if a newline or closing curly brace is expected but not found
   ##   InvalidExpressionError - if the block contains no expressions
+
   let pos = parser.previous().position
   parser.cleanUpNewlines()
   var expressions: seq[Expression] = @[]
@@ -237,8 +240,9 @@ proc parseIf*(parser: var Parser): Expression =
 
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
-    raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
-  
+    raise
+      newMissingTokenError("Expected ')' after condition", parser.previous().position)
+
   parser.cleanUpNewlines()
   branches.add(newCondition(condition, parser.parseExpression()))
   parser.cleanUpNewlines()
@@ -246,29 +250,34 @@ proc parseIf*(parser: var Parser): Expression =
   # ----- PARSING ELIF CONDITIONS -----
   while parser.match({tkElif}):
     if not parser.match({tkLpar}):
-      raise newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
-    
+      raise
+        newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
+
     parser.cleanUpNewlines()
     let condition = parser.parseExpression()
-    
+
     parser.cleanUpNewlines()
     if not parser.match({tkRpar}):
-      raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
-    
+      raise
+        newMissingTokenError("Expected ')' after condition", parser.previous().position)
+
     parser.cleanUpNewlines()
     branches.add(newCondition(condition, parser.parseExpression()))
     parser.cleanUpNewlines()
-  
+
   # ----- PARSING ELSE BRANCH -----
   parser.cleanUpNewlines()
   if not parser.match({tkElse}):
-    raise newMissingTokenError("Expected 'else' after if-elif conditions but got " & $parser.peek(), parser.previous().position)
-  
+    raise newMissingTokenError(
+      "Expected 'else' after if-elif conditions but got " & $parser.peek(),
+      parser.previous().position,
+    )
+
   parser.cleanUpNewlines()
   elseBranch = parser.parseExpression()
-  
+
   result = newIfExpr(pos, branches, elseBranch)
-  
+
   # ----- OPTIMIZATION -----
   # If conditions are trivially boolean, return the first expression that is true
   var allBool = true
@@ -278,7 +287,7 @@ proc parseIf*(parser: var Parser): Expression =
         return branch.then
     else:
       allBool = false
-  
+
   if allBool:
     return result.elseBranch
 
@@ -349,17 +358,16 @@ proc parseUnary*(parser: var Parser): Expression =
   if parser.match({tkSub}):
     let pos = parser.previous().position
     let operand = parser.parseUnary()
-    
+
     case operand.kind
     of ekNumber:
       return newNumberExpr(pos, -operand.nValue)
     else:
       return newNegExpr(pos, operand)
-      
   elif parser.match({tkNot}):
     let pos = parser.previous().position
     let operand = parser.parseUnary()
-    
+
     case operand.kind
     of ekBool:
       if operand.bValue:
@@ -368,7 +376,6 @@ proc parseUnary*(parser: var Parser): Expression =
         return newBoolExpr(pos, true)
     else:
       return newNotExpr(pos, operand)
-      
   else:
     return parser.parseFunctionCall()
 
@@ -398,14 +405,14 @@ proc parsePower*(parser: var Parser): Expression =
   result = parser.parseChain()
   while parser.match({tkPow}):
     let prev = parser.previous()
-    let right = parser.parseChain()  
-    
+    let right = parser.parseChain()
+
     if result.kind == ekNumber and right.kind == ekNumber:
       # Optimize by computing power at parse time when both operands are numbers
       result = newNumberExpr(prev.position, result.nValue ^ right.nValue)
     else:
       result = newBinaryExpr(prev.position, ekPow, result, right)
-  
+
   return result
 
 proc parseFactor*(parser: var Parser): Expression =
@@ -419,7 +426,7 @@ proc parseFactor*(parser: var Parser): Expression =
   while parser.match({tkMul, tkDiv, tkMod}):
     let prev = parser.previous()
     let right = parser.parsePower()
-    
+
     if prev.kind == tkMul:
       if result.kind == ekNumber and right.kind == ekNumber:
         result = newNumberExpr(prev.position, result.nValue * right.nValue)
@@ -431,7 +438,8 @@ proc parseFactor*(parser: var Parser): Expression =
       else:
         result = newBinaryExpr(prev.position, ekDiv, result, right)
     elif prev.kind == tkMod:
-      if result.kind == ekNumber and result.nValue.kind != nkComplex and right.kind == ekNumber and not right.nValue.isZero():
+      if result.kind == ekNumber and result.nValue.kind != nkComplex and
+          right.kind == ekNumber and not right.nValue.isZero():
         result = newNumberExpr(prev.position, result.nValue % right.nValue)
       else:
         result = newBinaryExpr(prev.position, ekMod, result, right)
@@ -469,8 +477,9 @@ proc parseComparison*(parser: var Parser): Expression =
   while parser.match({tkLt, tkLe, tkGt, tkGe}):
     let prev = parser.previous()
     let right = parser.parseTerm()
-    
-    if result.kind == ekNumber and right.kind == ekNumber and result.nValue.kind != nkComplex and right.nValue.kind != nkComplex:
+
+    if result.kind == ekNumber and right.kind == ekNumber and
+        result.nValue.kind != nkComplex and right.nValue.kind != nkComplex:
       if prev.kind == tkLt:
         result = newBoolExpr(prev.position, result.nValue < right.nValue)
       elif prev.kind == tkLe:
@@ -500,22 +509,22 @@ proc parseEquality*(parser: var Parser): Expression =
   while parser.match({tkEq, tkNe}):
     let prev = parser.previous()
     let right = parser.parseComparison()
-    
+
     # Optimize for numbers and booleans
     if (result.kind == ekNumber and right.kind == ekNumber) or
-       (result.kind == ekBool and right.kind == ekBool) or
-       (result.kind == ekNumber and right.kind == ekBool) or
-       (result.kind == ekBool and right.kind == ekNumber):
-      
-      let areEqual = 
+        (result.kind == ekBool and right.kind == ekBool) or
+        (result.kind == ekNumber and right.kind == ekBool) or
+        (result.kind == ekBool and right.kind == ekNumber):
+      let areEqual =
         if result.kind == ekNumber and right.kind == ekNumber:
           result.nValue == right.nValue
         elif result.kind == ekBool and right.kind == ekBool:
           result.bValue == right.bValue
-        elif result.kind == ekNumber and right.kind == ekBool: false
+        elif result.kind == ekNumber and right.kind == ekBool:
+          false
         else: # result.kind == ekBool and right.kind == ekNumber
           false
-          
+
       if prev.kind == tkEq:
         result = newBoolExpr(prev.position, areEqual)
       else: # tkNe
@@ -537,7 +546,7 @@ proc parseBoolean*(parser: var Parser): Expression =
   while parser.match({tkAnd, tkLine}):
     let prev = parser.previous()
     let right = parser.parseEquality()
-    
+
     if result.kind == ekBool and right.kind == ekBool:
       if prev.kind == tkAnd:
         result = newBoolExpr(prev.position, result.bValue and right.bValue)
@@ -570,9 +579,15 @@ proc parseAssignment*(parser: var Parser): Expression =
         "Expected identifier after 'local'", parser.previous().position
       )
     let name = parser.previous()
+    var typ: Type = AnyType
+    if parser.match({tkColon}):
+      if parser.match({tkType}):
+        typ = parser.previous().typ
+      else:
+        raise newMissingTokenError("Expected type after ':'", parser.previous().position)
     if parser.match({tkAssign}):
       let value = parser.parseExpression()
-      return newAssignExpr(name.position, name.name, value, local)
+      return newAssignExpr(name.position, name.name, value, local, typ)
     elif not local:
       parser.back()
     else:

@@ -12,7 +12,7 @@
 
 import std/[sets, tables, macros, complex]
 import
-  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control]
+  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control, types]
 import ../../types/[value, expression]
 import errors
 
@@ -79,6 +79,8 @@ let global = Environment(
       "ceil": native(ceil(number)),
       "abs": native(abs(number)),
       "round": native(round(number)),
+      "re": native(re(number)),
+      "im": native(im(number)),
 
       # Trigonometric Functions
       "sin": native(sin(number)),

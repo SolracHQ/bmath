@@ -6,7 +6,7 @@
 
 import std/[strutils, tables, sequtils, complex]
 
-import position, expression, number, vector
+import position, expression, number, vector, types
 export Position
 
 type
@@ -22,7 +22,7 @@ type
   Function* = ref object ## User-defined function data
     body*: Expression ## Function body
     env*: Environment ## Environment for variable bindings
-    params*: seq[string] ## Parameter names for the function
+    params*: seq[Parameter] ## Parameter names for the function
 
   Sequence* = ref object ## Lazily evaluated sequence
     generator*: Generator ## Function to generate sequence values
@@ -91,7 +91,7 @@ template newValue*[T](n: T): Value =
     {.error: message.}
 
 proc newValue*(
-    body: Expression, env: Environment, params: seq[string]
+    body: Expression, env: Environment, params: seq[Parameter]
 ): Value {.inline.} =
   ## Creates a new Value object wrapping a user-defined function.
   var functionObj = Function(body: body, env: env, params: params)

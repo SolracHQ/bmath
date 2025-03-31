@@ -125,3 +125,26 @@ This section covers arithmetic operations and basic mathematical functions.
   ```bm
   round(3.5)  # Returns 4
   ```
+
+- **re**  
+  Returns the real part of a complex number. If the input is not complex, it returns the input unchanged.  
+  **Accepted Types:** A single numeric value (integer, float, or complex).  
+  **Example:** 
+  ```bm
+  re(3 + 4i)   # Returns 3
+  ```
+  or
+  ```bm
+  re(3)        # Returns 3
+  ```
+- **im**
+  Returns the imaginary part of a complex number. If the input is not complex, it returns 0.  
+  **Accepted Types:** A single numeric value (integer, float, or complex).  
+  **Example:** 
+  ```bm
+  im(3 + 4i)   # Returns 4
+  ```
+  or
+  ```bm
+  im(3)        # Returns 0
+  ```

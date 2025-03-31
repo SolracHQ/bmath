@@ -268,7 +268,8 @@ proc nth*(value: Value, index: Value): Value =
   ##
   ## Returns:
   ## - The value at the specified index
-  if index.kind != vkNumber or (index.kind == vkNumber and index.number.kind != nkInteger):
+  if index.kind != vkNumber or
+      (index.kind == vkNumber and index.number.kind != nkInteger):
     raise newTypeError(
       "nth expects an integer as the second argument, but got " & (
         if index.kind == vkNumber: "a " & $index.number.kind & " number"

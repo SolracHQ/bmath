@@ -420,3 +420,39 @@ proc round*(a: Value): Value {.inline, captureNumericError.} =
     return newValue(round(a.number))
   else:
     raise newUnsupportedTypeError("Cannot round value of type: " & $a.kind)
+
+# ----- Real and imaginary part procedures -----
+proc re*(a: Value): Value {.inline, captureNumericError.} =
+  ## Real part of a value
+  ##
+  ## Parameters:
+  ## - a: value to get the real part of
+  ##
+  ## Returns:
+  ## - a new Value object with the real part
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ArithmeticError: for numeric calculation errors
+  if a.kind == vkNumber:
+    return newValue(re(a.number))
+  else:
+    raise newUnsupportedTypeError("Cannot get real part of value of type: " & $a.kind)
+
+proc im*(a: Value): Value {.inline, captureNumericError.} =
+  ## Imaginary part of a value
+  ##
+  ## Parameters:
+  ## - a: value to get the imaginary part of
+  ##
+  ## Returns:
+  ## - a new Value object with the imaginary part
+  ##
+  ## Raises:
+  ## - UnsupportedTypeError: if operand is not a number
+  ## - ArithmeticError: for numeric calculation errors
+  if a.kind == vkNumber:
+    return newValue(im(a.number))
+  else:
+    raise
+      newUnsupportedTypeError("Cannot get imaginary part of value of type: " & $a.kind)
