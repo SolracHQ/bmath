@@ -1,7 +1,9 @@
 /.cache
 /bin
-/tests
-!/test/*.nim
+
+tests/*
+!test/*.nim
+
 /.vscode
 nimble.develop
 nimble.paths

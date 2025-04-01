@@ -12,5 +12,6 @@
 - [Vector Operations](stdlib/vector-operations.md)
 - [Sequence Operations](stdlib/sequence-operations.md)
 - [Functional Utilities](stdlib/functional.md)
+- [Types](stdlib/types.md)
 
 For a complete overview of all functions, see the [Standard Library Index](stdlib/index.md).

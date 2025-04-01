@@ -1,7 +1,7 @@
 ## comparison.nim
 
 import utils, sequence
-import ../../../types/[value, number, vector]
+import ../../../types/[value, number, vector, types]
 import ../errors
 
 proc `<`*(a, b: Value): Value {.inline, captureNumericError.} =
@@ -138,6 +138,12 @@ proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =
           eq = false
           break
       result = newValue(eq)
+  elif a.kind == vkType and b.kind == vkType:
+    result = newValue(a.typ == b.typ)
+  elif a.kind == vkBool and b.kind == vkBool:
+    result = newValue(a.boolean == b.boolean)
+  elif a.kind == vkNativeFunc and b.kind == vkNativeFunc:
+    result = newValue(a.nativeFn == b.nativeFn)
   else:
     result = newValue(false)
 

@@ -12,7 +12,7 @@
 
 import std/[sets, tables, macros, complex]
 import
-  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control, types]
+  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control]
 import ../../types/[value, expression]
 import errors
 
@@ -66,6 +66,9 @@ let global = Environment(
     {
       # Program Control
       "exit": Value(kind: vkNativeFunc, nativeFn: exit),
+      "try_or": Value(kind: vkNativeFunc, nativeFn: try_or),
+      "try_catch": Value(kind: vkNativeFunc, nativeFn: try_catch),
+      "print": native(print(value)),
 
       # Mathematical Constants
       "pi": newValue(PI),

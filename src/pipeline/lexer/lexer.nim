@@ -49,19 +49,20 @@ const KEYWORDS: Table[string, TokenKind] = {
   "local": tkLocal,
   "true": tkTrue,
   "false": tkFalse,
+  "is": tkIs,
 }.toTable
 
-const TYPES: Table[string, Token] = {
-  "integer": Token(kind: tkType, typ: newType(Integer)),
-  "real": Token(kind: tkType, typ: newType(Real)),
-  "complex": Token(kind: tkType, typ: newType(SimpleType.Complex)),
-  "bool": Token(kind: tkType, typ: newType(Boolean)),
-  "vector": Token(kind: tkType, typ: newType(Vector)),
-  "sequence": Token(kind: tkType, typ: newType(Sequence)),
-  "function": Token(kind: tkType, typ: newType(Function)),
-  "type": Token(kind: tkType, typ: newType(SimpleType.Type)),
-  "any": Token(kind: tkType, typ: AnyType),
-  "number": Token(kind: tkType, typ: NumberType),
+const TYPES: Table[string, Type] = {
+  "integer": SimpleType.Integer.newType,
+  "real": SimpleType.Real.newType,
+  "complex": SimpleType.Complex.newType,
+  "boolean": SimpleType.Boolean.newType,
+  "vector": SimpleType.Vector.newType,
+  "sequence": SimpleType.Sequence.newType,
+  "function": SimpleType.Function.newType,
+  "type": SimpleType.Type.newType,
+  "any": AnyType,
+  "number": NumberType,
 }.toTable
 
 proc atEnd*(lexer: Lexer): bool {.inline.} =
@@ -197,11 +198,11 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
   lexer.readWhile(isIdentChar)
   let ident = lexer.source[start ..< lexer.current]
   let position = pos(lexer.line, startCol)
-  result = Token(kind: tkIdent, position: position, name: ident)
+  result = newToken(ident, position)
   if KEYWORDS.hasKey(ident):
     result = Token(kind: KEYWORDS[ident], position: position)
   elif TYPES.hasKey(ident):
-    result = TYPES[ident]
+    result = TYPES[ident].newToken(position)
     
   if result.kind == tkIf:
     lexer.stack.add(StackableElement(kind: skIf, position: pos(lexer.line, lexer.col)))

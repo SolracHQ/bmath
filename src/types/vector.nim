@@ -94,6 +94,17 @@ iterator items*[T](v: Vector[T]): T {.inline.} =
   for i in 0 ..< v.len:
     yield v.p[i]
 
+proc map*[T, U](v: Vector[T], f: proc (t: T): U): Vector[U] {.inline.} =
+  ## Applies a function to each element of the vector and returns a new vector.
+  ##
+  ## Params:
+  ##   v: Vector[T] - the vector to map.
+  ##   f: proc (T): U - the function to apply to each element.
+  ## Returns: Vector[U] - a new vector containing the results of applying f to each element.
+  result = newVector[U](v.len)
+  for i in 0 ..< v.len:
+    result.p[i] = f(v.p[i])
+
 proc toSeq*[T](v: Vector[T]): seq[T] =
   ## Converts the vector to a sequence.
   ##
@@ -103,3 +114,13 @@ proc toSeq*[T](v: Vector[T]): seq[T] =
   result = @[]
   for i in 0 ..< v.len:
     result.add(v.p[i])
+
+proc fromSeq*[T](s: seq[T]): Vector[T] =
+  ## Creates a vector from a sequence.
+  ##
+  ## Params:
+  ##   s: seq[T] - the sequence to convert.
+  ## Returns: Vector[T] - a new vector containing all elements of the sequence.
+  result = newVector[T](s.len)
+  for i in 0 ..< s.len:
+    result.p[i] = s[i]

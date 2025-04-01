@@ -40,33 +40,67 @@ proc newType*(`type`: SimpleType): Type =
   ## Create a new Type object from a SimpleType
   Type(kind: tkSimple, simpleType: `type`)
 
+proc `===`*(a, b: Type): bool =
+  ## Compares two types for identity
+  if a.kind != b.kind:
+    return false
+  else:
+    # Same kinds
+    case a.kind
+    of tkSimple:
+      return a.simpleType == b.simpleType
+    of tkSum:
+      return a.types == b.types
+    of tkError:
+      return a.error == b.error
+
+proc `==`*(a, b: Type): bool =
+  ## Compares two types for equality
+  if a.kind != b.kind:
+    # Handle different kinds - special handling for sum and simple
+    if a.kind == tkSum and b.kind == tkSimple:
+      return b.simpleType in a.types
+    elif a.kind == tkSimple and b.kind == tkSum:
+      return a.simpleType in b.types
+    else:
+      return false
+  else:
+    # Same kinds
+    case a.kind
+    of tkSimple:
+      return a.simpleType == b.simpleType
+    of tkSum:
+      return a.types == b.types
+    of tkError:
+      return a.error == b.error
+
 proc `$`*(t: Type): string =
   ## Returns a human-readable representation of the type
   case t.kind
   of tkSimple:
     case t.simpleType
     of Integer:
-      return "Integer"
+      return "integer"
     of Real:
-      return "Real"
+      return "real"
     of Complex:
-      return "Complex"
+      return "complex"
     of Boolean:
-      return "Boolean"
+      return "boolean"
     of Vector:
-      return "Vector"
+      return "vector"
     of Sequence:
-      return "Sequence"
+      return "sequence"
     of Function:
-      return "Function"
+      return "function"
     of Type:
-      return "Type"
+      return "type"
   of tkSum:
     if t.types == AnyType.types:
-      return "Any"
+      return "any"
     if t.types == NumberType.types:
-      return "Number"
+      return "number"
     else:
-      result = "Sum(" & $t.types & ")"
+      result = "sum(" & $t.types & ")"
   of tkError:
-    result = "Error(" & $t.error & ")"
+    result = "error(" & $t.error & ")"

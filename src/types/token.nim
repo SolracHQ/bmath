@@ -59,6 +59,7 @@ type
 
     # Types
     tkType ## Type Value
+    tkIs ## Type check operator 'is'
     tkColon ## Type separator ':'
 
     # Control tokens
@@ -93,8 +94,10 @@ template newToken*(value: typed, pos: Position): Token =
     Token(kind: tkNumber, nValue: value, position: pos)
   elif value is Complex[float]:
     Token(kind: tkNumber, nValue: newNumber(value), position: pos)
-  elif value is SomeString:
+  elif value is string:
     Token(kind: tkIdent, name: value, position: pos)
+  elif value is Type:
+    Token(kind: tkType, typ: value, position: pos)
   else:
     {.error: "Unsupported type for Token".}
 
@@ -172,6 +175,8 @@ proc `$`*(token: Token): string =
   # Types
   of tkType:
     $token.typ
+  of tkIs:
+    "'is'"
   of tkColon:
     "':'"
   # Control tokens

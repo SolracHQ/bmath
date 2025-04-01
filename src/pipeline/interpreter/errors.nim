@@ -1,6 +1,7 @@
 ## Module for interpreter-specific error types
 
 import ../../types/[errors, position]
+export BMathError
 
 type
   RuntimeError* = object of BMathError ## Raised when runtime errors occur

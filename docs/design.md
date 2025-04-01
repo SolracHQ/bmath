@@ -19,13 +19,15 @@ expression       -> assignation
 
 block            -> "{" expression ( "\n" expression )* "}"
 
-assignation      -> ( "local" )? ( IDENTIFIER "=" )? ( IDENTIFIER "=" )* boolean
+assignation      -> ( "local" )? ( IDENTIFIER "=" )? ( IDENTIFIER "=" )* logical
 
 if_expression    -> "if(" expression ")" expression ( "elif(" expression ")" expression )* "else" expression
 
-boolean          -> comparison ( ("&" | "|") comparison )*
+logical          -> equality ( ("&" | "|") equality )*
 
-comparison       -> term ( ("==" | "!=" | "<" | "<=" | ">" | ">=") term )* 
+equality        -> comparison ( ("==" | "!=" | "is" ) comparison )*
+
+comparison       -> term ( ( "<" | "<=" | ">" | ">=" ) term )* 
 
 term             -> factor ( ("+" | "-") factor )*
 
@@ -37,14 +39,22 @@ chain_expression -> unary ( "->" unary )*
 
 unary            -> ("-")? primary
 
-primary          -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation | block | if_expression
+type_cast        -> primary "->" TYPE | TYPE "(" primary ")"
 
-NUMBER          -> [0-9]* ("." [0-9]+)? ("e" [0-9]* ("." [0-9]+)?)? ("i")?
+primary          -> function | NUMBER | "(" expression ")" | IDENTIFIER | vector | BOOLEAN | functionInvocation | block | if_expression | TYPE
+
+TYPE             -> "integer" | "real" | "complex" | "boolean" | "vector" | "sequence" | "function" | "any" | "number" | "type"
+
+IDENTIFIER       -> [a-zA-Z_][a-zA-Z0-9_]*
+
+BOOLEAN         -> "true" | "false"
+
+NUMBER           -> [0-9]* ("." [0-9]+)? ("e" [0-9]* ("." [0-9]+)?)? ("i")?
 
 functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" 
            | "(" expression ")" "(" ( expression ("," expression)* )? ")"
 
-function         -> "|" ( ( IDENTIFIER ) ( "," IDENTIFIER )* )? "|" expression
+function         -> "|" ( ( IDENTIFIER ( ":" TYPE )? ) ( "," IDENTIFIER ( ":" TYPE )? )* )? "|" expression
 
 vector           -> "[" ( expression ("," expression)* )? "]"
 ```
@@ -110,6 +120,106 @@ func(expr, arg1, arg2)
 This enables readable pipelines:
 ```
 [1, 2, 3, 4] -> filter(|n| n % 2 == 0) -> map(|n| n^2) -> sum()
+```
+
+## Type System
+
+### Type Hierarchy
+BMath has a rich, expressive type system that supports both simple and compound types:
+
+#### Simple Types
+- `integer`: Whole number values 
+- `real`: Floating-point numbers
+- `complex`: Complex numbers with real and imaginary components
+- `boolean`: `true` or `false` values
+- `vector`: Eager collections of values
+- `sequence`: Lazy collections of values
+- `function`: First-class callable values
+- `type`: Type values themselves
+
+#### Special Types
+- `any`: The union of all types (matches any value)
+- `number`: The union of integer, real, and complex types
+- `error`: Special type representing runtime errors
+
+### Type Casting
+BMath provides two methods for type conversion:
+
+1. **Arrow Operator Casting**: Using the arrow operator with a type name
+   ```
+   42 -> real    # Converts integer 42 to real
+   3.14 -> integer  # Converts real 3.14 to integer (truncates to 3)
+   ```
+
+2. **Function-Style Casting**: Using a type name as a function
+   ```
+   real(42)      # Same as 42 -> real
+   integer(3.14)  # Same as 3.14 -> integer
+   ```
+
+Type conversions follow these rules:
+- Integer to real: preserves numeric value
+- Real to integer: truncates decimal portion
+- Real/integer to complex: creates complex number with zero imaginary part
+- Complex to real/integer: extracts real part if imaginary part is zero, otherwise raises an error
+- Non-numeric types have specific conversion rules documented in the standard library
+
+## Error Handling
+
+BMath provides structured error handling through specialized functions rather than traditional try/catch syntax:
+
+### Error Types
+Runtime errors in BMath are represented as values with error types. Common errors include:
+- `TypeError`: When operations receive incompatible types
+- `ValueError`: When operations receive invalid values
+- `DivisionByZeroError`: When attempting to divide by zero
+- `UndefinedVariableError`: When accessing a non-existent variable
+- `InvalidArgumentError`: When providing incorrect arguments to functions
+- `ReservedNameError`: When attempting to modify built-in names
+
+### Error Handling Functions
+BMath offers two primary error handling mechanisms:
+
+1. **try_or**: Executes a function and returns a default value if an error occurs
+   ```
+   result = try_or(|x| dangerous_operation(), fallback_value)
+   ```
+
+2. **try_catch**: Executes a function and calls an error handler with the error type if an exception occurs
+   ```
+   result = try_catch(
+     || dangerous_operation(), 
+     |error_type| handle_error(error_type)
+   )
+   ```
+
+### Early Termination
+To exit a program with a specific status code:
+```
+exit()      # Exit with status code 0 (success)
+exit(1)     # Exit with status code 1 (typically indicating an error)
+```
+
+## Control Flow
+
+In addition to the previously described if expressions and block expressions, BMath offers:
+
+### Function Application
+Functions are applied using standard function call syntax:
+```
+square(5)          # Direct function call
+(|x| x * x)(5)     # Anonymous function application
+```
+
+### Debug Utilities
+BMath provides utilities for debugging expressions:
+```
+print(value)       # Prints a value and returns it (for chaining)
+```
+
+Example in a chain:
+```
+[1, 2, 3] -> map(|n| n * 2) -> print() -> sum()  # Prints [2, 4, 6] and continues
 ```
 
 ## Evaluation and Scoping Rules

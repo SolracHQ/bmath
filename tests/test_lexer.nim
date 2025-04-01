@@ -1,5 +1,5 @@
 import ../src/pipeline/lexer/[lexer, errors]
-import ../src/types/[token, number]
+import ../src/types/[token, number, types]
 import unittest
 
 suite "Lexer tests":
@@ -193,3 +193,61 @@ suite "Lexer tests":
     expect InvalidNumberFormatError:
       var lex = newLexer("1e")
       discard lex.next() # parse number
+
+  test "Tokenizing type identifiers":
+    var l = newLexer("integer real complex boolean vector sequence function type any number")
+    
+    # Check each type token
+    let tok1 = l.next()
+    check tok1.kind == tkType
+    check tok1.typ === SimpleType.Integer.newType
+    
+    let tok2 = l.next()
+    check tok2.kind == tkType
+    check tok2.typ === SimpleType.Real.newType
+    
+    let tok3 = l.next()
+    check tok3.kind == tkType
+    check tok3.typ === SimpleType.Complex.newType
+    
+    let tok4 = l.next()
+    check tok4.kind == tkType
+    check tok4.typ == SimpleType.Boolean.newType
+    
+    let tok5 = l.next()
+    check tok5.kind == tkType
+    check tok5.typ === SimpleType.Vector.newType
+    
+    let tok6 = l.next()
+    check tok6.kind == tkType
+    check tok6.typ === SimpleType.Sequence.newType
+    
+    let tok7 = l.next()
+    check tok7.kind == tkType
+    check tok7.typ === SimpleType.Function.newType
+    
+    let tok8 = l.next()
+    check tok8.kind == tkType
+    check tok8.typ === SimpleType.Type.newType
+    
+    let tok9 = l.next()
+    check tok9.kind == tkType
+    check tok9.typ === AnyType
+    
+    let tok10 = l.next()
+    check tok10.kind == tkType
+    check tok10.typ === NumberType
+  
+  test "Tokenizing 'is' operator":
+    var l = newLexer("x is integer")
+    
+    let tok1 = l.next()
+    check tok1.kind == tkIdent
+    check tok1.name == "x"
+    
+    let tok2 = l.next()
+    check tok2.kind == tkIs
+    
+    let tok3 = l.next()
+    check tok3.kind == tkType
+    check tok3.typ === SimpleType.Integer.newType
