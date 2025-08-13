@@ -46,20 +46,20 @@ This section covers functions for transforming and processing collections using 
   [1, 2, 3, 4] -> sum()
   ```
 
-- **any**  
+- **any_true**  
   Returns true if at least one element in a vector or sequence of boolean values is true.  
   **Accepted Types:** A vector or sequence of boolean values.  
   **Example:**  
   ```bm
-  [false, false, true] -> any()
+  [false, false, true] -> any_true()
   ```
 
-- **all**  
+- **all_true**  
   Returns true only if every element in a vector or sequence of boolean values is true.  
   **Accepted Types:** A vector or sequence of boolean values.  
   **Example:**  
   ```bm
-  [true, true, true] -> all()
+  [true, true, true] -> all_true()
   ```
 
 - **nth**  

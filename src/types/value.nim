@@ -19,6 +19,7 @@ type
     vkVector ## Vector value
     vkSeq ## Sequence value, lazily evaluated and stored as reference
     vkType ## Type value
+    vkString ## String value
 
   Function* = ref object ## User-defined function data
     body*: Expression ## Function body
@@ -46,6 +47,8 @@ type
       sequence*: Sequence ## Sequence storage when kind is `vkSeq`
     of vkType:
       typ*: Type ## Type storage when kind is `vkType`
+    of vkString:
+      content*: string ## String storage when kind is `vkString`
 
   TransformerKind* = enum
     ## Discriminator for runtime transformer types stored in `Transformer` objects.
@@ -91,6 +94,8 @@ template newValue*[T](n: T): Value =
     Value(kind: vkVector, vector: n)
   elif n is Type:
     Value(kind: vkType, typ: n)
+  elif n is string:
+    Value(kind: vkString, content: n)
   else:
     const message = "Unsupported type '" & $T & "' for Value"
     {.error: message.}
@@ -125,6 +130,7 @@ proc `$`*(kind: ValueKind): string =
   of vkVector: "vector"
   of vkSeq: "seq"
   of vkType: "type"
+  of vkString: "string"
 
 proc `$`*(value: Value): string =
   ## Returns string representation of numeric value
@@ -143,6 +149,8 @@ proc `$`*(value: Value): string =
     "<seq>"
   of vkType:
     $value.typ
+  of vkString:
+    "\"" & value.content & "\""
 
 proc `$`*(val: LabeledValue): string =
   if val.label != "":

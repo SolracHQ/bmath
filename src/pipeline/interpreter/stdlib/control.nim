@@ -58,7 +58,8 @@ proc try_or*(args: openArray[Value], invoker: FnInvoker): Value =
 
   if args.len != 2:
     raise newInvalidArgumentError(
-      "try_or expects exactly 2 arguments (function, default value), but got " & $args.len & " arguments"
+      "try_or expects exactly 2 arguments (function, default value), but got " &
+        $args.len & " arguments"
     )
 
   # Verify the first argument is a function
@@ -91,7 +92,8 @@ proc try_catch*(args: openArray[Value], invoker: FnInvoker): Value =
 
   if args.len != 2:
     raise newInvalidArgumentError(
-      "try_catch expects exactly 2 arguments (function, handler), but got " & $args.len & " arguments"
+      "try_catch expects exactly 2 arguments (function, handler), but got " & $args.len &
+        " arguments"
     )
 
   # Verify both arguments are functions
@@ -112,11 +114,11 @@ proc try_catch*(args: openArray[Value], invoker: FnInvoker): Value =
     # Create an error type with the exception message
     let errorType = Type(kind: tkError, error: e.name)
     let errorValue = Value(kind: vkType, typ: errorType)
-    
+
     # Pass the error to the handler function
     return invoker(args[1], [errorValue])
 
-proc print*(value:Value): Value =
+proc print*(value: Value): Value =
   ## Prints a value to the standard output
   ##
   ## Parameters:
@@ -124,7 +126,7 @@ proc print*(value:Value): Value =
   ##
   ## Returns:
   ## - The printed value (for chaining)
-  
+
   # Convert the value to a string and print it
   echo $value
   return value

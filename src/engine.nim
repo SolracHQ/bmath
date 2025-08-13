@@ -49,8 +49,6 @@ iterator run*(engine: Engine, source: string): LabeledValue =
 
     debug("AST: \n", $ast)
 
-    debug("Starting optimization process")
-
     debug("Starting evaluation")
     wrapError("RUNTIME", fatal = not engine.replMode):
       yield engine.interpreter.eval(ast)

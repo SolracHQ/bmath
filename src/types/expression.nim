@@ -17,6 +17,7 @@ type
     ekVector ## Vector literal
     ekBoolean ## Boolean literal (true or false)
     ekType ## Type literal (type name)
+    ekString ## String literal
 
     # Unary operations
     ekNeg ## Unary negation operation (-operand)
@@ -66,6 +67,9 @@ type
   # New specialized types for each expression variant
   NumberLiteral* = object
     number*: Number ## Number value
+
+  StringLiteral* = object
+    content*: string ## String value
 
   BoolLiteral* = object
     boolean*: bool ## Boolean value
@@ -126,6 +130,8 @@ type
       number*: Number
     of ekBoolean:
       boolean*: bool
+    of ekString:
+      content*: string
     of ekVector:
       vector*: Vector[Expression]
     of ekType:
@@ -160,113 +166,79 @@ proc newLiteralExpr*[T](pos: Position, value: T): Expression =
     result = newBoolExpr(pos, value)
   elif T is seq[Expression]:
     result = newVectorExpr(pos, value)
+  elif T is string:
+    result = Expression(kind: ekString, position: pos, content: value)
   else:
     raise newException(ValueError, "Invalid type for literal expression")
 
 proc newTypeExpr*(pos: Position, typ: Type): Expression {.inline.} =
-  result = Expression(
-    kind: ekType, 
-    position: pos, 
-    typ: typ
-  )
+  result = Expression(kind: ekType, position: pos, typ: typ)
 
 proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
-  result = Expression(
-    kind: ekNot, 
-    position: pos, 
-    unaryOp: UnaryOp(operand: operand)
-  )
+  result = Expression(kind: ekNot, position: pos, unaryOp: UnaryOp(operand: operand))
 
 proc newNumberExpr*(pos: Position, value: Number): Expression {.inline.} =
-  result = Expression(
-    kind: ekNumber, 
-    position: pos, 
-    number: value
-  )
+  result = Expression(kind: ekNumber, position: pos, number: value)
 
 proc newBoolExpr*(pos: Position, value: bool): Expression {.inline.} =
-  result = Expression(
-    kind: ekBoolean, 
-    position: pos, 
-    boolean: value
-  )
+  result = Expression(kind: ekBoolean, position: pos, boolean: value)
 
 proc newVectorExpr*(pos: Position, values: seq[Expression]): Expression {.inline.} =
-  result = Expression(
-    kind: ekVector, 
-    position: pos, 
-    vector: fromSeq[Expression](values)
-  )
+  result =
+    Expression(kind: ekVector, position: pos, vector: fromSeq[Expression](values))
 
 proc newNegExpr*(pos: Position, operand: Expression): Expression {.inline.} =
-  result = Expression(
-    kind: ekNeg, 
-    position: pos, 
-    unaryOp: UnaryOp(operand: operand)
-  )
+  result = Expression(kind: ekNeg, position: pos, unaryOp: UnaryOp(operand: operand))
 
 proc newBinaryExpr*(
     pos: Position, kind: static[ExpressionKind], left: Expression, right: Expression
 ): Expression {.inline.} =
-  result = Expression(
-    kind: kind, 
-    position: pos, 
-    binaryOp: BinaryOp(left: left, right: right)
-  )
+  result =
+    Expression(kind: kind, position: pos, binaryOp: BinaryOp(left: left, right: right))
 
 proc newIdentExpr*(pos: Position, ident: string): Expression {.inline.} =
-  result = Expression(
-    kind: ekIdent, 
-    position: pos, 
-    identifier: Identifier(ident: ident)
-  )
+  result =
+    Expression(kind: ekIdent, position: pos, identifier: Identifier(ident: ident))
 
 proc newAssignExpr*(
     pos: Position, ident: string, expr: Expression, isLocal: bool, typ: Type
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekAssign, 
-    position: pos, 
-    assign: Assign(ident: ident, expr: expr, isLocal: isLocal, typ: typ)
+    kind: ekAssign,
+    position: pos,
+    assign: Assign(ident: ident, expr: expr, isLocal: isLocal, typ: typ),
   )
 
 proc newFuncCallExpr*(
     pos: Position, function: Expression, args: seq[Expression]
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekFuncCall, 
-    position: pos, 
-    functionCall: FunctionCall(function: function, params: args)
+    kind: ekFuncCall,
+    position: pos,
+    functionCall: FunctionCall(function: function, params: args),
   )
 
 proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.inline.} =
-  result = Expression(
-    kind: ekBlock, 
-    position: pos, 
-    blockExpr: Block(expressions: expressions)
-  )
+  result =
+    Expression(kind: ekBlock, position: pos, blockExpr: Block(expressions: expressions))
 
 proc newFuncExpr*(
     pos: Position, params: seq[Parameter], body: Expression
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekFuncDef, 
-    position: pos, 
-    functionDef: FunctionDef(params: params, body: body)
+    kind: ekFuncDef, position: pos, functionDef: FunctionDef(params: params, body: body)
   )
 
 proc newIfExpr*(
     pos: Position, branches: seq[Branch], elseBranch: Expression
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekIf, 
-    position: pos, 
-    ifExpr: IfExpr(branches: branches, elseBranch: elseBranch)
+    kind: ekIf,
+    position: pos,
+    ifExpr: IfExpr(branches: branches, elseBranch: elseBranch),
   )
 
-proc newBranch*(
-    conditionExpr: Expression, thenExpr: Expression
-): Branch {.inline.} =
+proc newBranch*(conditionExpr: Expression, thenExpr: Expression): Branch {.inline.} =
   Branch(condition: conditionExpr, then: thenExpr)
 
 proc newParameter*(name: string, typ: Type = AnyType): Parameter {.inline.} =
@@ -284,6 +256,8 @@ proc stringify(node: Expression, indent: int): string =
     result.add indentation & "number: " & $node.number & "\n"
   of ekBoolean:
     result.add indentation & "bool: " & $node.boolean & "\n"
+  of ekString:
+    result.add indentation & "string: \"" & node.content & "\"\n"
   of eKAdd, eKSub, eKMul, eKDiv, eKMod, eKPow, eKEq, eKNe, eKLt, eKLe, eKGt, eKGe,
       eKAnd, eKOr:
     let kindStr = toLowerAscii($node.kind).substr(2)
@@ -356,6 +330,8 @@ proc asSource*(expr: Expression, ident: int = 0): string =
     return $expr.number
   of ekBoolean:
     return $expr.boolean
+  of ekString:
+    return "\"" & expr.content & "\""
   of ekAdd:
     return asSource(expr.binaryOp.left) & " + " & asSource(expr.binaryOp.right)
   of ekSub:
@@ -393,7 +369,8 @@ proc asSource*(expr: Expression, ident: int = 0): string =
   of ekAssign:
     return expr.assign.ident & " = " & asSource(expr.assign.expr)
   of ekFuncCall:
-    return asSource(expr.functionCall.function) & "(" & 
+    return
+      asSource(expr.functionCall.function) & "(" &
       expr.functionCall.params.mapIt(asSource(it)).join(", ") & ")"
   of ekBlock:
     let indentation = " ".repeat(ident * 2)
@@ -401,11 +378,14 @@ proc asSource*(expr: Expression, ident: int = 0): string =
       return "{" & asSource(expr.blockExpr.expressions[0]) & "}"
     else:
       let innerIndent = " ".repeat((ident + 1) * 2)
-      return "{" & "\n" &
-        expr.blockExpr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") & "\n" &
-        indentation & "}"
+      return
+        "{" & "\n" &
+        expr.blockExpr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join(
+          "\n"
+        ) & "\n" & indentation & "}"
   of ekFuncDef:
-    return "|" & expr.functionDef.params.join(", ") & "| " & asSource(expr.functionDef.body)
+    return
+      "|" & expr.functionDef.params.join(", ") & "| " & asSource(expr.functionDef.body)
   of ekVector:
     return "[" & expr.vector.toSeq().mapIt(asSource(it)).join(", ") & "]"
   of ekIf:

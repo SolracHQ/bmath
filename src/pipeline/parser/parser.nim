@@ -155,7 +155,8 @@ proc parseFunction(parser: var Parser): Expression =
         if parser.match({tkType}):
           typ = parser.previous().typ
         else:
-          raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+          raise
+            newMissingTokenError("Expected type after ':'", parser.previous().position)
       params.add(Parameter(name: name, typ: typ))
     else:
       raise newUnexpectedTokenError(
@@ -316,6 +317,8 @@ proc parsePrimary*(parser: var Parser): Expression =
     return newBoolExpr(token.position, false)
   elif parser.match({tkIdent}):
     return parser.parseIdentifier()
+  elif parser.match({tkString}):
+    return newLiteralExpr(token.position, token.content)
   elif parser.match({tkLine}):
     return parser.parseFunction()
   elif parser.match({tkLSquare}):
@@ -393,7 +396,11 @@ proc parseChain*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseFunctionCall()
     if right.kind == ekFuncCall:
-      result = newFuncCallExpr(prev.position, right.functionCall.function, @[result] & right.functionCall.params)
+      result = newFuncCallExpr(
+        prev.position,
+        right.functionCall.function,
+        @[result] & right.functionCall.params,
+      )
     else:
       result = newFuncCallExpr(prev.position, right, @[result])
 
@@ -514,7 +521,9 @@ proc parseEquality*(parser: var Parser): Expression =
 
     # If tkIs, rigth must be a type
     if prev.kind == tkIs and right.kind != ekType:
-      raise newMissingTokenError("Expected type after 'is' but got " & $right.kind, parser.previous().position)
+      raise newMissingTokenError(
+        "Expected type after 'is' but got " & $right.kind, parser.previous().position
+      )
 
     # if tkIs and right.typ is AnyType, we can just return true
     if prev.kind == tkIs and right.typ === AnyType:
@@ -530,14 +539,19 @@ proc parseEquality*(parser: var Parser): Expression =
       elif result.kind == ekType:
         return newBoolExpr(prev.position, right.typ == SimpleType.Type.newType)
       elif result.kind == ekNumber:
-        let numberType = case result.number.kind
+        let numberType =
+          case result.number.kind
           of nkInteger: SimpleType.Integer.newType
           of nkReal: SimpleType.Real.newType
           of nkComplex: SimpleType.Complex.newType
         return newBoolExpr(prev.position, right.typ == numberType)
       else:
         # Fall back to runtime type checking for other expression kinds
-        result = newFuncCallExpr(prev.position, newTypeExpr(result.position, SimpleType.Type.newType), @[result])
+        result = newFuncCallExpr(
+          prev.position,
+          newTypeExpr(result.position, SimpleType.Type.newType),
+          @[result],
+        )
 
     # Optimize for numbers and booleans
     if (result.kind == ekNumber and right.kind == ekNumber) or
@@ -556,7 +570,7 @@ proc parseEquality*(parser: var Parser): Expression =
       else: # tkNe
         result = newBoolExpr(prev.position, not areEqual)
     elif (result.kind == ekNumber and right.kind == ekBoolean) or
-         (result.kind == ekBoolean and right.kind == ekNumber):
+        (result.kind == ekBoolean and right.kind == ekNumber):
       result = newBoolExpr(prev.position, false)
     else:
       if prev.kind == tkEq or prev.kind == tkIs:
@@ -613,7 +627,8 @@ proc parseAssignment*(parser: var Parser): Expression =
       if parser.match({tkType}):
         typ = parser.previous().typ
       else:
-        raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+        raise
+          newMissingTokenError("Expected type after ':'", parser.previous().position)
     if parser.match({tkAssign}):
       let value = parser.parseExpression()
       return newAssignExpr(name.position, name.name, value, local, typ)

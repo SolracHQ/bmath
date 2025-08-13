@@ -12,7 +12,7 @@
 
 import std/[sets, tables, macros, complex]
 import
-  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control]
+  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control, assertions]
 import ../../types/[value, expression]
 import errors
 
@@ -119,12 +119,21 @@ let global = Environment(
       "map": Value(kind: vkNativeFunc, nativeFn: map),
       "filter": Value(kind: vkNativeFunc, nativeFn: filter),
       "reduce": Value(kind: vkNativeFunc, nativeFn: reduce),
-      "any": native(any(vector)),
-      "all": native(all(vector)),
+      "any_true": native(any(vector)),
+      "all_true": native(all(vector)),
       "nth": native(nth(vector, number)),
       "at": native(nth(vector, number)), # Alias for nth
       "min": Value(kind: vkNativeFunc, nativeFn: min),
       "max": Value(kind: vkNativeFunc, nativeFn: max),
+
+      # Assertion Functions
+      "assert": Value(kind: vkNativeFunc, nativeFn: assert),
+      "assert_eq": Value(kind: vkNativeFunc, nativeFn: assert_eq),
+      "assert_neq": Value(kind: vkNativeFunc, nativeFn: assert_neq),
+      "assert_lt": Value(kind: vkNativeFunc, nativeFn: assert_lt),
+      "assert_gt": Value(kind: vkNativeFunc, nativeFn: assert_gt),
+      "assert_type": Value(kind: vkNativeFunc, nativeFn: assert_type),
+      "assert_error": Value(kind: vkNativeFunc, nativeFn: assert_error),
     }
   ),
 )

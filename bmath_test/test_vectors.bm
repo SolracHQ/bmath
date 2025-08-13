@@ -1,0 +1,144 @@
+# Vector Operations Tests
+# ======================
+# Tests for vector creation, access, and operations
+
+"Testing Vector Operations..."
+
+# [1] Vector Creation
+"1. Vector Creation Tests"
+# Literal vectors
+intVector = [1, 2, 3, 4, 5]
+assert_eq(intVector, [1, 2, 3, 4, 5], "Integer vector creation", "✓ Integer vector creation")
+
+floatVector = [1.1, 2.2, 3.3]
+assert_eq(floatVector, [1.1, 2.2, 3.3], "Float vector creation", "✓ Float vector creation")
+
+mixedVector = [1, 2.5, 3]
+assert_eq(mixedVector, [1, 2.5, 3], "Mixed type vector creation", "✓ Mixed type vector creation")
+
+emptyVector = []
+assert_eq(emptyVector, [], "Empty vector creation", "✓ Empty vector creation")
+
+# Vector constructor with function
+generatedVector = vec(5, |i| i + 1)
+assert_eq(generatedVector, [1, 2, 3, 4, 5], "Vector with generator function", "✓ Vector with generator function")
+
+# Vector constructor with constant
+constantVector = vec(3, 42)
+assert_eq(constantVector, [42, 42, 42], "Vector with constant value", "✓ Vector with constant value")
+
+"✓ Vector creation tests passed"
+
+# [2] Vector Access and Information
+"2. Vector Access and Information"
+testVector = [10, 20, 30, 40, 50]
+
+# Length
+assert_eq(testVector->len, 5, "Vector length")
+assert_eq(len(testVector), 5, "Vector length (function syntax)")
+
+# First and last elements
+assert_eq(testVector->first, 10, "First element access")
+assert_eq(first(testVector), 10, "First element (function syntax)")
+
+assert_eq(testVector->last, 50, "Last element access")
+assert_eq(last(testVector), 50, "Last element (function syntax)")
+
+# Nth element access
+assert_eq(testVector->nth(0), 10, "Nth element - first")
+assert_eq(testVector->nth(2), 30, "Nth element - middle")
+assert_eq(testVector->nth(4), 50, "Nth element - last")
+
+"✓ Vector access tests passed"
+
+# [3] Element-wise Arithmetic
+"3. Element-wise Arithmetic"
+vectorA = [1, 2, 3]
+vectorB = [4, 5, 6]
+
+# Addition
+vectorSum = vectorA + vectorB
+assert_eq(vectorSum, [5, 7, 9], "Vector addition")
+
+# Subtraction
+vectorDiff = vectorB - vectorA
+assert_eq(vectorDiff, [3, 3, 3], "Vector subtraction")
+
+# Scalar operations
+doubledVector = 2 * vectorA
+assert_eq(doubledVector, [2, 4, 6], "Scalar multiplication")
+
+halvedVector = vectorB / 2
+assert_eq(halvedVector, [2.0, 2.5, 3.0], "Scalar division")
+
+# Power
+poweredVector = vectorA ^ 2
+assert_eq(poweredVector, [1, 4, 9], "Vector power")
+
+"✓ Element-wise arithmetic tests passed"
+
+# [4] Vector Products
+"4. Vector Products"
+# Dot product
+dotResult = vectorA->dot(vectorB)
+assert_eq(dotResult, 32, "Dot product (1*4 + 2*5 + 3*6)")
+
+dotResult2 = dot(vectorA, vectorB)
+assert_eq(dotResult2, 32, "Dot product (function syntax)")
+
+"✓ Vector product tests passed"
+
+# [5] Vector Manipulation
+"5. Vector Manipulation"
+numbers = [10, 20, 30, 40, 50]
+
+# Slicing
+slice1 = numbers->slice(3)
+assert_eq(slice1, [10, 20, 30], "Slice from start to index")
+
+slice2 = numbers->slice(1, 4)
+assert_eq(slice2, [20, 30, 40], "Slice with start and end indices")
+
+# Merging
+vector1 = [1, 2]
+vector2 = [3, 4]
+merged = vector1->merge(vector2)
+assert_eq(merged, [1, 2, 3, 4], "Vector merge")
+
+merged2 = merge(vector1, vector2)
+assert_eq(merged2, [1, 2, 3, 4], "Vector merge (function syntax)")
+
+"✓ Vector manipulation tests passed"
+
+# [6] Vector Modification
+"6. Vector Modification"
+modVector = [10, 20, 30]
+oldValue = modVector->set(1, 99)
+assert_eq(oldValue, 20, "Set returns old value")
+assert_eq(modVector, [10, 99, 30], "Vector modified by set")
+
+"✓ Vector modification tests passed"
+
+# [7] Vector Type Promotion
+"7. Vector Type Promotion"
+intVec = [1, 2, 3]
+floatVec = [1.5, 2.5, 3.5]
+promotedSum = intVec + floatVec
+assert_eq(promotedSum, [2.5, 4.5, 6.5], "Type promotion in vector addition")
+
+"✓ Vector type promotion tests passed"
+
+# [8] Complex Vector Operations
+"8. Complex Vector Operations"
+# Test with larger vectors
+largeVector = vec(10, |i| i * i)
+expectedSquares = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+assert_eq(largeVector, expectedSquares, "Large vector with squares")
+
+# Test empty vector operations
+emptyLen = []->len
+assert_eq(emptyLen, 0, "Empty vector length")
+
+"✓ Complex vector operation tests passed"
+
+"All vector operation tests completed!"

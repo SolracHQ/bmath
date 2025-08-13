@@ -34,7 +34,9 @@ proc evalExpression(
   interpreter: Interpreter, expression: Expression, environment: Environment
 ): Value
 
-proc evalAssign(interpreter: Interpreter, expression: Expression, env: Environment): Value =
+proc evalAssign(
+    interpreter: Interpreter, expression: Expression, env: Environment
+): Value =
   ## Evaluates an assignment expression, storing the result in the environment.
   ##
   ## Parameters:
@@ -110,11 +112,16 @@ proc evalFunInvoke(
     if callee.kind == vkType:
       if expression.functionCall.params.len != 1:
         raise newInvalidArgumentError("Type constructor expects one argument")
-      return casting(callee.typ, interpreter.evalExpression(expression.functionCall.params[0], env))
+      return casting(
+        callee.typ, interpreter.evalExpression(expression.functionCall.params[0], env)
+      )
     if callee.kind != vkFunction and callee.kind != vkNativeFunc:
       raise newTypeError("Value is not a function")
     return evalFunctionCall(
-      interpreter, callee, expression.functionCall.params.mapIt(interpreter.evalExpression(it, env)), env
+      interpreter,
+      callee,
+      expression.functionCall.params.mapIt(interpreter.evalExpression(it, env)),
+      env,
     )
   except BMathError as e:
     e.stack.add(expression.position)
@@ -173,7 +180,10 @@ proc evalExpression(
   ##   BMathError - If a mathematical error occurs during evaluation.
   let env = if environment == nil: interpreter.env else: environment
   template binOp(expression, op: untyped): Value =
-    op(interpreter.evalExpression(expression.binaryOp.left, env), interpreter.evalExpression(expression.binaryOp.right, env))
+    op(
+      interpreter.evalExpression(expression.binaryOp.left, env),
+      interpreter.evalExpression(expression.binaryOp.right, env),
+    )
 
   try:
     case expression.kind
@@ -181,6 +191,8 @@ proc evalExpression(
       return newValue(expression.number)
     of ekBoolean:
       return newValue(expression.boolean)
+    of ekString:
+      return newValue(expression.content)
     of ekAdd:
       return binOp(expression, `+`)
     of ekSub:
@@ -210,7 +222,10 @@ proc evalExpression(
     of ekOr:
       return binOp(expression, `or`)
     of ekVector:
-      var vector = expression.vector.map(proc(e: Expression): Value = interpreter.evalExpression(e, env))
+      var vector = expression.vector.map(
+        proc(e: Expression): Value =
+          interpreter.evalExpression(e, env)
+      )
       return Value(kind: vkVector, vector: vector)
     of ekNeg:
       return -interpreter.evalExpression(expression.unaryOp.operand, env)
@@ -259,6 +274,8 @@ proc eval*(
   ##   LabeledValue - The evaluated value with an optional label.
   let env = if environment == nil: interpreter.env else: environment
   if expression.kind == ekAssign:
-    return LabeledValue(label: expression.assign.ident, value: interpreter.evalExpression(expression, env))
+    return LabeledValue(
+      label: expression.assign.ident, value: interpreter.evalExpression(expression, env)
+    )
   else:
     return emptyLabeled(interpreter.evalExpression(expression, env))

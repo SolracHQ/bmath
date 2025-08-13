@@ -1,0 +1,185 @@
+# Assertion Examples in BMath Language
+# ====================================
+# This file demonstrates the assertion functions for testing and validation.
+
+# [1] Basic Assertions
+# ------------------
+# Assert that a condition is true
+assert(true)                          # Should pass
+assert(5 > 3)                        # Should pass
+assert(2 + 2 == 4)                   # Should pass
+
+# Assert with custom message
+# assert(false, "This is a test failure message")  # Uncomment to test failure
+
+# [2] Equality Assertions
+# ---------------------
+# Test that two values are equal
+assert_eq(42, 42)                    # Should pass
+assert_eq(3.14, 3.14)               # Should pass  
+assert_eq(true, true)               # Should pass
+assert_eq("hello", "hello")         # Should pass
+
+# Test vectors
+v1 = [1, 2, 3]
+v2 = [1, 2, 3]
+v3 = [1, 2, 4]
+assert_eq(v1, v2)                   # Should pass
+# assert_eq(v1, v3)                 # Uncomment to test failure
+
+# With custom messages
+assert_eq(10, 10, "Numbers should be equal")
+# assert_eq(10, 20, "This will fail with custom message")  # Uncomment to test
+
+# [3] Inequality Assertions
+# ------------------------
+# Test that two values are not equal
+assert_neq(42, 43)                  # Should pass
+assert_neq(true, false)             # Should pass
+assert_neq("hello", "world")        # Should pass
+
+# With vectors
+assert_neq(v1, v3)                  # Should pass
+# assert_neq(v1, v2)                # Uncomment to test failure
+
+# [4] Comparison Assertions
+# -----------------------
+# Test less than
+assert_lt(5, 10)                    # Should pass
+assert_lt(-1, 0)                    # Should pass
+assert_lt(3.14, 4.0)               # Should pass
+# assert_lt(10, 5)                  # Uncomment to test failure
+
+# Test greater than
+assert_gt(10, 5)                    # Should pass
+assert_gt(0, -1)                    # Should pass
+assert_gt(4.0, 3.14)               # Should pass
+# assert_gt(5, 10)                  # Uncomment to test failure
+
+# With custom messages
+assert_lt(1, 2, "1 should be less than 2")
+assert_gt(5, 3, "5 should be greater than 3")
+
+# [5] Type Assertions
+# -----------------
+# Test that values have expected types
+x = 42
+y = 3.14
+z = true
+s = "hello"
+local vec = [1, 2, 3]
+
+# Note: Type assertions require Type values - this may need adjustment
+# based on how types are exposed in the language
+# assert_type(x, Integer)
+# assert_type(y, Real)
+# assert_type(z, Boolean)
+# assert_type(s, String)
+# assert_type(vec, Vector)
+
+# [6] Testing Mathematical Functions
+# --------------------------------
+# Test basic arithmetic
+result1 = 2 + 3
+assert_eq(result1, 5, "Addition test")
+
+result2 = 10 - 4
+assert_eq(result2, 6, "Subtraction test")
+
+result3 = 3 * 4
+assert_eq(result3, 12, "Multiplication test")
+
+result4 = 15 / 3
+assert_eq(result4, 5, "Division test")
+
+# Test power function
+result5 = pow(2, 3)
+assert_eq(result5, 8, "Power function test")
+
+# Test square root
+result6 = sqrt(16)
+assert_eq(result6, 4, "Square root test")
+
+# [7] Testing Trigonometric Functions
+# ----------------------------------
+# Test sine of pi/2 (should be 1)
+sinResult = sin(pi / 2)
+# Note: Floating point comparison might need tolerance
+# For now, we test the approximation
+assert_gt(sinResult, 0.99, "sin(pi/2) should be close to 1")
+assert_lt(sinResult, 1.01, "sin(pi/2) should be close to 1")
+
+# Test cosine of 0 (should be 1)
+cosResult = cos(0)
+assert_eq(cosResult, 1, "cos(0) should be 1")
+
+# [8] Testing Vector Operations
+# ---------------------------
+# Test vector creation and operations
+vec1 = [1, 2, 3]
+vec2 = [4, 5, 6]
+
+# Test vector length
+assert_eq(len(vec1), 3, "Vector should have length 3")
+
+# Test vector sum
+vsum = vec1 + vec2
+expected = [5, 7, 9]
+assert_eq(vsum, expected, "Vector addition test")
+
+# Test dot product
+dotResult = dot(vec1, vec2)
+expectedDot = 1*4 + 2*5 + 3*6  # = 4 + 10 + 18 = 32
+assert_eq(dotResult, expectedDot, "Dot product test")
+
+# Test first and last elements
+assert_eq(first(vec1), 1, "First element test")
+assert_eq(last(vec1), 3, "Last element test")
+
+# [9] Testing Logical Operations
+# -----------------------------
+# Test logical AND
+assert_eq(true & true, true, "true AND true should be true")
+assert_eq(true & false, false, "true AND false should be false")
+assert_eq(false & false, false, "false AND false should be false")
+
+# Test logical OR
+assert_eq(true | false, true, "true OR false should be true")
+assert_eq(false | false, false, "false OR false should be false")
+
+# Test logical NOT
+assert_eq(!true, false, "NOT true should be false")
+assert_eq(!false, true, "NOT false should be true")
+
+# [10] Testing Conditional Expressions
+# -----------------------------------
+# Test if expressions
+conditionalResult1 = if(5 > 3) "greater" else "less or equal"
+assert_eq(conditionalResult1, "greater", "Conditional test 1")
+
+conditionalResult2 = if(2 > 5) "greater" else "less or equal"
+assert_eq(conditionalResult2, "less or equal", "Conditional test 2")
+
+# [11] Testing Function Definitions and Calls
+# ------------------------------------------
+# Define a simple function and test it
+square = |x| x * x
+
+# Test the function
+assert_eq(square(4), 16, "Square function test")
+assert_eq(square(-3), 9, "Square function with negative number")
+
+# Define a function with multiple parameters
+add = |a, b| a + b
+assert_eq(add(3, 5), 8, "Addition function test")
+
+# [12] Testing String Operations (if supported)
+# --------------------------------------------
+str1 = "hello"
+str2 = "world"
+
+# Test string equality
+assert_eq(str1, "hello", "String equality test")
+assert_neq(str1, str2, "String inequality test")
+
+"All assertion tests completed successfully!"

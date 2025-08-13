@@ -144,6 +144,8 @@ proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =
     result = newValue(a.boolean == b.boolean)
   elif a.kind == vkNativeFunc and b.kind == vkNativeFunc:
     result = newValue(a.nativeFn == b.nativeFn)
+  elif a.kind == vkString and b.kind == vkString:
+    result = newValue(a.content == b.content)
   else:
     result = newValue(false)
 

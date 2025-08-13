@@ -12,6 +12,9 @@ type
 
   InvalidNumberFormatError* = object of LexerError ## Raised when a number is malformed
 
+  InvalidEscapeSequenceError* = object of LexerError
+    ## Raised when an invalid escape sequence is found in a string literal
+
 # Create a new IncompleteInputError with given message and position in stack
 template newIncompleteInputError*(
     message: string, pos: Position
@@ -29,3 +32,9 @@ template newInvalidNumberFormatError*(
     message: string, pos: Position
 ): ref InvalidNumberFormatError =
   (ref InvalidNumberFormatError)(msg: message, stack: @[pos])
+
+# Create a new InvalidEscapeSequenceError with given message and position in stack
+template newInvalidEscapeSequenceError*(
+    message: string, pos: Position
+): ref InvalidEscapeSequenceError =
+  (ref InvalidEscapeSequenceError)(msg: message, stack: @[pos])

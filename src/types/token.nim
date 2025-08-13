@@ -50,6 +50,7 @@ type
     tkTrue ## Boolean true literal
     tkFalse ## Boolean false literal
     tkIdent ## Identifier (variable/function name)
+    tkString ## String literal
 
     # Keywords
     tkIf ## If keyword
@@ -82,6 +83,8 @@ type
       name*: string ## Identifier name for tkIdent tokens
     of tkType:
       typ*: Type ## Type value for tkType tokens
+    of tkString:
+      content*: string ## String literal for tkString tokens
     else:
       discard
 
@@ -95,11 +98,15 @@ template newToken*(value: typed, pos: Position): Token =
   elif value is Complex[float]:
     Token(kind: tkNumber, nValue: newNumber(value), position: pos)
   elif value is string:
-    Token(kind: tkIdent, name: value, position: pos)
+    Token(kind: tkString, content: value, position: pos)
   elif value is Type:
     Token(kind: tkType, typ: value, position: pos)
   else:
     {.error: "Unsupported type for Token".}
+
+# Helper for identifiers
+template newIdentToken*(identname: string, pos: Position): Token =
+  Token(kind: tkIdent, name: identname, position: pos)
 
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
@@ -163,6 +170,8 @@ proc `$`*(token: Token): string =
     "false"
   of tkIdent:
     "'" & token.name & "'"
+  of tkString:
+    "\"" & token.content & "\""
   # Keywords
   of tkIf:
     "if"

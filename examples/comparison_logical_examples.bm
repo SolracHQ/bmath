@@ -63,13 +63,13 @@ vectorsDifferent = v1 != v3           # Expected: true
 boolVec1 = [true, false, true]
 boolVec2 = [true, true, true]
 
-# Using "all" to check if all elements are true
-allTrue1 = all(boolVec1)              # Expected: false
-allTrue2 = all(boolVec2)              # Expected: true
+# Using "all_true" to check if all elements are true
+allTrue1 = all_true(boolVec1)              # Expected: false
+allTrue2 = all_true(boolVec2)              # Expected: true
 
-# Using "any" to check if any element is true
-anyTrue1 = any(boolVec1)              # Expected: true
-anyTrue2 = any([false, false, false]) # Expected: false
+# Using "any_true" to check if any element is true
+anyTrue1 = any_true(boolVec1)              # Expected: true
+anyTrue2 = any_true([false, false, false]) # Expected: false
 
 # [10] Type Limitations
 # ------------------

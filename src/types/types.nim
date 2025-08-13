@@ -18,6 +18,7 @@ type
     Sequence
     Function
     Type
+    String
 
   Type* = object
     case kind*: TypeKind
@@ -28,13 +29,13 @@ type
     of tkError:
       error*: cstring
 
-const 
+const
   AnyType* = Type(
-    kind: tkSum, types: toHashSet([Integer, Real, Complex, Boolean, Vector, Sequence, Function, Type])
+    kind: tkSum,
+    types:
+      toHashSet([Integer, Real, Complex, Boolean, Vector, Sequence, Function, Type]),
   )
-  NumberType* = Type(
-    kind: tkSum, types: toHashSet([Integer, Real, Complex])
-  )
+  NumberType* = Type(kind: tkSum, types: toHashSet([Integer, Real, Complex]))
 
 proc newType*(`type`: SimpleType): Type =
   ## Create a new Type object from a SimpleType
@@ -81,6 +82,8 @@ proc `$`*(t: Type): string =
     case t.simpleType
     of Integer:
       return "integer"
+    of String:
+      return "string"
     of Real:
       return "real"
     of Complex:

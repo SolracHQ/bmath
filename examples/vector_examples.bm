@@ -79,9 +79,10 @@ complexVectorSum = complexVector->sum   # Expected: 4+7i
 boolVector1 = [true, true, false]
 boolVector2 = [true, false, false]
 
-anyTrueResult = boolVector1->any     # Expected: true
-allTrueResult = boolVector1->all     # Expected: false
-allFalseResult = [false, false, false]->all  # Expected: false
+# Using any_true and all_true functions
+anyTrueResult = boolVector1->any_true()     # Expected: true
+allTrueResult = boolVector1->all_true()     # Expected: false
+allFalseResult = [false, false, false]->all_true()  # Expected: false
 
 # [10] Nested Vectors
 # ----------------

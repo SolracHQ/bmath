@@ -1,0 +1,123 @@
+# Comparison and Logical Operations Tests
+# ======================================
+# Tests for comparison operators and logical operations
+
+"Testing Comparison and Logical Operations..."
+
+# [1] Equality Operators
+"1. Equality Operators"
+assert_eq(5 == 5, true, "Integer equality", "✓ Integer equality")
+assert_eq(5 == 6, false, "Integer inequality", "✓ Integer inequality")
+assert_eq(5.0 == 5, true, "Float-Integer equality (type promotion)", "✓ Float-Integer equality")
+assert_eq(3.14 == 3.14, true, "Float equality", "✓ Float equality")
+
+assert_eq(5 != 6, true, "Not equal operator", "✓ Not equal operator")
+assert_eq(5 != 5, false, "Not equal with same values", "✓ Not equal same values")
+
+assert_eq(true == true, true, "Boolean equality", "✓ Boolean equality")
+assert_eq(true == false, false, "Boolean inequality", "✓ Boolean inequality")
+
+"✓ Equality operator tests passed"
+
+# [2] Ordering Operators
+"2. Ordering Operators"
+assert_eq(3 < 5, true, "Less than - true case", "✓ Less than true")
+assert_eq(5 < 3, false, "Less than - false case", "✓ Less than false")
+assert_eq(5 < 5, false, "Less than - equal values", "✓ Less than equal")
+
+assert_eq(10 > 2, true, "Greater than - true case", "✓ Greater than true")
+assert_eq(2 > 10, false, "Greater than - false case", "✓ Greater than false")
+assert_eq(5 > 5, false, "Greater than - equal values", "✓ Greater than equal")
+
+assert_eq(5 <= 5, true, "Less than or equal - equal case", "✓ Less or equal equal")
+assert_eq(3 <= 5, true, "Less than or equal - less case", "✓ Less or equal less")
+assert_eq(7 <= 5, false, "Less than or equal - greater case", "✓ Less or equal greater")
+
+assert_eq(5 >= 5, true, "Greater than or equal - equal case", "✓ Greater or equal equal")
+assert_eq(7 >= 5, true, "Greater than or equal - greater case", "✓ Greater or equal greater")
+assert_eq(3 >= 5, false, "Greater than or equal - less case", "✓ Greater or equal less")
+
+"✓ Ordering operator tests passed"
+
+# [3] Logical Operators
+"3. Logical Operators"
+assert_eq(true & true, true, "AND operator - both true", "✓ AND both true")
+assert_eq(true & false, false, "AND operator - one false", "✓ AND one false")
+assert_eq(false & true, false, "AND operator - first false", "✓ AND first false")
+assert_eq(false & false, false, "AND operator - both false", "✓ AND both false")
+
+assert_eq(true | true, true, "OR operator - both true", "✓ OR both true")
+assert_eq(true | false, true, "OR operator - first true", "✓ OR first true")
+assert_eq(false | true, true, "OR operator - second true", "✓ OR second true")
+assert_eq(false | false, false, "OR operator - both false", "✓ OR both false")
+
+assert_eq(!true, false, "NOT operator - true", "✓ NOT true")
+assert_eq(!false, true, "NOT operator - false", "✓ NOT false")
+
+"✓ Logical operator tests passed"
+
+# [4] Combined Expressions
+"4. Combined Logical Expressions"
+assert_eq((5 > 3) & (10 != 5), true, "AND with comparisons - both true", "✓ AND comparisons true")
+assert_eq((5 > 3) & (10 == 5), false, "AND with comparisons - one false", "✓ AND comparisons one false")
+
+assert_eq((5 > 3) | (10 == 5), true, "OR with comparisons - one true", "✓ OR comparisons one true")
+assert_eq((5 < 3) | (10 == 5), false, "OR with comparisons - both false", "✓ OR comparisons both false")
+
+assert_eq(!((5 < 3) | (10 == 5)), true, "NOT with OR expression", "✓ NOT OR expression")
+
+"✓ Combined logical expression tests passed"
+
+# [5] Complex Chaining
+"5. Complex Logical Chains"
+complexChain1 = (5 > 3) & ((10 > 5) | (2 == 3))
+assert_eq(complexChain1, true, "Complex chain: (5>3) & ((10>5) | (2==3))", "✓ Complex chain 1")
+
+complexChain2 = !((5 < 3) | !(7 > 4))
+assert_eq(complexChain2, true, "Complex chain with negation", "✓ Complex chain 2")
+
+# Operator precedence
+precedenceTest = 5 > 3 & 10 > 8
+assert_eq(precedenceTest, true, "Precedence: comparison before logical", "✓ Precedence test")
+
+"✓ Complex logical chain tests passed"
+
+# [6] Comparisons with Variables
+"6. Comparisons with Variables"
+x = 10
+y = 20
+z = 10
+
+assert_eq(x == y, false, "Variable comparison - not equal", "✓ Var not equal")
+assert_eq(x == z, true, "Variable comparison - equal", "✓ Var equal")
+assert_eq(x < y, true, "Variable comparison - less than", "✓ Var less than")
+assert_eq(y > x, true, "Variable comparison - greater than", "✓ Var greater than")
+
+"✓ Variable comparison tests passed"
+
+# [7] Conditionals with Comparisons
+"7. Conditionals with Comparisons"
+conditionalValue1 = if(x < y) "smaller" else "not smaller"
+assert_eq(conditionalValue1, "smaller", "Conditional with comparison")
+
+conditionalValue2 = if(x == z) "equal" else "not equal"
+assert_eq(conditionalValue2, "equal", "Conditional with equality")
+
+"✓ Conditional comparison tests passed"
+
+# [8] Type-specific Comparisons
+"8. Type-specific Comparisons"
+# String comparisons (if supported)
+assert_eq("hello" == "hello", true, "String equality")
+assert_eq("hello" == "world", false, "String inequality")
+
+# Vector comparisons (if supported)
+vec1 = [1, 2, 3]
+vec2 = [1, 2, 3]
+vec3 = [4, 5, 6]
+assert_eq(vec1 == vec2, true, "Vector equality")
+assert_eq(vec1 == vec3, false, "Vector inequality")
+
+"✓ Type-specific comparison tests passed"
+
+"All comparison and logical operation tests completed!"

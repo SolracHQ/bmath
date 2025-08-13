@@ -33,6 +33,8 @@ proc getType*(value: Value): Type =
     return newType(SimpleType.Sequence)
   of vkType:
     return newType(SimpleType.Type)
+  of vkString:
+    return newType(SimpleType.String)
 
 proc casting*(target: Type, source: Value): Value =
   ## Casts a value to a specified type.
@@ -49,49 +51,79 @@ proc casting*(target: Type, source: Value): Value =
 
   # Handle simple type conversions
   if target.kind == tkSimple:
-    case target.simpleType:
+    case target.simpleType
     of SimpleType.Integer:
       if source.kind == vkNumber:
-        case source.number.kind:
+        case source.number.kind
         of nkInteger:
-          return source  # Already an integer
+          return source # Already an integer
         of nkReal:
-          return newValue(int(source.number.real))  # Convert float to int
+          return newValue(int(source.number.real)) # Convert float to int
         of nkComplex:
-          return newValue(int(source.number.complex.re))  # Take real part and convert to int
+          return
+            newValue(int(source.number.complex.re)) # Take real part and convert to int
       else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Integer type")
-
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Integer type")
     of SimpleType.Real:
       if source.kind == vkNumber:
-        case source.number.kind:
+        case source.number.kind
         of nkInteger:
-          return newValue(float(source.number.integer))  # Convert int to float
+          return newValue(float(source.number.integer)) # Convert int to float
         of nkReal:
-          return source  # Already a real number
+          return source # Already a real number
         of nkComplex:
-          return newValue(source.number.complex.re)  # Take real part
+          return newValue(source.number.complex.re) # Take real part
       else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Real type")
-
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Real type")
     of SimpleType.Complex:
       if source.kind == vkNumber:
-        case source.number.kind:
+        case source.number.kind
         of nkInteger:
-          return newValue(complex(float(source.number.integer)))  # Convert int to complex
+          return
+            newValue(complex(float(source.number.integer))) # Convert int to complex
         of nkReal:
-          return newValue(complex(source.number.real))  # Convert real to complex
+          return newValue(complex(source.number.real)) # Convert real to complex
         of nkComplex:
-          return source  # Already a complex number
+          return source # Already a complex number
       else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Complex type")
-
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Complex type")
     of SimpleType.Boolean:
       if source.kind == vkBool:
         return source
       else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Boolean type")
-
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Boolean type")
+    of SimpleType.String:
+      if source.kind == vkString:
+        return source
+      elif source.kind == vkVector:
+        # only integer vectors with values in ASCII range can be converted to string
+        for v in source.vector:
+          if v.kind != vkNumber or v.number.kind != nkInteger or v.number.integer < 0 or v.number.integer > 127:
+            raise newInvalidArgumentError(
+              "Cannot convert vector with non-integer or out-of-ASCII-range values to String type"
+            )
+        var chars = newString(source.vector.size)
+        for i, v in source.vector:
+          chars[i] = char(v.number.integer)
+        return Value(kind: vkString, content: chars)
+      elif source.kind == vkSeq:
+        # Convert sequence of single-character strings to a single string
+        var chars = newString(0)
+        for item in source.sequence:
+          if item.kind == vkNumber and item.number.kind == nkInteger and item.number.integer >= 0 and item.number.integer <= 127:
+            chars.add(char(item.number.integer))
+          else:
+            raise newInvalidArgumentError(
+              "Cannot convert sequence with non-integer or out-of-ASCII-range values to String type"
+            )
+        return Value(kind: vkString, content: chars)
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to String type")
     of SimpleType.Vector:
       if source.kind == vkVector:
         return source
@@ -102,12 +134,19 @@ proc casting*(target: Type, source: Value): Value =
           elements.add(item)
 
         result = Value(kind: vkVector)
-        result.vector = fromSeq(elements)
-        
-        return result
-      else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Vector type")
+        result.vector = elements.fromSeq
 
+        return result
+      elif source.kind == vkString:
+        # Convert string to vector of single-character strings
+        var elements: seq[Value] = @[]
+        for c in source.content:
+          elements.add(Value(kind: vkNumber, number: newNumber(int(c))))
+        result = Value(kind: vkVector)
+        result.vector = fromSeq(elements)
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Vector type")
     of SimpleType.Sequence:
       if source.kind == vkSeq:
         return source
@@ -131,24 +170,24 @@ proc casting*(target: Type, source: Value): Value =
               inc index
           ,
         )
-        
+
         return Value(kind: vkSeq, sequence: resultSeq)
       else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Sequence type")
-
+        raise newInvalidArgumentError(
+          "Cannot convert " & $source.kind & " to Sequence type"
+        )
     of SimpleType.Function:
       if source.kind == vkFunction or source.kind == vkNativeFunc:
         return source
       else:
-        raise newInvalidArgumentError("Cannot convert " & $source.kind & " to Function type")
-
+        raise newInvalidArgumentError(
+          "Cannot convert " & $source.kind & " to Function type"
+        )
     of SimpleType.Type:
       if source.kind == vkType:
         return source
       else:
         return source.getType().newValue()
-  
-  
 
   # Handle sum types
   elif target.kind == tkSum:
@@ -156,11 +195,10 @@ proc casting*(target: Type, source: Value): Value =
     let valueType = getType(source)
     if target == valueType:
       return source
-    
+
     # If no conversion worked
     raise newInvalidArgumentError("Cannot convert " & $valueType & " to " & $target)
-  
+
   # Error types
   else:
     raise newInvalidArgumentError("Cannot convert to an error type")
-

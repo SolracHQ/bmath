@@ -195,10 +195,11 @@ proc any*(a: Value): Value {.inline.} =
   ## Raises:
   ## - TypeError: if argument is not a vector or sequence
   ## - TypeError: if any element is not a boolean
+  
+  result = Value(kind: vkBool, boolean: false)
 
   case a.kind
   of vkVector:
-    result = Value(kind: vkBool, boolean: false)
     for i in 0 ..< a.vector.size:
       let val = a.vector[i]
       if val.kind != vkBool:
@@ -207,7 +208,6 @@ proc any*(a: Value): Value {.inline.} =
         result.boolean = true
         break
   of vkSeq:
-    result = Value(kind: vkBool, boolean: false)
     for v in a.sequence:
       if v.kind != vkBool:
         raise newTypeError("any requires boolean values, but found " & $v.kind)

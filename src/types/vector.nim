@@ -94,7 +94,16 @@ iterator items*[T](v: Vector[T]): T {.inline.} =
   for i in 0 ..< v.len:
     yield v.p[i]
 
-proc map*[T, U](v: Vector[T], f: proc (t: T): U): Vector[U] {.inline.} =
+iterator pairs*[T](v: Vector[T]): (int, T) {.inline.} =
+  ## Provides an iterator over the index-element pairs of the vector.
+  ##
+  ## Params:
+  ##   v: Vector[T] - the vector to iterate over.
+  ## Yields: (int, T) - each index and its corresponding element in the vector.
+  for i in 0 ..< v.len:
+    yield (i, v.p[i])
+
+proc map*[T, U](v: Vector[T], f: proc(t: T): U): Vector[U] {.inline.} =
   ## Applies a function to each element of the vector and returns a new vector.
   ##
   ## Params:
