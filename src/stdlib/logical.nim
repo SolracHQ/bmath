@@ -1,6 +1,7 @@
 ## logical.nim
 
-import ../../../types/[value]
+import ../types/[value]
+import ../types
 import ../errors
 
 template `and`*(a, b: Value): Value =

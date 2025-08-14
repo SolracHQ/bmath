@@ -1,8 +1,10 @@
 import unittest, math, complex
-import ../src/pipeline/interpreter/[interpreter, errors]
-import ../src/pipeline/parser/[parser]
-import ../src/pipeline/lexer/[lexer, errors]
+import ../src/pipeline/interpreter/[interpreter]
+import ../src/pipeline/parser
+import ../src/pipeline/lexer
 import ../src/types/[value, vector]
+import ../src/types
+import ../src/errors
 
 proc evalString(s: string): Value =
   var interpreter = newInterpreter()

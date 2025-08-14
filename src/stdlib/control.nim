@@ -1,7 +1,8 @@
 ## control.nim
 ## Standard library functions for program flow control
 
-import ../../../types/[value, number, types]
+import ../types/[value, number, bm_types]
+import ../types
 import ../errors
 
 proc exit*(args: openArray[Value], invoker: FnInvoker): Value =

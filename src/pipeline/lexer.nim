@@ -12,8 +12,9 @@
 
 import std/[strutils, tables, complex]
 
-import ../../types/[position, token, types]
-import errors
+import ../types/[position, token, bm_types]
+import ../types
+import ../errors
 
 type
   StackableKind* = enum

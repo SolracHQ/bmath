@@ -1,4 +1,4 @@
-## types.nim
+## value.nim
 ## 
 ## This module contains all type definitions for the interpreter to avoid cyclic dependencies.
 ## It includes fundamental types for values, tokens, AST nodes, and errors, along with their
@@ -6,79 +6,11 @@
 
 import std/[strutils, tables, sequtils, complex]
 
-import position, expression, number, vector, types
-export Position
+import position, expression, number, vector, bm_types
 
-type
-  ValueKind* = enum
-    ## Discriminator for runtime value types stored in `Value` objects.
-    vkNumber ## Numeric value stored in `nValue` field
-    vkBool ## Boolean value stored in `bValue` field
-    vkNativeFunc ## Native function stored in `nativeFunc` field
-    vkFunction ## User-defined function stored as reference
-    vkVector ## Vector value
-    vkSeq ## Sequence value, lazily evaluated and stored as reference
-    vkType ## Type value
-    vkString ## String value
+import ../types
 
-  Function* = ref object ## User-defined function data
-    body*: Expression ## Function body
-    env*: Environment ## Environment for variable bindings
-    params*: seq[Parameter] ## Parameter names for the function
-
-  Sequence* = ref object ## Lazily evaluated sequence
-    generator*: Generator ## Function to generate sequence values
-    transformers*: seq[Transformer] ## Functions to transform sequence values
-
-  Value* = object
-    ## Variant type representing runtime numeric values with type tracking.
-    case kind*: ValueKind ## Type discriminator determining active field
-    of vkNumber:
-      number*: Number ## Numeric storage when kind is `vkNumber`
-    of vkBool:
-      boolean*: bool ## Boolean storage when kind is `vkBool`
-    of vkNativeFunc:
-      nativeFn*: NativeFn ## Native function storage when kind is `vkNativeFunc`
-    of vkFunction:
-      function*: Function ## User-defined function storage when kind is `vkFunction`
-    of vkVector:
-      vector*: Vector[Value] ## Vector storage when kind is `vkVector`
-    of vkSeq:
-      sequence*: Sequence ## Sequence storage when kind is `vkSeq`
-    of vkType:
-      typ*: Type ## Type storage when kind is `vkType`
-    of vkString:
-      content*: string ## String storage when kind is `vkString`
-
-  TransformerKind* = enum
-    ## Discriminator for runtime transformer types stored in `Transformer` objects.
-    tkMap ## Map transformer
-    tkFilter ## Filter transformer
-
-  Transformer* = object
-    kind*: TransformerKind ## Type of transformer
-    fun*: proc(x: Value): Value ## Function to transform each item in a sequence.
-
-  Generator* {.exportc.} = object
-    atEnd*: proc(): bool ## Function to check if the sequence is exhausted.
-    next*: proc(peek: bool = false): Value ## Function to generate sequence values.
-
-  LabeledValue* = object
-    label*: string
-    value*: Value
-
-  FnInvoker* = proc(function: Value, args: openArray[Value]): Value
-    ## Function type for invoking functions in the runtime.
-
-  NativeFn* = proc(args: openArray[Value], invoker: FnInvoker): Value
-    ## Function in the host language callable from the interpreter.
-
-  Environment* = ref object
-    ## Environment for storing variable bindings and parent scopes.
-    values*: Table[string, Value]
-    parent*: Environment
-
-template newValue*[T](n: T): Value =
+template newValue*(n: typed): Value =
   ## Create a new Value object from a number
   when n is SomeInteger:
     Value(kind: vkNumber, number: newNumber(n))

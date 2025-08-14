@@ -2,157 +2,10 @@ import std/[strutils, sequtils]
 
 import position
 import number
-import types
+import bm_types
 import vector
 
-type
-  ExpressionKind* = enum
-    ## Abstract Syntax Tree (AST) node categories (now called Expressions).
-    ## 
-    ## Each variant corresponds to a different language construct with
-    ## associated child nodes or values.
-
-    # Literals
-    ekNumber ## Numeric literal (integer or float)
-    ekVector ## Vector literal
-    ekBoolean ## Boolean literal (true or false)
-    ekType ## Type literal (type name)
-    ekString ## String literal
-
-    # Unary operations
-    ekNeg ## Unary negation operation (-operand)
-
-    # Binary operations
-    ekAdd ## Addition operation (left + right)
-    ekSub ## Subtraction operation (left - right)
-    ekMul ## Multiplication operation (left * right)
-    ekDiv ## Division operation (left / right)
-    ekPow ## Exponentiation operation (left ^ right)
-    ekMod ## Modulus operation (left % right)
-
-    # Comparison operations
-    ekEq ## Equality comparison (left == right)
-    ekNe ## Inequality comparison (left != right)
-    ekLt ## Less-than comparison (left < right)
-    ekLe ## Less-than-or-equal comparison (left <= right)
-    ekGt ## Greater-than comparison (left > right)
-    ekGe ## Greater-than-or-equal comparison (left >= right)
-
-    # Logical operations
-    ekAnd ## Logical AND operation (left & right)
-    ekOr ## Logical OR operation (left | right)
-    ekNot ## Logical NOT operation (!operand)
-
-    # Identifiers and assignments
-    ekIdent ## Identifier reference
-    ekAssign ## Variable assignment (ident = expr)
-
-    # Function constructs
-    ekFuncDef ## Function definition
-    ekFuncCall ## Function invocation
-
-    # Block expression
-    ekBlock ## Block expression (sequence of statements)
-
-    # Control flow
-    ekIf ## If-else conditional expression
-
-  Parameter* = object
-    ## Represents a function parameter.
-    ##
-    ## Contains the parameter name and its type.
-    name*: string
-    typ*: Type = AnyType
-
-  # New specialized types for each expression variant
-  NumberLiteral* = object
-    number*: Number ## Number value
-
-  StringLiteral* = object
-    content*: string ## String value
-
-  BoolLiteral* = object
-    boolean*: bool ## Boolean value
-
-  VectorLiteral* = object
-    vector*: Vector[Expression] ## Elements of the vector literal
-
-  UnaryOp* = object
-    operand*: Expression ## Operand for unary operation
-
-  BinaryOp* = object
-    left*: Expression ## Left operand of binary operation
-    right*: Expression ## Right operand of binary operation
-
-  Identifier* = object
-    ident*: string ## Identifier name
-
-  Assign* = object
-    ident*: string ## Target identifier for assignment
-    expr*: Expression ## Assigned expression
-    isLocal*: bool ## Flag indicating if the assignment is to a local variable
-    typ*: Type = AnyType ## Type of the assigned expression
-
-  FunctionCall* = object
-    function*: Expression ## Expression that evaluates to a function
-    params*: seq[Expression] ## params for the invocation
-
-  Block* = object
-    expressions*: seq[Expression] ## Sequence of statements in the block
-
-  FunctionDef* = object
-    body*: Expression ## Function body expression
-    params*: seq[Parameter] ## Function parameter names
-
-  Branch* = object
-    ## Represents a condition in an if-elif expression.
-    ##
-    ## Contains the condition expression and the corresponding branch expression.
-    condition*: Expression
-    then*: Expression
-
-  IfExpr* = object
-    branches*: seq[Branch]
-    elseBranch*: Expression ## Else branch expression
-
-  TypeCast* = object
-    typ*: Type ## Type to cast to
-    value*: Expression ## Expression to cast
-
-  Expression* = ref object
-    ## Abstract Syntax Tree (AST) node (renamed to Expression).
-    ##
-    ## The active fields depend on the node kind specified in the discriminator.
-    ## Each kind maps to a specialized type.
-    position*: Position ## Original source location
-    case kind*: ExpressionKind
-    of ekNumber:
-      number*: Number
-    of ekBoolean:
-      boolean*: bool
-    of ekString:
-      content*: string
-    of ekVector:
-      vector*: Vector[Expression]
-    of ekType:
-      typ*: Type
-    of ekNeg, ekNot:
-      unaryOp*: UnaryOp
-    of ekAdd, ekSub, ekMul, ekDiv, ekMod, ekPow, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
-        ekAnd, ekOr:
-      binaryOp*: BinaryOp
-    of ekIdent:
-      identifier*: Identifier
-    of ekAssign:
-      assign*: Assign
-    of ekFuncCall:
-      functionCall*: FunctionCall
-    of ekBlock:
-      blockExpr*: Block
-    of ekFuncDef:
-      functionDef*: FunctionDef
-    of ekIf:
-      ifExpr*: IfExpr
+import ../types
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
   ## Creates a new literal expression based on the type of value.
@@ -177,11 +30,8 @@ proc newTypeExpr*(pos: Position, typ: Type): Expression {.inline.} =
 proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
   result = Expression(kind: ekNot, position: pos, unaryOp: UnaryOp(operand: operand))
 
-proc newNumberExpr*(pos: Position, value: Number): Expression {.inline.} =
-  result = Expression(kind: ekNumber, position: pos, number: value)
-
-proc newBoolExpr*(pos: Position, value: bool): Expression {.inline.} =
-  result = Expression(kind: ekBoolean, position: pos, boolean: value)
+proc newValueExpr*(pos: Position, value: Value): Expression {.inline.} =
+  result = Expression(kind: ekValue, position: pos, value: value)
 
 proc newVectorExpr*(pos: Position, values: seq[Expression]): Expression {.inline.} =
   result =
@@ -252,12 +102,8 @@ proc stringify(node: Expression, indent: int): string =
   if node.isNil:
     result.add indentation & "nil\n"
   case node.kind
-  of ekNumber:
-    result.add indentation & "number: " & $node.number & "\n"
-  of ekBoolean:
-    result.add indentation & "bool: " & $node.boolean & "\n"
-  of ekString:
-    result.add indentation & "string: \"" & node.content & "\"\n"
+  of ekValue:
+    result.add $indentation & "value: " & $node.value & "\n"
   of eKAdd, eKSub, eKMul, eKDiv, eKMod, eKPow, eKEq, eKNe, eKLt, eKLe, eKGt, eKGe,
       eKAnd, eKOr:
     let kindStr = toLowerAscii($node.kind).substr(2)
@@ -326,12 +172,8 @@ proc `$`(param: Parameter): string =
 proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format
   case expr.kind
-  of ekNumber:
-    return $expr.number
-  of ekBoolean:
-    return $expr.boolean
-  of ekString:
-    return "\"" & expr.content & "\""
+  of ekValue:
+    return $expr.value
   of ekAdd:
     return asSource(expr.binaryOp.left) & " + " & asSource(expr.binaryOp.right)
   of ekSub:

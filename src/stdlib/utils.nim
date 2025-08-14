@@ -1,6 +1,7 @@
 import macros
 
-import ../../../types/number
+import ../types/number
+import ../types
 import ../errors
 
 macro captureNumericError*(procDef: untyped): untyped =

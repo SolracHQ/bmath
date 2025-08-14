@@ -1,8 +1,8 @@
 ## logging.nim
 
 import std/strformat
-import types/errors
-import pipeline/lexer/errors
+import types
+import errors
 
 proc logError*(error: ref BMathError, context: string) =
   ## Central error logging with context

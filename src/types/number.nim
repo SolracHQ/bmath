@@ -1,36 +1,8 @@
 import std/math
 import std/complex
 
-import errors
-
-type
-  NumberKind* = enum
-    nkInteger ## Integer number
-    nkReal ## Floating-point number
-    nkComplex ## Complex number
-
-  Number* = object
-    case kind*: NumberKind
-    of nkInteger:
-      integer*: int ## Integer value
-    of nkReal:
-      real*: float ## Floating-point value
-    of nkComplex:
-      complex*: Complex[float] ## Complex number value
-
-  NumericError* = object of BMathError
-
-  DivisionByZeroError* = object of NumericError
-    ## Raised when attempting to divide by zero
-
-  ComplexModulusError* = object of NumericError
-    ## Raised when modulus operation is attempted with complex numbers
-
-  ComplexComparisonError* = object of NumericError
-    ## Raised when comparison is attempted with complex numbers
-
-  ComplexCeilFloorRoundError* = object of NumericError
-    ## Raised when ceil/floor/round is attempted with complex numbers
+import ../types
+import ../errors
 
 template newNumber*(value: typed): Number =
   ## Creates a new Number object based on the type of value

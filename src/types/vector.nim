@@ -5,32 +5,7 @@
 ## - Maintains fixed size once allocated
 ## - Provides convenient access operations and iteration
 
-type
-  VectorObj*[T] = object
-    p: ptr UncheckedArray[T]
-    len: int
-
-  Vector*[T] = ref VectorObj[T]
-
-proc `=destroy`*[T](v: VectorObj[T]) =
-  ## Frees the memory allocated for the vector when it goes out of scope.
-  ##
-  ## Params:
-  ##   v: VectorObj[T] - the vector object being destroyed.
-  if v.p != nil:
-    dealloc(v.p)
-
-proc `=trace`*[T](v: var VectorObj[T], env: pointer) =
-  ## Traces the vector's elements for garbage collection.
-  ##
-  ## Params:
-  ##   v: var VectorObj[T] - the vector being traced.
-  ##   env: pointer - environment pointer for the GC.
-  if v.p != nil:
-    for i in 0 ..< v.len:
-      `=trace`(v.p[i], env)
-
-proc `=wasMoved`*[T](v: var VectorObj[T]) {.error.}
+import ../types
 
 proc newVector*[T](len: int): Vector[T] =
   ## Creates a new vector with the specified length.

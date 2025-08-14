@@ -1,6 +1,7 @@
 ## trigonometry.nim
 
-import ../../../types/[value, number, vector]
+import ../types/[value, number, vector]
+import ../types
 import ../errors
 import utils
 

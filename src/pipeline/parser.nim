@@ -12,8 +12,9 @@
 ## - Block expressions for statement sequencing
 ## - Robust error detection with position tracking
 
-import ../../types/[expression, token, number, types]
-import errors
+import ../types/[expression, token, number, bm_types, value]
+import ../types
+import ../errors
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse
@@ -153,7 +154,7 @@ proc parseFunction(parser: var Parser): Expression =
       var typ: Type = AnyType
       if parser.match({tkColon}):
         if parser.match({tkType}):
-          typ = parser.previous().typ
+          typ = parser.previous().value.typ
         else:
           raise
             newMissingTokenError("Expected type after ':'", parser.previous().position)
@@ -283,8 +284,8 @@ proc parseIf*(parser: var Parser): Expression =
   # If conditions are trivially boolean, return the first expression that is true
   var allBool = true
   for branch in branches:
-    if branch.condition.kind == ekBoolean:
-      if branch.condition.boolean:
+    if branch.condition.kind == ekValue and branch.condition.value.kind == vkBool:
+      if branch.condition.value.boolean:
         return branch.then
     else:
       allBool = false
@@ -304,27 +305,27 @@ proc parsePrimary*(parser: var Parser): Expression =
   ##   UnexpectedTokenError - if an unexpected token is encountered
   let token = parser.peek()
   if parser.match({tkLpar}):
-    return parser.parseGroup()
+    result = parser.parseGroup()
   elif parser.match({tkLCurly}):
-    return parser.parseBlock()
+    result = parser.parseBlock()
   elif parser.match({tkIf}):
-    return parser.parseIf()
+    result = parser.parseIf()
   elif parser.match({tkNumber}):
-    return newNumberExpr(token.position, token.nValue)
+    result = newValueExpr(token.position, token.value)
   elif parser.match({tkTrue}):
-    return newBoolExpr(token.position, true)
+    result = newValueExpr(token.position, newValue(true))
   elif parser.match({tkFalse}):
-    return newBoolExpr(token.position, false)
+    result = newValueExpr(token.position, newValue(false))
   elif parser.match({tkIdent}):
-    return parser.parseIdentifier()
+    result = parser.parseIdentifier()
   elif parser.match({tkString}):
-    return newLiteralExpr(token.position, token.content)
+    result = newValueExpr(token.position, token.value)
   elif parser.match({tkLine}):
-    return parser.parseFunction()
+    result = parser.parseFunction()
   elif parser.match({tkLSquare}):
-    return parser.parseVector()
+    result = parser.parseVector()
   elif parser.match({tkType}):
-    return newTypeExpr(token.position, token.typ)
+    result = newTypeExpr(token.position, token.value.typ)
   else:
     let token = parser.peek()
     raise newUnexpectedTokenError("Unexpected token " & $token, token.position)
@@ -364,21 +365,17 @@ proc parseUnary*(parser: var Parser): Expression =
     let pos = parser.previous().position
     let operand = parser.parseUnary()
 
-    case operand.kind
-    of ekNumber:
-      return newNumberExpr(pos, -operand.number)
+    if operand.kind == ekValue and operand.value.kind == vkNumber:
+      # Optimize for numeric negation
+      return newValueExpr(pos, newValue(-operand.value.number))
     else:
       return newNegExpr(pos, operand)
   elif parser.match({tkNot}):
     let pos = parser.previous().position
     let operand = parser.parseUnary()
 
-    case operand.kind
-    of ekBoolean:
-      if operand.boolean:
-        return newBoolExpr(pos, false)
-      else:
-        return newBoolExpr(pos, true)
+    if operand.kind == ekValue and operand.value.kind == vkBool:
+      return newValueExpr(pos, newValue(not operand.value.boolean))
     else:
       return newNotExpr(pos, operand)
   else:
@@ -416,9 +413,11 @@ proc parsePower*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseChain()
 
-    if result.kind == ekNumber and right.kind == ekNumber:
+    if result.kind == ekValue and right.kind == ekValue and result.value.kind == vkNumber and
+        right.value.kind == vkNumber:
       # Optimize by computing power at parse time when both operands are numbers
-      result = newNumberExpr(prev.position, result.number ^ right.number)
+      result =
+        newValueExpr(prev.position, newValue(result.value.number ^ right.value.number))
     else:
       result = newBinaryExpr(prev.position, ekPow, result, right)
 
@@ -437,19 +436,29 @@ proc parseFactor*(parser: var Parser): Expression =
     let right = parser.parsePower()
 
     if prev.kind == tkMul:
-      if result.kind == ekNumber and right.kind == ekNumber:
-        result = newNumberExpr(prev.position, result.number * right.number)
+      if result.kind == ekValue and right.kind == ekValue and
+          result.value.kind == vkNumber and right.value.kind == vkNumber:
+        result = newValueExpr(
+          prev.position, newValue(result.value.number * right.value.number)
+        )
       else:
         result = newBinaryExpr(prev.position, ekMul, result, right)
     elif prev.kind == tkDiv:
-      if result.kind == ekNumber and right.kind == ekNumber and not right.number.isZero():
-        result = newNumberExpr(prev.position, result.number / right.number)
+      if result.kind == ekValue and right.kind == ekValue and
+          result.value.kind == vkNumber and right.value.kind == vkNumber and
+          not right.value.number.isZero():
+        result = newValueExpr(
+          prev.position, newValue(result.value.number / right.value.number)
+        )
       else:
         result = newBinaryExpr(prev.position, ekDiv, result, right)
     elif prev.kind == tkMod:
-      if result.kind == ekNumber and result.number.kind != nkComplex and
-          right.kind == ekNumber and not right.number.isZero():
-        result = newNumberExpr(prev.position, result.number % right.number)
+      if result.kind == ekValue and right.kind == ekValue and
+          result.value.kind == vkNumber and right.value.kind == vkNumber and
+          result.value.number.kind != nkComplex and not right.value.number.isZero():
+        result = newValueExpr(
+          prev.position, newValue(result.value.number % right.value.number)
+        )
       else:
         result = newBinaryExpr(prev.position, ekMod, result, right)
 
@@ -465,13 +474,19 @@ proc parseTerm*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseFactor()
     if prev.kind == tkSub:
-      if result.kind == ekNumber and right.kind == ekNumber:
-        result = newNumberExpr(prev.position, result.number - right.number)
+      if result.kind == ekValue and right.kind == ekValue and
+          result.value.kind == vkNumber and right.value.kind == vkNumber:
+        result = newValueExpr(
+          prev.position, newValue(result.value.number - right.value.number)
+        )
       else:
         result = newBinaryExpr(prev.position, ekSub, result, right)
     elif prev.kind == tkAdd:
-      if result.kind == ekNumber and right.kind == ekNumber:
-        result = newNumberExpr(prev.position, result.number + right.number)
+      if result.kind == ekValue and right.kind == ekValue and
+          result.value.kind == vkNumber and right.value.kind == vkNumber:
+        result = newValueExpr(
+          prev.position, newValue(result.value.number + right.value.number)
+        )
       else:
         result = newBinaryExpr(prev.position, ekAdd, result, right)
 
@@ -487,16 +502,25 @@ proc parseComparison*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseTerm()
 
-    if result.kind == ekNumber and right.kind == ekNumber and
-        result.number.kind != nkComplex and right.number.kind != nkComplex:
+    if result.kind == ekValue and right.kind == ekValue and result.value.kind == vkNumber and
+        right.value.kind == vkNumber and result.value.number.kind != nkComplex and
+        right.value.number.kind != nkComplex:
       if prev.kind == tkLt:
-        result = newBoolExpr(prev.position, result.number < right.number)
+        result = newValueExpr(
+          prev.position, newValue(result.value.number < right.value.number)
+        )
       elif prev.kind == tkLe:
-        result = newBoolExpr(prev.position, result.number <= right.number)
+        result = newValueExpr(
+          prev.position, newValue(result.value.number <= right.value.number)
+        )
       elif prev.kind == tkGt:
-        result = newBoolExpr(prev.position, result.number > right.number)
+        result = newValueExpr(
+          prev.position, newValue(result.value.number > right.value.number)
+        )
       elif prev.kind == tkGe:
-        result = newBoolExpr(prev.position, result.number >= right.number)
+        result = newValueExpr(
+          prev.position, newValue(result.value.number >= right.value.number)
+        )
     else:
       if prev.kind == tkLt:
         result = newBinaryExpr(prev.position, ekLt, result, right)
@@ -519,7 +543,7 @@ proc parseEquality*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseComparison()
 
-    # If tkIs, rigth must be a type
+    # If tkIs, right must be a type
     if prev.kind == tkIs and right.kind != ekType:
       raise newMissingTokenError(
         "Expected type after 'is' but got " & $right.kind, parser.previous().position
@@ -527,24 +551,27 @@ proc parseEquality*(parser: var Parser): Expression =
 
     # if tkIs and right.typ is AnyType, we can just return true
     if prev.kind == tkIs and right.typ === AnyType:
-      return newBoolExpr(prev.position, true)
+      return newValueExpr(prev.position, newValue(true))
 
     # For 'is' operator, optimize by directly evaluating types for known expression kinds
     if prev.kind == tkIs:
       # Check if we can determine the type at parse time
-      if result.kind == ekBoolean:
-        return newBoolExpr(prev.position, right.typ == SimpleType.Boolean.newType)
-      elif result.kind == ekVector:
-        return newBoolExpr(prev.position, right.typ == SimpleType.Vector.newType)
+      if result.kind == ekValue and result.value.kind == vkBool:
+        return
+          newValueExpr(prev.position, newValue(right.typ == SimpleType.Boolean.newType))
+      elif result.kind == ekValue and result.value.kind == vkVector:
+        return
+          newValueExpr(prev.position, newValue(right.typ == SimpleType.Vector.newType))
       elif result.kind == ekType:
-        return newBoolExpr(prev.position, right.typ == SimpleType.Type.newType)
-      elif result.kind == ekNumber:
+        return
+          newValueExpr(prev.position, newValue(right.typ == SimpleType.Type.newType))
+      elif result.kind == ekValue and result.value.kind == vkNumber:
         let numberType =
-          case result.number.kind
+          case result.value.number.kind
           of nkInteger: SimpleType.Integer.newType
           of nkReal: SimpleType.Real.newType
           of nkComplex: SimpleType.Complex.newType
-        return newBoolExpr(prev.position, right.typ == numberType)
+        return newValueExpr(prev.position, newValue(right.typ == numberType))
       else:
         # Fall back to runtime type checking for other expression kinds
         result = newFuncCallExpr(
@@ -554,24 +581,31 @@ proc parseEquality*(parser: var Parser): Expression =
         )
 
     # Optimize for numbers and booleans
-    if (result.kind == ekNumber and right.kind == ekNumber) or
-        (result.kind == ekBoolean and right.kind == ekBoolean):
-      let areEqual =
-        if result.kind == ekNumber and right.kind == ekNumber:
-          result.number == right.number
-        elif result.kind == ekBoolean and right.kind == ekBoolean:
-          result.boolean == right.boolean
-        elif result.kind == ekNumber and right.kind == ekBoolean:
-          false
-        else: # result.kind == ekBool and right.kind == ekNumber
-          false
+    if (
+      result.kind == ekValue and right.kind == ekValue and result.value.kind == vkNumber and
+      right.value.kind == vkNumber
+    ):
+      let areEqual = result.value.number == right.value.number
       if prev.kind == tkEq:
-        result = newBoolExpr(prev.position, areEqual)
+        result = newValueExpr(prev.position, newValue(areEqual))
       else: # tkNe
-        result = newBoolExpr(prev.position, not areEqual)
-    elif (result.kind == ekNumber and right.kind == ekBoolean) or
-        (result.kind == ekBoolean and right.kind == ekNumber):
-      result = newBoolExpr(prev.position, false)
+        result = newValueExpr(prev.position, newValue(not areEqual))
+    elif (
+      result.kind == ekValue and right.kind == ekValue and result.value.kind == vkBool and
+      right.value.kind == vkBool
+    ):
+      let areEqual = result.value.boolean == right.value.boolean
+      if prev.kind == tkEq:
+        result = newValueExpr(prev.position, newValue(areEqual))
+      else: # tkNe
+        result = newValueExpr(prev.position, newValue(not areEqual))
+    elif (
+      result.kind == ekValue and right.kind == ekValue and (
+        (result.value.kind == vkNumber and right.value.kind == vkBool) or
+        (result.value.kind == vkBool and right.value.kind == vkNumber)
+      )
+    ):
+      result = newValueExpr(prev.position, newValue(false))
     else:
       if prev.kind == tkEq or prev.kind == tkIs:
         result = newBinaryExpr(prev.position, ekEq, result, right)
@@ -590,15 +624,22 @@ proc parseLogical*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseEquality()
 
-    if result.kind == ekBoolean and right.kind == ekBoolean:
+    if result.kind == ekValue and right.kind == ekValue and result.value.kind == vkBool and
+        right.value.kind == vkBool:
       if prev.kind == tkAnd:
-        result = newBoolExpr(prev.position, result.boolean and right.boolean)
+        result = newValueExpr(
+          prev.position, newValue(result.value.boolean and right.value.boolean)
+        )
       elif prev.kind == tkLine:
-        result = newBoolExpr(prev.position, result.boolean or right.boolean)
-    elif result.kind == ekBoolean and prev.kind == tkAnd and not result.boolean:
-      result = newBoolExpr(prev.position, false)
-    elif result.kind == ekBoolean and prev.kind == tkLine and result.boolean:
-      result = newBoolExpr(prev.position, true)
+        result = newValueExpr(
+          prev.position, newValue(result.value.boolean or right.value.boolean)
+        )
+    elif result.kind == ekValue and result.value.kind == vkBool and prev.kind == tkAnd and
+        not result.value.boolean:
+      result = newValueExpr(prev.position, newValue(false))
+    elif result.kind == ekValue and result.value.kind == vkBool and prev.kind == tkLine and
+        result.value.boolean:
+      result = newValueExpr(prev.position, newValue(true))
     else:
       if prev.kind == tkAnd:
         result = newBinaryExpr(prev.position, ekAnd, result, right)
@@ -625,7 +666,7 @@ proc parseAssignment*(parser: var Parser): Expression =
     var typ: Type = AnyType
     if parser.match({tkColon}):
       if parser.match({tkType}):
-        typ = parser.previous().typ
+        typ = parser.previous().value.typ
       else:
         raise
           newMissingTokenError("Expected type after ':'", parser.previous().position)

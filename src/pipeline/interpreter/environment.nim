@@ -12,9 +12,13 @@
 
 import std/[sets, tables, macros, complex]
 import
-  stdlib/[arithmetic, trigonometry, vector, sequence, functional, comparison, control, assertions]
+  ../../stdlib/[
+    arithmetic, trigonometry, vector, sequence, functional, comparison, control,
+    assertions,
+  ]
 import ../../types/[value, expression]
-import errors
+import ../../types
+import ../../errors
 
 from math import E, PI
 

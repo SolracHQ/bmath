@@ -1,33 +1,7 @@
 ## types.nim
-## 
-## 
-import std/[sets]
 
-type
-  TypeKind* = enum
-    tkSimple
-    tkSum
-    tkError
-
-  SimpleType* {.pure.} = enum
-    Integer
-    Real
-    Complex
-    Boolean
-    Vector
-    Sequence
-    Function
-    Type
-    String
-
-  Type* = object
-    case kind*: TypeKind
-    of tkSimple:
-      simpleType*: SimpleType
-    of tkSum:
-      types*: HashSet[SimpleType]
-    of tkError:
-      error*: cstring
+import std/sets
+from ../types import Type, SimpleType, TypeKind
 
 const
   AnyType* = Type(

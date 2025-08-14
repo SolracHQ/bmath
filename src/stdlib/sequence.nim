@@ -1,6 +1,7 @@
 ## sequence.nim
 
-import ../../../types/[value, number, vector]
+import ../types/[value, number, vector]
+import ../types
 import ../errors
 
 proc sequence*(values: openArray[Value], invoker: FnInvoker): Value =

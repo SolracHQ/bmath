@@ -14,10 +14,11 @@
 
 import std/[sequtils]
 import ../../types/[value, expression, vector]
-import ../../types/errors
-import ./errors
+import ../../types
+import ../../types
+import ../../errors
 import environment
-import stdlib/[arithmetic, comparison, logical, types]
+import ../../stdlib/[arithmetic, comparison, logical, types]
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment ## The global environment for storing variables
@@ -187,12 +188,8 @@ proc evalExpression(
 
   try:
     case expression.kind
-    of ekNumber:
-      return newValue(expression.number)
-    of ekBoolean:
-      return newValue(expression.boolean)
-    of ekString:
-      return newValue(expression.content)
+    of ekValue:
+      return expression.value
     of ekAdd:
       return binOp(expression, `+`)
     of ekSub:

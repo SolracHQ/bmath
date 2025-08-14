@@ -1,6 +1,7 @@
 ## typed.nim
 
-import ../../../types/[value, types, number, vector]
+import ../types/[value, bm_types, number, vector]
+import ../types
 import ../errors
 import sequence
 import std/[complex]
@@ -102,7 +103,8 @@ proc casting*(target: Type, source: Value): Value =
       elif source.kind == vkVector:
         # only integer vectors with values in ASCII range can be converted to string
         for v in source.vector:
-          if v.kind != vkNumber or v.number.kind != nkInteger or v.number.integer < 0 or v.number.integer > 127:
+          if v.kind != vkNumber or v.number.kind != nkInteger or v.number.integer < 0 or
+              v.number.integer > 127:
             raise newInvalidArgumentError(
               "Cannot convert vector with non-integer or out-of-ASCII-range values to String type"
             )
@@ -114,7 +116,8 @@ proc casting*(target: Type, source: Value): Value =
         # Convert sequence of single-character strings to a single string
         var chars = newString(0)
         for item in source.sequence:
-          if item.kind == vkNumber and item.number.kind == nkInteger and item.number.integer >= 0 and item.number.integer <= 127:
+          if item.kind == vkNumber and item.number.kind == nkInteger and
+              item.number.integer >= 0 and item.number.integer <= 127:
             chars.add(char(item.number.integer))
           else:
             raise newInvalidArgumentError(

@@ -1,6 +1,7 @@
 ## functional.nim
 
-import ../../../types/[value, vector, number]
+import ../types/[value, vector, number]
+import ../types
 import ../errors
 import sequence, arithmetic
 
@@ -195,7 +196,7 @@ proc any*(a: Value): Value {.inline.} =
   ## Raises:
   ## - TypeError: if argument is not a vector or sequence
   ## - TypeError: if any element is not a boolean
-  
+
   result = Value(kind: vkBool, boolean: false)
 
   case a.kind

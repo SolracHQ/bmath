@@ -9,11 +9,13 @@
 ## API endpoint for expression evaluation.
 
 import
-  pipeline/lexer/lexer,
-  pipeline/parser/parser,
+  pipeline/lexer,
+  pipeline/parser,
   pipeline/interpreter/interpreter,
   logging,
-  types/[value, errors]
+  types/value,
+  types,
+  errors
 
 when defined(debug):
   import types/expression

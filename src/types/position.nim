@@ -1,6 +1,4 @@
-type Position* = object ## Source code location information
-  line*: int ## 1-based line number in source
-  column*: int ## 1-based column number in source
+import ../types
 
 proc pos*(line, column: int): Position =
   ## Creates a new source position

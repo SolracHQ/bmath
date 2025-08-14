@@ -1,6 +1,7 @@
 ## vector.nim
 
-import ../../../types/[value, number, vector]
+import ../types/[value, number, vector]
+import ../types
 import arithmetic
 import ../errors
 

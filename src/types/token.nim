@@ -1,106 +1,21 @@
-import position
-import number
-import types
+import value
 import std/complex
 
-type
-  TokenKind* = enum
-    ## Lexical token categories produced by the lexer.
-    ## 
-    ## These represent fundamental syntactic elements including:
-    ## - Operators (arithmetic, assignment)
-    ## - Literal values
-    ## - Structural characters
-    ## - Identifiers
+import ../types
 
-    # Operators
-    tkAdd ## Addition operator '+'
-    tkSub ## Subtraction operator '-'
-    tkMul ## Multiplication operator '*'
-    tkDiv ## Division operator '/'
-    tkPow ## Exponentiation operator '^'
-    tkMod ## Modulus operator '%'
-    tkAssign ## Assignment operator '='
-    tkChain ## Chained function call operator '->'
-
-    # Boolean operators
-    tkAnd ## Logical AND operator '&'
-    # for tkOr we will reuse the tkLine '|' character
-    tkNot ## Logical NOT operator '!'
-
-    # Comparison operators
-    tkEq ## Equality operator '=='
-    tkNe ## Inequality operator '!='
-    tkLt ## Less than operator '<'
-    tkLe ## Less than or equal operator '<='
-    tkGt ## Greater than operator '>'
-    tkGe ## Greater than or equal operator '>='
-
-    # Structural tokens
-    tkLPar ## Left parenthesis '('
-    tkRPar ## Right parenthesis ')'
-    tkLCurly ## Left curly brace '{'
-    tkRCurly ## Right curly brace '}'
-    tkRSquare ## Square bracket '['
-    tkLSquare ## Square bracket ']'
-    tkLine ## Parameter delimiter '|'
-
-    # Literals and identifiers
-    tkNumber ## Numeric literal (integer or float)
-    tkTrue ## Boolean true literal
-    tkFalse ## Boolean false literal
-    tkIdent ## Identifier (variable/function name)
-    tkString ## String literal
-
-    # Keywords
-    tkIf ## If keyword
-    tkElse ## Else keyword
-    tkElif ## Elif keyword
-    tkLocal ## Local keyword
-
-    # Types
-    tkType ## Type Value
-    tkIs ## Type check operator 'is'
-    tkColon ## Type separator ':'
-
-    # Control tokens
-    tkComma ## Argument separator ','
-    tkNewline # End of expression marker for parser (due multiline blocks support)
-    tkEoe ## End of expression marker for lexer
-
-  Token* = object
-    ## Lexical token with source position and type-specific data.
-    ## 
-    ## The active field depends on the token kind:
-    ## - `iValue` for integer literals (tkInt)
-    ## - `fValue` for floating-point literals (tkFloat)
-    ## - `name` for identifiers (tkIdent)
-    position*: Position ## Source location of the token
-    case kind*: TokenKind
-    of tkNumber:
-      nValue*: Number ## Numeric value for tkNumber tokens
-    of tkIdent:
-      name*: string ## Identifier name for tkIdent tokens
-    of tkType:
-      typ*: Type ## Type value for tkType tokens
-    of tkString:
-      content*: string ## String literal for tkString tokens
-    else:
-      discard
-
-template newToken*(value: typed, pos: Position): Token =
-  when value is SomeInteger:
-    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
-  elif value is SomeFloat:
-    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
-  elif value is Number:
-    Token(kind: tkNumber, nValue: value, position: pos)
-  elif value is Complex[float]:
-    Token(kind: tkNumber, nValue: newNumber(value), position: pos)
-  elif value is string:
-    Token(kind: tkString, content: value, position: pos)
-  elif value is Type:
-    Token(kind: tkType, typ: value, position: pos)
+template newToken*(the_value: typed, pos: Position): Token =
+  when the_value is SomeInteger:
+    Token(kind: tkNumber, value: newValue(the_value), position: pos)
+  elif the_value is SomeFloat:
+    Token(kind: tkNumber, value: newValue(the_value), position: pos)
+  elif the_value is Number:
+    Token(kind: tkNumber, value: newValue(the_value), position: pos)
+  elif the_value is Complex[float]:
+    Token(kind: tkNumber, value: newValue(the_value), position: pos)
+  elif the_value is string:
+    Token(kind: tkString, value: newValue(the_value), position: pos)
+  elif the_value is Type:
+    Token(kind: tkType, value: newValue(the_value), position: pos)
   else:
     {.error: "Unsupported type for Token".}
 
@@ -163,7 +78,7 @@ proc `$`*(token: Token): string =
     "'|'"
   # Literals and identifiers
   of tkNumber:
-    $token.nValue
+    $token.value
   of tkTrue:
     "true"
   of tkFalse:
@@ -171,7 +86,7 @@ proc `$`*(token: Token): string =
   of tkIdent:
     "'" & token.name & "'"
   of tkString:
-    "\"" & token.content & "\""
+    $token.value
   # Keywords
   of tkIf:
     "if"
@@ -183,7 +98,7 @@ proc `$`*(token: Token): string =
     "local"
   # Types
   of tkType:
-    $token.typ
+    $token.value
   of tkIs:
     "'is'"
   of tkColon:

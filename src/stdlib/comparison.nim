@@ -1,7 +1,8 @@
 ## comparison.nim
 
 import utils, sequence
-import ../../../types/[value, number, vector, types]
+import ../types/[value, number, vector, bm_types]
+import ../types
 import ../errors
 
 proc `<`*(a, b: Value): Value {.inline, captureNumericError.} =

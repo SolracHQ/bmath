@@ -1,5 +1,7 @@
-import ../src/pipeline/lexer/[lexer, errors]
-import ../src/types/[token, number, types]
+import ../src/pipeline/lexer
+import ../src/types/[token, number, bm_types]
+import ../src/types
+import ../src/errors
 import unittest
 
 suite "Lexer tests":
@@ -9,9 +11,9 @@ suite "Lexer tests":
     while not l.atEnd:
       tokens.add l.next()
 
-    check tokens[0].nValue.integer == 123
-    check tokens[1].nValue.real == 45.67
-    check tokens[2].nValue.real == 8e9
+    check tokens[0].value.number.integer == 123
+    check tokens[1].value.number.real == 45.67
+    check tokens[2].value.number.real == 8e9
 
   test "Tokenizing operators":
     var l = newLexer("+-*/^%")
@@ -130,25 +132,25 @@ suite "Lexer tests":
     # Tokenize "3i"
     let tok1 = l.next()
     check tok1.kind == tkNumber
-    check $tok1.nValue == "3.0i"
+    check $tok1.value.number == "3.0i"
     # Tokenize "4+3i" into 3 tokens: number "4", '+' operator, number "3i"
     let tok2 = l.next() # number "4"
     check tok2.kind == tkNumber
-    check $tok2.nValue == "4"
+    check $tok2.value.number == "4"
     let tok3 = l.next() # '+' operator
     check tok3.kind == tkAdd
     let tok4 = l.next() # number "3i"
     check tok4.kind == tkNumber
-    check $tok4.nValue == "3.0i"
+    check $tok4.value.number == "3.0i"
     # Tokenize "4+3i*2" into 5 tokens: number "4", '+' operator, number "3i", '*' operator, number "2"
     let tok5 = l.next() # number "4"
     check tok5.kind == tkNumber
-    check $tok5.nValue == "4"
+    check $tok5.value.number == "4"
     let tok6 = l.next() # '+' operator
     check tok6.kind == tkAdd
     let tok7 = l.next() # number "3i"
     check tok7.kind == tkNumber
-    check $tok7.nValue == "3.0i"
+    check $tok7.value.number == "3.0i"
     let tok8 = l.next() # '*' operator
     check tok8.kind == tkMul
     let tok9 = l.next() # number "2"
@@ -200,43 +202,43 @@ suite "Lexer tests":
     # Check each type token
     let tok1 = l.next()
     check tok1.kind == tkType
-    check tok1.typ === SimpleType.Integer.newType
+    check tok1.value.typ === SimpleType.Integer.newType
     
     let tok2 = l.next()
     check tok2.kind == tkType
-    check tok2.typ === SimpleType.Real.newType
+    check tok2.value.typ === SimpleType.Real.newType
     
     let tok3 = l.next()
     check tok3.kind == tkType
-    check tok3.typ === SimpleType.Complex.newType
+    check tok3.value.typ === SimpleType.Complex.newType
     
     let tok4 = l.next()
     check tok4.kind == tkType
-    check tok4.typ == SimpleType.Boolean.newType
+    check tok4.value.typ == SimpleType.Boolean.newType
     
     let tok5 = l.next()
     check tok5.kind == tkType
-    check tok5.typ === SimpleType.Vector.newType
+    check tok5.value.typ === SimpleType.Vector.newType
     
     let tok6 = l.next()
     check tok6.kind == tkType
-    check tok6.typ === SimpleType.Sequence.newType
+    check tok6.value.typ === SimpleType.Sequence.newType
     
     let tok7 = l.next()
     check tok7.kind == tkType
-    check tok7.typ === SimpleType.Function.newType
+    check tok7.value.typ === SimpleType.Function.newType
     
     let tok8 = l.next()
     check tok8.kind == tkType
-    check tok8.typ === SimpleType.Type.newType
+    check tok8.value.typ === SimpleType.Type.newType
     
     let tok9 = l.next()
     check tok9.kind == tkType
-    check tok9.typ === AnyType
+    check tok9.value.typ === AnyType
     
     let tok10 = l.next()
     check tok10.kind == tkType
-    check tok10.typ === NumberType
+    check tok10.value.typ === NumberType
   
   test "Tokenizing 'is' operator":
     var l = newLexer("x is integer")
@@ -250,4 +252,4 @@ suite "Lexer tests":
     
     let tok3 = l.next()
     check tok3.kind == tkType
-    check tok3.typ === SimpleType.Integer.newType
+    check tok3.value.typ === SimpleType.Integer.newType
