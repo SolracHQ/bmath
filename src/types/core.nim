@@ -29,30 +29,31 @@ type
   Vector*[T] = ref VectorObj[T]
     ## Reference to a vector object, providing dynamic memory management.
 
-  TypeKind* = enum
+  BMathTypeKind* = enum
     ## Represents the kind of type in the BMath type system.
     tkSimple
     tkSum
     tkError
 
-  SimpleType* {.pure.} = enum
+  BMathSimpleType* = enum
     ## Represents simple types in the BMath type system.
-    Integer
-    Real
-    Complex
-    Boolean
-    Vector
-    Sequence
-    Function
-    Type
-    String
+    stInteger
+    stReal
+    stComplex
+    stBoolean
+    stVector
+    stSequence
+    stFunction
+    stType
+    stString
+    stError
 
-  Type* = object ## Represents a type in the BMath type system.
-    case kind*: TypeKind
+  BMathType* = object ## Represents a type in the BMath type system.
+    case kind*: BMathTypeKind
     of tkSimple:
-      simpleType*: SimpleType
+      simpleType*: BMathSimpleType
     of tkSum:
-      types*: HashSet[SimpleType]
+      types*: HashSet[BMathSimpleType]
     of tkError:
       error*: cstring
 
@@ -66,11 +67,20 @@ type
     vkSeq ## Sequence value, lazily evaluated and stored as reference
     vkType ## Type value
     vkString ## String value
+    vkError ## Error value
+
+  Signature* = object
+    ## Represents a function signature with parameter types.
+    ##
+    ## Contains the parameter names and their types.
+    params*: seq[Parameter] ## Parameter names and types
+    returnType*: BMathType ## Return type of the function
 
   Function* = ref object ## User-defined function data
     body*: Expression ## Function body
     env*: Environment ## Environment for variable bindings
     params*: seq[Parameter] ## Parameter names for the function
+    signature*: Signature ## Function signature for type checking
 
   Sequence* = ref object ## Lazily evaluated sequence
     generator*: Generator ## Function to generate sequence values
@@ -92,9 +102,11 @@ type
     of vkSeq:
       sequence*: Sequence ## Sequence storage when kind is `vkSeq`
     of vkType:
-      typ*: Type ## Type storage when kind is `vkType`
+      typ*: BMathType ## Type storage when kind is `vkType`
     of vkString:
       content*: string ## String storage when kind is `vkString`
+    of vkError:
+      error*: string ## Error message when kind is `vkError`
 
   TransformerKind* = enum
     ## Discriminator for runtime transformer types stored in `Transformer` objects.
@@ -105,7 +117,7 @@ type
     kind*: TransformerKind ## Type of transformer
     fun*: proc(x: Value): Value ## Function to transform each item in a sequence.
 
-  Generator* {.exportc.} = object
+  Generator* = object
     atEnd*: proc(): bool ## Function to check if the sequence is exhausted.
     next*: proc(peek: bool = false): Value ## Function to generate sequence values.
 
@@ -116,8 +128,10 @@ type
   FnInvoker* = proc(function: Value, args: openArray[Value]): Value
     ## Function type for invoking functions in the runtime.
 
-  NativeFn* = proc(args: openArray[Value], invoker: FnInvoker): Value
-    ## Function in the host language callable from the interpreter.
+  NativeFn* = object ## Function in the host language callable from the interpreter.
+    callable*: proc(args: openArray[Value], invoker: FnInvoker): Value
+      ## Native function callable from the interpreter
+    signatures*: seq[Signature] ## Signatures for type checking
 
   Environment* = ref object
     ## Environment for storing variable bindings and parent scopes.
@@ -185,6 +199,7 @@ type
 
     # Control tokens
     tkComma ## Argument separator ','
+    tkFatArrow ## Return type arrow '=>'
     tkNewline # End of expression marker for parser (due multiline blocks support)
     tkEoe ## End of expression marker for lexer
 
@@ -211,9 +226,8 @@ type
     ## associated child nodes or values.
 
     # Literals
-    ekValue ## Value literal (number, string or boolean)
+    ekValue ## Value literal (number or string or boolean or type)
     ekVector ## Vector literal
-    ekType ## Type literal (type name)
 
     # Unary operations
     ekNeg ## Unary negation operation (-operand)
@@ -258,10 +272,13 @@ type
     ##
     ## Contains the parameter name and its type.
     name*: string
-    typ*: Type = Type(
+    typ*: BMathType = BMathType(
       kind: tkSum,
       types: toHashSet(
-        [Integer, Real, SimpleType.Complex, Boolean, Vector, Sequence, Function, Type]
+        [
+          stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
+          stType,
+        ]
       ),
     )
 
@@ -280,10 +297,13 @@ type
     ident*: string ## Target identifier for assignment
     expr*: Expression ## Assigned expression
     isLocal*: bool ## Flag indicating if the assignment is to a local variable
-    typ*: Type = Type(
+    typ*: BMathType = BMathType(
       kind: tkSum,
       types: toHashSet(
-        [Integer, Real, SimpleType.Complex, Boolean, Vector, Sequence, Function, Type]
+        [
+          stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
+          stType,
+        ]
       ),
     )
 
@@ -297,6 +317,15 @@ type
   FunctionDef* = object
     body*: Expression ## Function body expression
     params*: seq[Parameter] ## Function parameter names
+    returnType*: BMathType = BMathType(
+      kind: tkSum,
+      types: toHashSet(
+        [
+          stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
+          stType,
+        ]
+      ),
+    )
 
   Branch* = object
     ## Represents a condition in an if-elif expression.
@@ -320,8 +349,6 @@ type
       value*: Value
     of ekVector:
       vector*: Vector[Expression]
-    of ekType:
-      typ*: Type
     of ekNeg, ekNot:
       unaryOp*: UnaryOp
     of ekAdd, ekSub, ekMul, ekDiv, ekMod, ekPow, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,

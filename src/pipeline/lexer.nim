@@ -12,9 +12,7 @@
 
 import std/[strutils, tables, complex]
 
-import ../types/[position, token, bm_types]
-import ../types
-import ../errors
+import ../types/[position, token, bm_types, errors]
 
 type
   StackableKind* = enum
@@ -53,18 +51,18 @@ const KEYWORDS: Table[string, TokenKind] = {
   "is": tkIs,
 }.toTable
 
-const TYPES: Table[string, Type] = {
-  "integer": SimpleType.Integer.newType,
-  "real": SimpleType.Real.newType,
-  "complex": SimpleType.Complex.newType,
-  "boolean": SimpleType.Boolean.newType,
-  "vector": SimpleType.Vector.newType,
-  "sequence": SimpleType.Sequence.newType,
-  "function": SimpleType.Function.newType,
-  "string": SimpleType.String.newType,
-  "type": SimpleType.Type.newType,
-  "any": AnyType,
-  "number": NumberType,
+const TYPES: Table[string, BMathType] = {
+  "Int": stInteger.newType,
+  "Real": stReal.newType,
+  "Complex": stComplex.newType,
+  "Bool": stBoolean.newType,
+  "Vec": stVector.newType,
+  "Sequence": stSequence.newType,
+  "Function": stFunction.newType,
+  "String": stString.newType,
+  "Type": stType.newType,
+  "Any": AnyType,
+  "Number": NumberType,
 }.toTable
 
 proc atEnd*(lexer: Lexer): bool {.inline.} =
@@ -222,11 +220,16 @@ proc parseString*(lexer: var Lexer, start: int): Token =
   ##   lexer: var Lexer - the current lexer instance.
   ##   start: int - the starting index of the string in the source.
   ## Returns: Token - a token representing the string literal.
+  ## Record starting column so the returned token points to the opening quote
+  let startCol = lexer.col
+  let startPos = pos(lexer.line, startCol)
   lexer.advance() # Skip opening quote
   var content = ""
   while not lexer.atEnd and lexer.source[lexer.current] != '"':
     if lexer.source[lexer.current] == '\\':
       lexer.advance() # Skip the backslash
+      if lexer.atEnd:
+        raise newIncompleteInputError("Unterminated escape sequence in string", startPos)
       case lexer.source[lexer.current]
       of 'n':
         content.add('\n')
@@ -236,6 +239,8 @@ proc parseString*(lexer: var Lexer, start: int): Token =
         content.add('\r')
       of '"':
         content.add('"')
+      of '\\':
+        content.add('\\')
       else:
         raise newInvalidEscapeSequenceError(
           "Invalid escape sequence '\\" & lexer.source[lexer.current] & "'",
@@ -247,11 +252,11 @@ proc parseString*(lexer: var Lexer, start: int): Token =
   # After loop, check if we are at a closing quote
   if not lexer.atEnd and lexer.source[lexer.current] == '"':
     lexer.advance() # Skip closing quote
-    return newToken(content, pos(lexer.line, lexer.col))
+    return newToken(content, startPos)
   # If not, it's unterminated
   raise newIncompleteInputError(
-    "Unterminated string literal starting at " & $pos(lexer.line, lexer.col),
-    pos(lexer.line, lexer.col),
+    "Unterminated string literal starting at " & $startPos,
+    startPos,
   )
 
 proc checkNext*(lexer: Lexer): char =
@@ -292,6 +297,9 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of '=':
     if checkNext(lexer) == '=':
       kind = tkEq
+      lexer.advance()
+    elif checkNext(lexer) == '>':
+      kind = tkFatArrow
       lexer.advance()
     else:
       kind = tkAssign

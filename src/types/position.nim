@@ -1,4 +1,5 @@
-import ../types
+from core import Position
+export Position
 
 proc pos*(line, column: int): Position =
   ## Creates a new source position

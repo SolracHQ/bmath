@@ -1,8 +1,6 @@
 ## trigonometry.nim
 
-import ../types/[value, number, vector]
-import ../types
-import ../errors
+import ../types/[value, number, vector, errors]
 import utils
 
 proc cos*(a: Value): Value {.inline, captureNumericError.} =

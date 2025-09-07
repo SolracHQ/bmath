@@ -3,7 +3,6 @@ import unittest, math
 import ../src/pipeline/parser
 import ../src/pipeline/lexer
 import ../src/types/[expression, vector, bm_types]
-import ../src/types
 
 suite "Parser tests":
   test "parses addition of identifiers":
@@ -335,7 +334,7 @@ suite "Parser tests":
     check ast.binaryOp.left.functionCall.params[0].identifier.ident == "x"
     check ast.binaryOp.right.kind == ekType
     check ast.binaryOp.right.typ.kind == tkSimple
-    check ast.binaryOp.right.typ.simpleType == SimpleType.Complex
+    check ast.binaryOp.right.typ.simpleType == stComplex
     
   test "parses function with type checking":
     var lexer = newLexer("|x| if(x is complex) 1 else 2")
@@ -360,7 +359,7 @@ suite "Parser tests":
     check condition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
     check condition.binaryOp.right.kind == ekType
     check condition.binaryOp.right.typ.kind == tkSimple
-    check condition.binaryOp.right.typ.simpleType == SimpleType.Complex
+    check condition.binaryOp.right.typ.simpleType == stComplex
     
     # Check branches
     check ast.functionDef.body.ifExpr.branches.len == 1
@@ -392,7 +391,7 @@ suite "Parser tests":
     check firstCondition.binaryOp.left.functionCall.params[0].kind == ekIdent
     check firstCondition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
     check firstCondition.binaryOp.right.kind == ekType
-    check firstCondition.binaryOp.right.typ.simpleType == SimpleType.Complex
+    check firstCondition.binaryOp.right.typ.simpleType == stComplex
     
     # Check the first "then" branch (x->re)
     let firstThenBranch = ast.functionDef.body.ifExpr.branches[0].then
@@ -412,13 +411,13 @@ suite "Parser tests":
     check secondCondition.binaryOp.left.functionCall.params[0].kind == ekIdent
     check secondCondition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
     check secondCondition.binaryOp.right.kind == ekType
-    check secondCondition.binaryOp.right.typ.simpleType == SimpleType.Integer
+    check secondCondition.binaryOp.right.typ.simpleType == stInteger
     
     # Check the second "then" branch (x->real)
     let secondThenBranch = ast.functionDef.body.ifExpr.branches[1].then
     check secondThenBranch.kind == ekFuncCall
     check secondThenBranch.functionCall.function.kind == ekType
-    check secondThenBranch.functionCall.function.typ.simpleType == SimpleType.Real
+    check secondThenBranch.functionCall.function.typ.simpleType == stReal
     check secondThenBranch.functionCall.params.len == 1
     check secondThenBranch.functionCall.params[0].kind == ekIdent
     check secondThenBranch.functionCall.params[0].identifier.ident == "x"

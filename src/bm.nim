@@ -10,7 +10,7 @@
 ## 3. Execute through engine.run()
 ## 4. Output result
 import std/terminal
-import cli, engine, types/value, types, errors
+import cli, engine, types/[value, errors]
 
 proc handleHelp() =
   echo HELP

@@ -55,7 +55,7 @@ NUMBER           -> [0-9]* ("." [0-9]+)? ("e" [0-9]* ("." [0-9]+)?)? ("i")?
 functionInvocation -> IDENTIFIER "(" ( expression ("," expression)* )? ")" 
            | "(" expression ")" "(" ( expression ("," expression)* )? ")"
 
-function         -> "|" ( ( IDENTIFIER ( ":" TYPE )? ) ( "," IDENTIFIER ( ":" TYPE )? )* )? "|" expression
+function         -> "|" ( ( IDENTIFIER ( ":" TYPE )? ) ( "," IDENTIFIER ( ":" TYPE )? )* )? "|" ( "=>" TYPE ) expression
 
 vector           -> "[" ( expression ("," expression)* )? "]"
 ```

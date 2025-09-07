@@ -5,7 +5,7 @@ author = "solrac"
 description = "Simple Math CLI utility"
 license = "MIT"
 srcDir = "src"
-bin = @["bm"]
+bin = @["bm", "lsp"]
 binDir = "bin"
 
 # Dependencies

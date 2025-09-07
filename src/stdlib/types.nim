@@ -1,12 +1,10 @@
 ## typed.nim
 
-import ../types/[value, bm_types, number, vector]
-import ../types
-import ../errors
+import ../types/[value, bm_types, number, vector, errors]
 import sequence
 import std/[complex]
 
-proc getType*(value: Value): Type =
+proc getType*(value: Value): BMathType =
   ## Returns the type of a value.
   ##
   ## Parameters:
@@ -19,25 +17,37 @@ proc getType*(value: Value): Type =
   of vkNumber:
     case value.number.kind
     of nkInteger:
-      return newType(SimpleType.Integer)
+      return newType(stInteger)
     of nkReal:
-      return newType(SimpleType.Real)
+      return newType(stReal)
     of nkComplex:
-      return newType(SimpleType.Complex)
+      return newType(stComplex)
   of vkBool:
-    return newType(SimpleType.Boolean)
+    return newType(stBoolean)
   of vkFunction, vkNativeFunc:
-    return newType(SimpleType.Function)
+    return newType(stFunction)
   of vkVector:
-    return newType(SimpleType.Vector)
+    return newType(stVector)
   of vkSeq:
-    return newType(SimpleType.Sequence)
+    return newType(stSequence)
   of vkType:
-    return newType(SimpleType.Type)
+    return newType(stType)
   of vkString:
-    return newType(SimpleType.String)
+    return newType(stString)
+  of vkError:
+    return newType(stError)
 
-proc casting*(target: Type, source: Value): Value =
+proc extractType*(value: Value): Value =
+  ## Extracts the type from a value.
+  ## 
+  ## Parameters:
+  ##   value: Value - The value to extract the type from.
+  ## 
+  ## Returns:
+  ##   Value - A Value object representing the type of the input value.
+  return value.getType().newValue()
+
+proc casting*(target: BMathType, source: Value): Value =
   ## Casts a value to a specified type.
   ## 
   ## Parameters:
@@ -53,7 +63,12 @@ proc casting*(target: Type, source: Value): Value =
   # Handle simple type conversions
   if target.kind == tkSimple:
     case target.simpleType
-    of SimpleType.Integer:
+    of stError:
+      if source.kind == vkError:
+        return source
+      else:
+        raise newInvalidArgumentError("Cannot convert to an error type")
+    of stInteger:
       if source.kind == vkNumber:
         case source.number.kind
         of nkInteger:
@@ -66,7 +81,7 @@ proc casting*(target: Type, source: Value): Value =
       else:
         raise
           newInvalidArgumentError("Cannot convert " & $source.kind & " to Integer type")
-    of SimpleType.Real:
+    of stReal:
       if source.kind == vkNumber:
         case source.number.kind
         of nkInteger:
@@ -78,7 +93,7 @@ proc casting*(target: Type, source: Value): Value =
       else:
         raise
           newInvalidArgumentError("Cannot convert " & $source.kind & " to Real type")
-    of SimpleType.Complex:
+    of stComplex:
       if source.kind == vkNumber:
         case source.number.kind
         of nkInteger:
@@ -91,13 +106,13 @@ proc casting*(target: Type, source: Value): Value =
       else:
         raise
           newInvalidArgumentError("Cannot convert " & $source.kind & " to Complex type")
-    of SimpleType.Boolean:
+    of stBoolean:
       if source.kind == vkBool:
         return source
       else:
         raise
           newInvalidArgumentError("Cannot convert " & $source.kind & " to Boolean type")
-    of SimpleType.String:
+    of stString:
       if source.kind == vkString:
         return source
       elif source.kind == vkVector:
@@ -127,7 +142,7 @@ proc casting*(target: Type, source: Value): Value =
       else:
         raise
           newInvalidArgumentError("Cannot convert " & $source.kind & " to String type")
-    of SimpleType.Vector:
+    of stVector:
       if source.kind == vkVector:
         return source
       elif source.kind == vkSeq:
@@ -150,7 +165,7 @@ proc casting*(target: Type, source: Value): Value =
       else:
         raise
           newInvalidArgumentError("Cannot convert " & $source.kind & " to Vector type")
-    of SimpleType.Sequence:
+    of stSequence:
       if source.kind == vkSeq:
         return source
       elif source.kind == vkVector:
@@ -179,14 +194,14 @@ proc casting*(target: Type, source: Value): Value =
         raise newInvalidArgumentError(
           "Cannot convert " & $source.kind & " to Sequence type"
         )
-    of SimpleType.Function:
+    of stFunction:
       if source.kind == vkFunction or source.kind == vkNativeFunc:
         return source
       else:
         raise newInvalidArgumentError(
           "Cannot convert " & $source.kind & " to Function type"
         )
-    of SimpleType.Type:
+    of stType:
       if source.kind == vkType:
         return source
       else:

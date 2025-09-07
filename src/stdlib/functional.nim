@@ -1,8 +1,6 @@
 ## functional.nim
 
-import ../types/[value, vector, number]
-import ../types
-import ../errors
+import ../types/[value, vector, number, errors]
 import sequence, arithmetic
 
 proc map*(values: openArray[Value], invoker: FnInvoker): Value =

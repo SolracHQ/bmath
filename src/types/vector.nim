@@ -5,7 +5,8 @@
 ## - Maintains fixed size once allocated
 ## - Provides convenient access operations and iteration
 
-import ../types
+from core import Vector
+export Vector
 
 proc newVector*[T](len: int): Vector[T] =
   ## Creates a new vector with the specified length.

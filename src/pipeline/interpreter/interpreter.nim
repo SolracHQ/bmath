@@ -13,10 +13,7 @@
 ## environment that tracks variable bindings and their values.
 
 import std/[sequtils]
-import ../../types/[value, expression, vector]
-import ../../types
-import ../../types
-import ../../errors
+import ../../types/[value, expression, vector, errors]
 import environment
 import ../../stdlib/[arithmetic, comparison, logical, types]
 
@@ -79,7 +76,7 @@ proc evalFunctionCall(
     let native = funValue.nativeFn
     let invoker = proc(function: Value, args: openArray[Value]): Value =
       interpreter.evalFunctionCall(function, args, env)
-    return native(args, invoker)
+    return native.callable(args, invoker)
   elif funValue.kind == vkFunction:
     let fun = funValue.function
     if args.len != fun.params.len:
@@ -249,8 +246,6 @@ proc evalExpression(
         if condition.boolean:
           return interpreter.evalExpression(branch.then, env)
       return interpreter.evalExpression(expression.ifExpr.elseBranch, env)
-    of ekType:
-      return newValue(expression.typ)
   except BMathError as e:
     if e.stack.len == 0:
       e.stack.add(expression.position)

@@ -12,9 +12,7 @@
 ## - Block expressions for statement sequencing
 ## - Robust error detection with position tracking
 
-import ../types/[expression, token, number, bm_types, value]
-import ../types
-import ../errors
+import ../types/[expression, token, number, bm_types, value, errors]
 
 type Parser = object
   tokens: seq[Token] ## Sequence of tokens to parse
@@ -148,27 +146,32 @@ proc parseFunction(parser: var Parser): Expression =
   ##   UnexpectedTokenError - if an identifier is expected but not found
   ##   MissingTokenError - if a comma is expected but not found
   var params: seq[Parameter] = @[]
+  # parse parameter list until closing '|'
   while not parser.match({tkLine}):
+    parser.cleanUpNewlines()
     if parser.match({tkIdent}):
+      # simple param without explicit type
       let name = parser.previous().name
-      var typ: Type = AnyType
+      var typ = AnyType
       if parser.match({tkColon}):
-        if parser.match({tkType}):
-          typ = parser.previous().value.typ
-        else:
-          raise
-            newMissingTokenError("Expected type after ':'", parser.previous().position)
+        if not parser.match({tkType}):
+          raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+        typ = parser.previous().value.typ
       params.add(Parameter(name: name, typ: typ))
-    else:
-      raise newUnexpectedTokenError(
-        "Expected identifier but got '" & $parser.previous().kind & "'",
-        parser.previous().position,
-      )
-    if parser.match({tkLine}):
+    elif parser.match({tkLine}):
       break
-    if not parser.match({tkComma}):
-      raise newMissingTokenError("Expected ','", parser.previous().position)
-  return newFuncExpr(parser.previous().position, params, parser.parseExpression())
+    else:
+      if not parser.match({tkComma}):
+        raise newMissingTokenError("Expected ','", parser.previous().position)
+
+  # optional return type: '=>' TYPE
+  var returnType: BMathType = AnyType
+  if parser.match({tkFatArrow}):
+    if not parser.match({tkType}):
+      raise newMissingTokenError("Expected type after '=>'", parser.previous().position)
+    returnType = parser.previous().value.typ
+
+  return newFuncExpr(parser.previous().position, params, parser.parseExpression(), returnType)
 
 proc parseVector*(parser: var Parser): Expression =
   ## Parses vector literals
@@ -325,7 +328,7 @@ proc parsePrimary*(parser: var Parser): Expression =
   elif parser.match({tkLSquare}):
     result = parser.parseVector()
   elif parser.match({tkType}):
-    result = newTypeExpr(token.position, token.value.typ)
+    result = newValueExpr(token.position, token.value)
   else:
     let token = parser.peek()
     raise newUnexpectedTokenError("Unexpected token " & $token, token.position)
@@ -543,42 +546,19 @@ proc parseEquality*(parser: var Parser): Expression =
     let prev = parser.previous()
     let right = parser.parseComparison()
 
-    # If tkIs, right must be a type
-    if prev.kind == tkIs and right.kind != ekType:
-      raise newMissingTokenError(
-        "Expected type after 'is' but got " & $right.kind, parser.previous().position
-      )
-
     # if tkIs and right.typ is AnyType, we can just return true
-    if prev.kind == tkIs and right.typ === AnyType:
+    if prev.kind == tkIs and right.kind == ekValue and right.value.kind == vkType and
+        right.value.typ === AnyType:
       return newValueExpr(prev.position, newValue(true))
 
-    # For 'is' operator, optimize by directly evaluating types for known expression kinds
     if prev.kind == tkIs:
-      # Check if we can determine the type at parse time
-      if result.kind == ekValue and result.value.kind == vkBool:
-        return
-          newValueExpr(prev.position, newValue(right.typ == SimpleType.Boolean.newType))
-      elif result.kind == ekValue and result.value.kind == vkVector:
-        return
-          newValueExpr(prev.position, newValue(right.typ == SimpleType.Vector.newType))
-      elif result.kind == ekType:
-        return
-          newValueExpr(prev.position, newValue(right.typ == SimpleType.Type.newType))
-      elif result.kind == ekValue and result.value.kind == vkNumber:
-        let numberType =
-          case result.value.number.kind
-          of nkInteger: SimpleType.Integer.newType
-          of nkReal: SimpleType.Real.newType
-          of nkComplex: SimpleType.Complex.newType
-        return newValueExpr(prev.position, newValue(right.typ == numberType))
-      else:
-        # Fall back to runtime type checking for other expression kinds
-        result = newFuncCallExpr(
-          prev.position,
-          newTypeExpr(result.position, SimpleType.Type.newType),
-          @[result],
-        )
+      # we need rap left in a get_type call and compare equal to right
+      let getTypeCall = newFuncCallExpr(
+        prev.position, newIdentExpr(prev.position, "get_type"), @[result]
+      )
+      result = newBinaryExpr(prev.position, ekEq, getTypeCall, right)
+      continue
+        
 
     # Optimize for numbers and booleans
     if (
@@ -663,7 +643,7 @@ proc parseAssignment*(parser: var Parser): Expression =
         "Expected identifier after 'local'", parser.previous().position
       )
     let name = parser.previous()
-    var typ: Type = AnyType
+    var typ: BMathType = AnyType
     if parser.match({tkColon}):
       if parser.match({tkType}):
         typ = parser.previous().value.typ

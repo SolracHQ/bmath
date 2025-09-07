@@ -1,9 +1,7 @@
 ## control.nim
 ## Standard library functions for program flow control
 
-import ../types/[value, number, bm_types]
-import ../types
-import ../errors
+import ../types/[value, number, bm_types, errors]
 
 proc exit*(args: openArray[Value], invoker: FnInvoker): Value =
   ## Exits the program with an optional exit code
@@ -113,7 +111,7 @@ proc try_catch*(args: openArray[Value], invoker: FnInvoker): Value =
     return invoker(args[0], [])
   except BMathError as e:
     # Create an error type with the exception message
-    let errorType = Type(kind: tkError, error: e.name)
+    let errorType = BMathType(kind: tkError, error: e.name)
     let errorValue = Value(kind: vkType, typ: errorType)
 
     # Pass the error to the handler function

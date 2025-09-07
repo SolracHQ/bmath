@@ -1,0 +1,61 @@
+{
+  "scopeName": "source.bmath",
+  "patterns": [
+    {
+      "name": "comment.line.number-sign.bmath",
+      "begin": "#",
+      "end": "$"
+    },
+    {
+      "name": "keyword.control.bmath",
+      "match": "\\b(if|else|local|for|while|return|break|continue|exit)\\b"
+    },
+    {
+      "name": "variable.parameter.bmath",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+    },
+    {
+      "name": "constant.numeric.bmath",
+      "match": "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?(i)?\\b"
+    },
+    {
+      "name": "constant.language.boolean.bmath",
+      "match": "\\b(true|false)\\b"
+    },
+    {
+      "name": "string.quoted.double.bmath",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.bmath",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "meta.function.bmath",
+      "begin": "\\|",
+      "end": "\\|",
+      "patterns": [
+        {
+          "name": "variable.parameter.bmath",
+          "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+        }
+      ]
+    },
+    {
+      "name": "meta.function-call.bmath",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\s*\\("
+    },
+    {
+      "name": "keyword.operator.bmath",
+      "match": "\\+|\\-|\\*|\\/|\\^|==|!=|<=|>=|<|>|&|\\|"
+    },
+    {
+      "name": "punctuation.separator.bmath",
+      "match": "[\\[\\]\\{\\}\\(\\),]"
+    }
+  ],
+  "repository": {}
+}

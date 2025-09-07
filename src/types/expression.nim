@@ -5,7 +5,10 @@ import number
 import bm_types
 import vector
 
-import ../types
+from core import
+  Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, Assign,
+  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch
+export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
   ## Creates a new literal expression based on the type of value.
@@ -23,9 +26,6 @@ proc newLiteralExpr*[T](pos: Position, value: T): Expression =
     result = Expression(kind: ekString, position: pos, content: value)
   else:
     raise newException(ValueError, "Invalid type for literal expression")
-
-proc newTypeExpr*(pos: Position, typ: Type): Expression {.inline.} =
-  result = Expression(kind: ekType, position: pos, typ: typ)
 
 proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
   result = Expression(kind: ekNot, position: pos, unaryOp: UnaryOp(operand: operand))
@@ -51,7 +51,7 @@ proc newIdentExpr*(pos: Position, ident: string): Expression {.inline.} =
     Expression(kind: ekIdent, position: pos, identifier: Identifier(ident: ident))
 
 proc newAssignExpr*(
-    pos: Position, ident: string, expr: Expression, isLocal: bool, typ: Type
+    pos: Position, ident: string, expr: Expression, isLocal: bool, typ: BMathType
 ): Expression {.inline.} =
   result = Expression(
     kind: ekAssign,
@@ -73,10 +73,12 @@ proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.in
     Expression(kind: ekBlock, position: pos, blockExpr: Block(expressions: expressions))
 
 proc newFuncExpr*(
-    pos: Position, params: seq[Parameter], body: Expression
+    pos: Position, params: seq[Parameter], body: Expression, returnType: BMathType = AnyType
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekFuncDef, position: pos, functionDef: FunctionDef(params: params, body: body)
+    kind: ekFuncDef,
+    position: pos,
+    functionDef: FunctionDef(params: params, body: body, returnType: returnType),
   )
 
 proc newIfExpr*(
@@ -91,7 +93,7 @@ proc newIfExpr*(
 proc newBranch*(conditionExpr: Expression, thenExpr: Expression): Branch {.inline.} =
   Branch(condition: conditionExpr, then: thenExpr)
 
-proc newParameter*(name: string, typ: Type = AnyType): Parameter {.inline.} =
+proc newParameter*(name: string, typ: BMathType = AnyType): Parameter {.inline.} =
   ## Creates a new function parameter with the given name and type.
   Parameter(name: name, typ: typ)
 
@@ -152,8 +154,6 @@ proc stringify(node: Expression, indent: int): string =
     if node.ifExpr.elseBranch != nil:
       result.add("\n" & indentation & "else:\n")
       result.add(node.ifExpr.elseBranch.stringify(indent + 2))
-  of eKType:
-    result.add indentation & "type: " & $node.typ & "\n"
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -242,5 +242,3 @@ proc asSource*(expr: Expression, ident: int = 0): string =
     if expr.ifExpr.elseBranch != nil:
       src.add(" else " & asSource(expr.ifExpr.elseBranch))
     return src
-  of ekType:
-    return $expr.typ

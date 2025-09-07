@@ -1,8 +1,7 @@
 ## logging.nim
 
 import std/strformat
-import types
-import errors
+import types/errors
 
 proc logError*(error: ref BMathError, context: string) =
   ## Central error logging with context

@@ -4,11 +4,16 @@
 ## It includes fundamental types for values, tokens, AST nodes, and errors, along with their
 ## string representation implementations.
 
-import std/[strutils, tables, sequtils, complex]
+import std/[strutils, tables, sequtils, complex, sets]
 
 import position, expression, number, vector, bm_types
 
-import ../types
+from core import
+  Value, ValueKind, NativeFn, Function, Environment, LabeledValue, Parameter, FnInvoker,
+  Sequence, Generator, Transformer, TransformerKind, Signature
+export
+  Value, ValueKind, NativeFn, Function, Environment, LabeledValue, FnInvoker, Sequence,
+  Generator, Transformer, TransformerKind
 
 template newValue*(n: typed): Value =
   ## Create a new Value object from a number
@@ -24,7 +29,7 @@ template newValue*(n: typed): Value =
     Value(kind: vkBool, boolean: n.bool)
   elif n is seq[Value]:
     Value(kind: vkVector, vector: n)
-  elif n is Type:
+  elif n is BMathType:
     Value(kind: vkType, typ: n)
   elif n is string:
     Value(kind: vkString, content: n)
@@ -63,6 +68,7 @@ proc `$`*(kind: ValueKind): string =
   of vkSeq: "seq"
   of vkType: "type"
   of vkString: "string"
+  of vkError: "error"
 
 proc `$`*(value: Value): string =
   ## Returns string representation of numeric value
@@ -83,6 +89,8 @@ proc `$`*(value: Value): string =
     $value.typ
   of vkString:
     "\"" & value.content & "\""
+  of vkError:
+    "Error: " & value.error
 
 proc `$`*(val: LabeledValue): string =
   if val.label != "":
@@ -106,10 +114,35 @@ when defined(showSize):
     echo "   ├─ vkBool variant"
     echo "   │  └─ Bool component: ", sizeof(bool), " bytes"
     echo "   ├─ vkNativeFunc variant"
-    echo "   │  └─ NativeFunc component: ", sizeof(NativeFn), " bytes"
+    echo "   │  ├─ NativeFn whole: ", sizeof(NativeFn), " bytes"
+    echo "   │  ├─  - callable (proc type): ", sizeof(proc(args: openArray[Value], invoker: FnInvoker): Value), " bytes"
+    echo "   │  └─  - signatures (seq[Signature]): ", sizeof(seq[Signature]), " bytes"
     echo "   ├─ vkFunction variant"
-    echo "   │  └─ Function pointer size: ", sizeof(ref Function), " bytes"
+    echo "   │  ├─ Function ref size: ", sizeof(ref Function), " bytes"
+    echo "   │  └─  Function fields:"
+    echo "   │     - body (ref Expression): ", sizeof(ref Expression), " bytes"
+    echo "   │     - env (ref Environment): ", sizeof(ref Environment), " bytes"
+    echo "   │     - params (seq[Parameter]): ", sizeof(seq[Parameter]), " bytes"
+    echo "   │     - signature (Signature): ", sizeof(Signature), " bytes"
+    echo "   │       - Signature.params (seq[Parameter]): ", sizeof(seq[Parameter]), " bytes"
+    echo "   │       - Signature.returnType (BMathType): ", sizeof(BMathType), " bytes"
     echo "   ├─ vkVector variant"
-    echo "   │  └─ Vector component: ", sizeof(Vector[Value]), " bytes"
-    echo "   └─ vkSeq variant"
-    echo "      └─ Sequence pointer size: ", sizeof(ref Sequence), " bytes"
+    echo "   │  └─ Vector ref size: ", sizeof(Vector[Value]), " bytes"
+    echo "   ├─ vkSeq variant"
+    echo "   │  ├─ Sequence ref size: ", sizeof(ref Sequence), " bytes"
+    echo "   │  ├─  - Generator: ", sizeof(Generator), " bytes"
+    echo "   │  │    - atEnd (proc): ", sizeof(proc(): bool), " bytes"
+    echo "   │  │    - next (proc): ", sizeof(proc(peek: bool): Value), " bytes"
+    echo "   │  └─  - Transformer (seq): ", sizeof(seq[Transformer]), " bytes"
+    echo "   │       - Transformer size: ", sizeof(Transformer), " bytes"
+    echo "   │         - kind (TransformerKind): ", sizeof(TransformerKind), " bytes"
+    echo "   │         - fun (proc): ", sizeof(proc(x: Value): Value), " bytes"
+    echo "   ├─ vkType variant"
+    echo "   │  ├─ BMathType whole: ", sizeof(BMathType), " bytes"
+    echo "   │  ├─  - simple type enum: ", sizeof(BMathSimpleType), " bytes"
+    echo "   │  ├─  - sum types set: ", sizeof(HashSet[BMathSimpleType]), " bytes"
+    echo "   │  └─  - error cstring: ", sizeof(cstring), " bytes"
+    echo "   ├─ vkString variant"
+    echo "   │  └─ string component: ", sizeof(string), " bytes"
+    echo "   └─ vkError variant"
+    echo "      └─ error component (string): ", sizeof(string), " bytes"

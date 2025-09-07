@@ -1,8 +1,9 @@
 import std/math
 import std/complex
 
-import ../types
-import ../errors
+import errors
+from core import NumberKind, Number
+export NumberKind, Number
 
 template newNumber*(value: typed): Number =
   ## Creates a new Number object based on the type of value

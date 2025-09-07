@@ -1,0 +1,39 @@
+{
+  "BMath Function": {
+    "prefix": "bmathFunc",
+    "body": [
+      "function ${1:functionName}(${2:params}) {",
+      "    $0",
+      "}"
+    ],
+    "description": "Create a new BMath function"
+  },
+  "BMath If Expression": {
+    "prefix": "bmathIf",
+    "body": [
+      "if(${1:condition}) {",
+      "    $2",
+      "} else {",
+      "    $3",
+      "}"
+    ],
+    "description": "Create a new BMath if expression"
+  },
+  "BMath Vector": {
+    "prefix": "bmathVec",
+    "body": [
+      "[${1:item1}, ${2:item2}, ${3:item3}]",
+      "$0"
+    ],
+    "description": "Create a new BMath vector"
+  },
+  "BMath Sequence": {
+    "prefix": "bmathSeq",
+    "body": [
+      "sequence(${1:length}, |${2:item}| {",
+      "    $0",
+      "})"
+    ],
+    "description": "Create a new BMath sequence"
+  }
+}

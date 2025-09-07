@@ -1,7 +1,10 @@
 import value
 import std/complex
 
-import ../types
+import position
+import number
+from core import Token, TokenKind
+export Token, TokenKind
 
 template newToken*(the_value: typed, pos: Position): Token =
   when the_value is SomeInteger:
@@ -14,7 +17,7 @@ template newToken*(the_value: typed, pos: Position): Token =
     Token(kind: tkNumber, value: newValue(the_value), position: pos)
   elif the_value is string:
     Token(kind: tkString, value: newValue(the_value), position: pos)
-  elif the_value is Type:
+  elif the_value is BMathType:
     Token(kind: tkType, value: newValue(the_value), position: pos)
   else:
     {.error: "Unsupported type for Token".}
@@ -76,6 +79,8 @@ proc `$`*(token: Token): string =
     "']'"
   of tkLine:
     "'|'"
+  of tkFatArrow:
+    "'=>'"
   # Literals and identifiers
   of tkNumber:
     $token.value

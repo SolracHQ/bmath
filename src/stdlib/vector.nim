@@ -1,9 +1,7 @@
 ## vector.nim
 
-import ../types/[value, number, vector]
-import ../types
+import ../types/[value, number, vector, errors]
 import arithmetic
-import ../errors
 
 proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
   ## Create a vector of specified length where each element is calculated by applying 

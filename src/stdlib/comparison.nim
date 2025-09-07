@@ -1,9 +1,7 @@
 ## comparison.nim
 
 import utils, sequence
-import ../types/[value, number, vector, bm_types]
-import ../types
-import ../errors
+import ../types/[value, number, vector, bm_types, errors]
 
 proc `<`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Compare two values for less than

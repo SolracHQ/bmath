@@ -1,9 +1,7 @@
 ## assertions.nim
 ## Standard library functions for testing and validation
 
-import ../types/[value, number, bm_types]
-import ../types
-import ../errors
+import ../types/[value, number, bm_types, errors]
 from types import getType
 from comparison import `==`, `<`, `>`
 

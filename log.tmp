@@ -1,0 +1,196 @@
+2025-08-15T15:11:33-05:00 - Received raw message: {"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///home/solrac/workdir/bmath/bmath_test/test_arithmetic.bm","languageId":"bmath","version":1,"text":"# Arithmetic Operations Tests\n# ==========================\n# Tests for arithmetic operations and mathematical functions\n\n\"Testing Arithmetic Operations...\"\n\n# [1] Basic Arithmetic Operations\n\"1. Basic Arithmetic Operations\"\nassert_eq(5 + 3, 8, \"Addition\", \"✓ Addition passed\")\nassert_eq(10 - 4, 6, \"Subtraction\", \"✓ Subtraction passed\")\nassert_eq(7 * 6, 42, \"Multiplication\", \"✓ Multiplication passed\")\nassert_eq(20 / 5, 4.0, \"Division\", \"✓ Division passed\")\nassert_eq(17 % 5, 2, \"Modulus\", \"✓ Modulus passed\")\nassert_eq(2 ^ 3, 8, \"Exponentiation\", \"✓ Exponentiation passed\")\n\n\"✓ Basic arithmetic tests passed\"\n\n# [2] Order of Operations\n\"2. Order of Operations\"\nassert_eq(2 + 3 * 4, 14, \"Multiplication before addition\", \"✓ Order test passed\")\nassert_eq((2 + 3) * 4, 20, \"Parentheses force order\", \"✓ Parentheses order passed\")\nassert_eq(2 ^ 3 * 4, 32, \"Exponentiation before multiplication\", \"✓ Exponentiation order passed\")\nassert_eq((2 + 3) ^ 2, 25, \"Parentheses with exponentiation\", \"✓ Parentheses exponentiation passed\")\n\n\"✓ Order of operations tests passed\"\n\n# [3] Type Promotion\n\"3. Type Promotion\"\nassert_eq(5 + 3.5, 8.5, \"Integer + Float = Float\", \"✓ Type promotion addition passed\")\nassert_eq(10 * 2.5, 25.0, \"Integer * Float = Float\", \"✓ Type promotion multiplication passed\")\nassert_eq(8 / 2, 4.0, \"Integer / Integer = Float\", \"✓ Type promotion division passed\")\n\n\"✓ Type promotion tests passed\"\n\n# [4] Mathematical Functions\n\"4. Mathematical Functions\"\nassert_eq(abs(-42), 42, \"Absolute value of negative number\", \"✓ Abs negative passed\")\nassert_eq(abs(42), 42, \"Absolute value of positive number\", \"✓ Abs positive passed\")\nassert_eq(abs(0), 0, \"Absolute value of zero\", \"✓ Abs zero passed\")\n\nassert_eq(sqrt(16), 4.0, \"Square root\", \"✓ Sqrt 16 passed\")\nassert_eq(sqrt(25), 5.0, \"Square root of 25\", \"✓ Sqrt 25 passed\")\n\nassert_eq(pow(2, 3), 8, \"Power function\", \"✓ Pow 2^3 passed\")\nassert_eq(pow(5, 2), 25, \"Power function 5^2\", \"✓ Pow 5^2 passed\")\n\n\"✓ Mathematical functions tests passed\"\n\n# [5] Rounding Functions\n\"5. Rounding Functions\"\nassert_eq(floor(3.8), 3, \"Floor function\", \"✓ Floor positive passed\")\nassert_eq(floor(-2.3), -3, \"Floor of negative number\", \"✓ Floor negative passed\")\n\nassert_eq(ceil(3.2), 4, \"Ceiling function\", \"✓ Ceil positive passed\")\nassert_eq(ceil(-2.7), -2, \"Ceiling of negative number\", \"✓ Ceil negative passed\")\n\nassert_eq(round(3.5), 4, \"Round function\", \"✓ Round up passed\")\nassert_eq(round(3.4), 3, \"Round down\", \"✓ Round down passed\")\nassert_eq(round(-2.6), -3, \"Round negative number\", \"✓ Round negative passed\")\n\n\"✓ Rounding functions tests passed\"\n\n# [6] Complex Number Arithmetic\n\"6. Complex Number Tests\"\ncomplex1 = 3 + 4i\ncomplex2 = 2 - 3i\n\n# Test complex number creation\nassert_eq(complex1, 3 + 4i, \"Complex number creation\", \"✓ Complex creation passed\")\nassert_eq(complex2, 2 - 3i, \"Complex number with negative imaginary\", \"✓ Complex negative passed\")\n\n# Test complex arithmetic (if supported)\n# complexSum = complex1 + complex2\n# assert_eq(complexSum, 5 + 1i, \"Complex addition\")\n\n\"✓ Complex number tests passed\"\n\n# [7] Constants Tests\n\"7. Mathematical Constants\"\n# Test that constants exist and have reasonable values\nassert_gt(pi, 3.14, \"Pi is approximately 3.14159...\", \"✓ Pi lower bound passed\")\nassert_lt(pi, 3.15, \"Pi is less than 3.15\", \"✓ Pi upper bound passed\")\n\nassert_gt(e, 2.7, \"e is approximately 2.718...\", \"✓ e lower bound passed\")\nassert_lt(e, 2.8, \"e is less than 2.8\", \"✓ e upper bound passed\")\n\n\"✓ Mathematical constants tests passed\"\n\n# [8] Error Cases\n\"8. Error Handling Tests\"\n# Test division by zero\nassert_error(|| 10 / 0, \"Division by zero should raise an error\", \"Division by zero error detected\")\nassert_error(|| 5.5 / 0, \"Float division by zero should raise an error\", \"Float division by zero error detected\")\n\n# Test modulo by zero\nassert_error(|| 10 % 0, \"Modulo by zero should raise an error\", \"Modulo by zero error detected\")\n\n# Test invalid mathematical operations\nassert_error(|| sqrt(-1), \"Square root of negative number should raise an error (if not returning complex)\", \"Sqrt negative error detected\")\n\n# Test power operations that might overflow or be invalid\nassert_error(|| 0 ^ 0, \"Zero to the power of zero should raise an error\", \"Zero power error detected\")\n\n# Test invalid function calls\nassert_error(|| abs(), \"Function call with missing arguments should raise an error\", \"Abs missing args error detected\")\nassert_error(|| pow(2), \"Function call with insufficient arguments should raise an error\", \"Pow missing args error detected\")\nassert_error(|| 10 / 0, \"Division by zero should raise an error\", \"✓ Division by zero error detected\")\nassert_error(|| 5.5 / 0, \"Float division by zero should raise an error\", \"✓ Float division by zero error detected\")\n\nassert_error(|| 10 % 0, \"Modulo by zero should raise an error\", \"✓ Modulo by zero error detected\")\n\nassert_error(|| sqrt(-1), \"Square root of negative number should raise an error (if not returning complex)\", \"✓ Sqrt negative error detected\")\n\nassert_error(|| 0 ^ 0, \"Zero to the power of zero should raise an error\", \"Zero power error detected\")\n\nassert_error(|| abs(), \"Function call with missing arguments should raise an error\", \"Abs missing args error detected\")\nassert_error(|| pow(2), \"Function call with insufficient arguments should raise an error\", \"Pow missing args error detected\")\n\n\"✓ Error handling tests passed\"\n\n\"All arithmetic operation tests completed!\"\n"}}}
+2025-08-15T15:11:33-05:00 - handleRequest: method=textDocument/didOpen
+2025-08-15T15:11:33-05:00 - analyzeText: starting for file:///home/solrac/workdir/bmath/bmath_test/test_arithmetic.bm (len=5522)
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=5 col=35
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=8 col=33
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=9 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=10 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=11 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=12 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=13 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=14 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=16 col=36
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=19 col=25
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 14 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=20 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 16 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=21 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 14 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=22 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 16 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=23 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=25 col=39
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=28 col=20
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=29 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=30 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=31 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=33 col=34
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=36 col=28
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 14 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=37 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=38 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=39 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=41 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=42 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 15 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=44 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 15 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=45 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=47 col=42
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=50 col=24
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=51 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 15 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=52 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=54 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 15 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=55 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=57 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=58 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 15 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=59 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=61 col=38
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=64 col=26
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 5 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=65 col=1
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 5 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=66 col=1
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=69 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=70 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=76 col=34
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=79 col=28
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 10 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=81 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 10 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=82 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 10 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=84 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 10 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=85 col=10
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=87 col=42
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=90 col=26
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=92 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=93 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=96 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 14 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=99 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=102 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=105 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=106 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=107 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=108 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=110 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 14 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=112 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=114 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 12 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=116 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 13 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=117 col=13
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=119 col=34
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 0 tokens
+2025-08-15T15:11:33-05:00 - tokenizeExpression returned 1 tokens
+2025-08-15T15:11:33-05:00 - parse succeeded at line=121 col=44
+2025-08-15T15:11:33-05:00 - analyzeText: publishing 0 diagnostics for file:///home/solrac/workdir/bmath/bmath_test/test_arithmetic.bm
+2025-08-15T15:11:33-05:00 - Waiting for LSP message...
+2025-08-15T15:11:40-05:00 - Received raw message: {"jsonrpc":"2.0","id":1,"method":"shutdown"}
+2025-08-15T15:11:40-05:00 - handleRequest: method=shutdown
+2025-08-15T15:11:40-05:00 - Waiting for LSP message...

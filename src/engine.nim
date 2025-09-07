@@ -13,9 +13,7 @@ import
   pipeline/parser,
   pipeline/interpreter/interpreter,
   logging,
-  types/value,
-  types,
-  errors
+  types/[value, errors]
 
 when defined(debug):
   import types/expression

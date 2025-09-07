@@ -7,3 +7,21 @@ tests/*
 /.vscode
 nimble.develop
 nimble.paths
+
+# Node / JavaScript / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnpm-debug.log*
+.pnp/
+.pnp.js
+.yarn/
+
+# VS Code extension build/output inside this repo
+/vscode-ext/node_modules/
+/vscode-ext/out/
+/vscode-ext/.webpack/
