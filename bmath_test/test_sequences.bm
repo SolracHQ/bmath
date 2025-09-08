@@ -8,7 +8,7 @@
 "1. Basic Sequence Creation"
 # Finite sequence with function
 finiteSeq = seq(5, |i| i * 2)
-assert_eq(type(finiteSeq), sequence, "Finite sequence type", "✓ Finite sequence type")
+assert_eq(type(finiteSeq), Seq, "Finite sequence type", "✓ Finite sequence type")
 
 # Collect to test content
 collected = finiteSeq -> collect
@@ -16,7 +16,7 @@ assert_eq(collected, [0, 2, 4, 6, 8], "Finite sequence content", "✓ Finite seq
 
 # Sequence from vector
 vectorSeq = seq([10, 20, 30])
-assert_eq(type(vectorSeq), sequence, "Vector to sequence type", "✓ Vector to sequence type")
+assert_eq(type(vectorSeq), Seq, "Vector to sequence type", "✓ Vector to sequence type")
 collectedVec = vectorSeq -> collect
 assert_eq(collectedVec, [10, 20, 30], "Vector sequence content", "✓ Vector sequence content")
 
@@ -31,8 +31,8 @@ assert_eq(constCollected, [42, 42, 42], "Constant sequence", "✓ Constant seque
 "2. Sequence Access Operations"
 testSeq = seq(10, |i| i + 1)  # [1, 2, 3, ..., 10]
 
-# Test hasNext and next
-assert_eq(testSeq->hasNext, true, "Sequence has next element", "✓ Sequence has next element")
+# Test has_next and next
+assert_eq(testSeq->has_next, true, "Sequence has next element", "✓ Sequence has next element")
 firstElement = testSeq->next
 assert_eq(firstElement, 1, "First element from sequence", "✓ First element from sequence")
 
@@ -48,14 +48,14 @@ assert_eq(skippedElement->next, 5, "Skip operation result", "✓ Skip operation 
 # Map operation
 numbers = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
 doubled = numbers->map(|x| x * 2)
-assert_eq(type(doubled), sequence, "Map returns sequence", "✓ Map returns sequence")
+assert_eq(type(doubled), Seq, "Map returns sequence", "✓ Map returns sequence")
 doubledCollected = doubled->collect
 assert_eq(doubledCollected, [2, 4, 6, 8, 10], "Map transformation", "✓ Map transformation")
 
 # Filter operation
 numbers = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
 filtered = numbers->filter(|x| x % 2 == 0)
-assert_eq(type(filtered), sequence, "Filter returns sequence", "✓ Filter returns sequence")
+assert_eq(type(filtered), Seq, "Filter returns sequence", "✓ Filter returns sequence")
 filteredCollected = filtered->collect
 assert_eq(filteredCollected, [2, 4], "Filter even numbers", "✓ Filter even numbers")
 
@@ -85,7 +85,7 @@ assert_eq(product, 120, "Sequence reduce (product = 5!)")
 # Take operation
 longSeq = seq(100, |i| i * i)  # Squares: [0, 1, 4, 9, 16, ...]
 firstFive = longSeq->take(5)
-assert_eq(type(firstFive), sequence, "Take returns sequence")
+assert_eq(type(firstFive), Seq, "Take returns sequence")
 takenCollected = firstFive->collect
 assert_eq(takenCollected, [0, 1, 4, 9, 16], "Take first 5 squares")
 
@@ -141,7 +141,7 @@ seq2 = seq(3, |i| (i + 1) * 10)  # [10, 20, 30]
 
 # Zip sequences
 zipped = seq1->zip(seq2)
-assert_eq(type(zipped), sequence, "Zip returns sequence")
+assert_eq(type(zipped), Seq, "Zip returns sequence")
 zippedCollected = zipped->collect
 # Note: Exact format depends on implementation - might be pairs or flattened
 # This test may need adjustment based on actual zip behavior

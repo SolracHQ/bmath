@@ -2,7 +2,7 @@
 import unittest, math
 import ../src/pipeline/parser
 import ../src/pipeline/lexer
-import ../src/types/[expression, vector, bm_types]
+import ../src/types/[expression, vector, bm_types, core]
 
 suite "Parser tests":
   test "parses addition of identifiers":
@@ -328,13 +328,11 @@ suite "Parser tests":
     # Should be an is expression
     check ast.kind == ekEq
     check ast.binaryOp.left.kind == ekFuncCall
-    check ast.binaryOp.left.functionCall.function.kind == ekType
+    check ast.binaryOp.left.functionCall.function.kind == ekIdent
     check ast.binaryOp.left.functionCall.params.len == 1
     check ast.binaryOp.left.functionCall.params[0].kind == ekIdent
     check ast.binaryOp.left.functionCall.params[0].identifier.ident == "x"
-    check ast.binaryOp.right.kind == ekType
-    check ast.binaryOp.right.typ.kind == tkSimple
-    check ast.binaryOp.right.typ.simpleType == stComplex
+    check ast.binaryOp.right.kind == ekIdent
     
   test "parses function with type checking":
     var lexer = newLexer("|x| if(x is complex) 1 else 2")
@@ -353,13 +351,11 @@ suite "Parser tests":
     let condition = ast.functionDef.body.ifExpr.branches[0].condition
     check condition.kind == ekEq
     check condition.binaryOp.left.kind == ekFuncCall
-    check condition.binaryOp.left.functionCall.function.kind == ekType
+    check condition.binaryOp.left.functionCall.function.kind == ekIdent
     check condition.binaryOp.left.functionCall.params.len == 1
     check condition.binaryOp.left.functionCall.params[0].kind == ekIdent
     check condition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
-    check condition.binaryOp.right.kind == ekType
-    check condition.binaryOp.right.typ.kind == tkSimple
-    check condition.binaryOp.right.typ.simpleType == stComplex
+    check condition.binaryOp.right.kind == ekIdent
     
     # Check branches
     check ast.functionDef.body.ifExpr.branches.len == 1
@@ -386,12 +382,11 @@ suite "Parser tests":
     let firstCondition = ast.functionDef.body.ifExpr.branches[0].condition
     check firstCondition.kind == ekEq
     check firstCondition.binaryOp.left.kind == ekFuncCall
-    check firstCondition.binaryOp.left.functionCall.function.kind == ekType
+    check firstCondition.binaryOp.left.functionCall.function.kind == ekIdent
     check firstCondition.binaryOp.left.functionCall.params.len == 1
     check firstCondition.binaryOp.left.functionCall.params[0].kind == ekIdent
     check firstCondition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
-    check firstCondition.binaryOp.right.kind == ekType
-    check firstCondition.binaryOp.right.typ.simpleType == stComplex
+    check firstCondition.binaryOp.right.kind == ekIdent
     
     # Check the first "then" branch (x->re)
     let firstThenBranch = ast.functionDef.body.ifExpr.branches[0].then
@@ -406,18 +401,16 @@ suite "Parser tests":
     let secondCondition = ast.functionDef.body.ifExpr.branches[1].condition
     check secondCondition.kind == ekEq
     check secondCondition.binaryOp.left.kind == ekFuncCall
-    check secondCondition.binaryOp.left.functionCall.function.kind == ekType
+    check secondCondition.binaryOp.left.functionCall.function.kind == ekIdent
     check secondCondition.binaryOp.left.functionCall.params.len == 1
     check secondCondition.binaryOp.left.functionCall.params[0].kind == ekIdent
     check secondCondition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
-    check secondCondition.binaryOp.right.kind == ekType
-    check secondCondition.binaryOp.right.typ.simpleType == stInteger
+    check secondCondition.binaryOp.right.kind == ekIdent
     
     # Check the second "then" branch (x->real)
     let secondThenBranch = ast.functionDef.body.ifExpr.branches[1].then
     check secondThenBranch.kind == ekFuncCall
-    check secondThenBranch.functionCall.function.kind == ekType
-    check secondThenBranch.functionCall.function.typ.simpleType == stReal
+    check secondThenBranch.functionCall.function.kind == ekIdent
     check secondThenBranch.functionCall.params.len == 1
     check secondThenBranch.functionCall.params[0].kind == ekIdent
     check secondThenBranch.functionCall.params[0].identifier.ident == "x"

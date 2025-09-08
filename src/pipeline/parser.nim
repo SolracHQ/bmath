@@ -554,7 +554,7 @@ proc parseEquality*(parser: var Parser): Expression =
     if prev.kind == tkIs:
       # we need rap left in a get_type call and compare equal to right
       let getTypeCall = newFuncCallExpr(
-        prev.position, newIdentExpr(prev.position, "get_type"), @[result]
+        prev.position, newIdentExpr(prev.position, "type"), @[result]
       )
       result = newBinaryExpr(prev.position, ekEq, getTypeCall, right)
       continue

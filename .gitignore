@@ -25,3 +25,4 @@ pnpm-lock.yaml
 /vscode-ext/node_modules/
 /vscode-ext/out/
 /vscode-ext/.webpack/
+*.vsix

@@ -57,7 +57,7 @@ const TYPES: Table[string, BMathType] = {
   "Complex": stComplex.newType,
   "Bool": stBoolean.newType,
   "Vec": stVector.newType,
-  "Sequence": stSequence.newType,
+  "Seq": stSequence.newType,
   "Function": stFunction.newType,
   "String": stString.newType,
   "Type": stType.newType,

@@ -101,12 +101,12 @@ binomialExample = binomial(7, 3)  # Expected: 35
 # [8] Working with Vectors in Advanced Math
 # --------------------------------------
 # Calculate the magnitude (length) of a vector
-magnitude = |vector_| sqrt(vector_->map(|x| x^2)->reduce(0, |a, b| a + b))
+magnitude = |vector| sqrt(vector->map(|x| x^2)->reduce(0, |a, b| a + b))
 magExample = magnitude([3, 4])  # Expected: 5.0
 
 # Normalize a vector (make it unit length)
-normalize = |vector_| {
+normalize = |vector| {
   mag = magnitude(vector)
-  vector_->map(|x| x / mag)
+  vector->map(|x| x / mag)
 }
 normExample = normalize([3, 4])  # Expected: [0.6, 0.8]

@@ -78,7 +78,7 @@ let global = Environment(
         kind: vkNativeFunc, nativeFn: NativeFn(callable: try_catch, signatures: @[])
       ),
       "print": native(print(value)),
-      "get_type": native(extractType(value)),
+      "type": native(extractType(value)),
 
       # Mathematical Constants
       "pi": newValue(PI),

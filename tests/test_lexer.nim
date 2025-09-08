@@ -196,7 +196,7 @@ suite "Lexer tests":
       discard lex.next() # parse number
 
   test "Tokenizing type identifiers":
-    var l = newLexer("integer real complex boolean vector sequence function type any number")
+    var l = newLexer("Int Real Complex Bool Vec Sequence Function Type Any Number")
     
     # Check each type token
     let tok1 = l.next()
@@ -240,15 +240,15 @@ suite "Lexer tests":
     check tok10.value.typ === NumberType
   
   test "Tokenizing 'is' operator":
-    var l = newLexer("x is integer")
-    
+    var l = newLexer("x is Int")
+
     let tok1 = l.next()
     check tok1.kind == tkIdent
     check tok1.name == "x"
-    
+
     let tok2 = l.next()
     check tok2.kind == tkIs
-    
+
     let tok3 = l.next()
     check tok3.kind == tkType
     check tok3.value.typ === stInteger.newType
