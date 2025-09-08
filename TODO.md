@@ -70,7 +70,7 @@
 
 - [ ] Character and string syntax sugar
   - [ ] Add character literals (`'a'` → `97`) representing ASCII values
-  - [ ] Add string literals (`"abc"` → `[97, 98, 99]`) creating vectors of ASCII values
+  - [x] Add string literals (`"abc"`) and a `string` type (strings interoperate with vectors via conversion helpers)
   - [ ] Ensure compatibility with math-oriented language philosophy
   - [ ] Add appropriate standard library functions for ASCII manipulation
 
@@ -80,9 +80,9 @@
   - [ ] Implement in-line editing capabilities
   - [ ] Add arrow key navigation within current expression
   - [ ] Support cursor positioning and text manipulation
+
 - [ ] Add expression history functionality
   - [ ] Store previous expressions in memory
   - [ ] Navigate history with up/down arrow keys
   - [ ] Implement history search (Ctrl+R)
   - [ ] Allow recalling, editing, and re-executing past expressions
-

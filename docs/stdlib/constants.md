@@ -2,32 +2,68 @@
 
 This section covers built-in mathematical constants available in the language.
 
-- **pi**  
   The mathematical constant π (pi), representing the ratio of a circle's circumference to its diameter.  
   **Value:** Approximately 3.14159265358979323846  
-  **Example:** 
+  **Example:**
+
   ```bm
   circumference = 2 * pi * radius
   sin(pi/2)  # Returns 1
   ```
 
-- **e**  
+ **pi**  
+  The mathematical constant π (pi), representing the ratio of a circle's circumference to its diameter.  
+  **Value:** Approximately 3.14159265358979323846  
+  **Example:**
+
+  ```bm
+  circumference = 2 * pi * radius
+  sin(pi/2)  # Returns 1
+  ```
+
+  **Type:** Real
+
   The mathematical constant e (Euler's number), which is the base of natural logarithms.  
   **Value:** Approximately 2.71828182845904523536  
-  **Example:** 
+  **Example:**
+
   ```bm
   compound_interest = principal * e^(rate * time)
   log(e, e)  # Returns 1
   ```
 
-- **i**  
+ **e**  
+  The mathematical constant e (Euler's number), which is the base of natural logarithms.  
+  **Value:** Approximately 2.71828182845904523536  
+  **Example:**
+
+  ```bm
+  compound_interest = principal * e^(rate * time)
+  log(e, e)  # Returns 1
+  ```
+
+  **Type:** Real
+
   The imaginary unit, defined as the square root of -1.  
   **Value:** Complex number with real part 0 and imaginary part 1  
-  **Example:** 
+  **Example:**
+
   ```bm
   z = 3 + i  # A complex number
   i^2  # Returns -1
   ```
+
+ **i**  
+  The imaginary unit, defined as the square root of -1.  
+  **Value:** Complex number with real part 0 and imaginary part 1  
+  **Example:**
+
+  ```bm
+  z = 3 + i  # A Complex value
+  i^2  # Returns -1
+  ```
+
+  **Type:** Complex
 
 ## Using Constants in Expressions
 

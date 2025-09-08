@@ -76,7 +76,7 @@ print(z)
 
 ### Supported Types
 
-- `integer`, `real`, `complex`, `boolean`, `vector`, `sequence`, `function`, `type`, `any`
+- `Int`, `Real`, `Complex`, `Bool`, `Vec`, `Seq`, `Function`, `Type`, `Any`
 
 ### Type Checking and Future Plans
 
@@ -86,37 +86,37 @@ print(z)
 
 - **Type Checking:**
 
-   ```bm
-   type(5)         # Returns: integer
-   type([1,2,3])   # Returns: vector
-   value is real   # Returns: true if value is a real number
-   ```
+  ```bm
+  type(5)         # Returns: Int
+  type([1,2,3])   # Returns: Vec
+  value is Real   # Returns: true if value is a Real number
+  ```
 
 - **Type Conversion (Casting):**
    You can cast values using either the arrow operator or function-style:
 
-   ```bm
-   42 -> real       # Converts integer 42 to real (42.0)
-   real(42)         # Same as above
-   [1,2,3] -> sequence  # Converts a vector to a sequence
-   sequence([1,2,3])    # Same as above
-   ```
+  ```bm
+  42 -> Real       # Converts Int 42 to Real (42.0)
+  Real(42)         # Same as above
+  [1,2,3] -> Seq  # Converts a Vec to a Seq
+  Seq([1,2,3])    # Same as above
+  ```
 
 - **Type Annotations (Optional):**
    You can annotate function parameters with types, but it's not required:
 
-   ```bm
-   add = |a: integer, b: integer| a + b
-   ```
+  ```bm
+  add = |a: Int, b: Int| a + b
+  ```
 
 - **'is' Keyword:**
    Use `is` to check if a value matches a type:
 
-   ```bm
-   x = 3.14
-   x is real      # true
-   x is integer   # false
-   ```
+  ```bm
+  x = 3.14
+  x is Real      # true
+  x is Int       # false
+  ```
 
  Type features make your code more expressive and will enable better error checking in the future.
 
@@ -128,12 +128,12 @@ print(z)
 |----------|----------------------------|-------------------|------------------------|--------------------------------|
 | +        | Addition                   | 3 + 4             | Adds numbers           | Element-wise addition          |
 | -        | Subtraction/Negation       | 10 - 5, -x        | Subtracts/negates      | Element-wise subtraction       |
-| *        | Multiplication             | 2 * 3             | Multiplies numbers     | Scalar-vector or element-wise  |
-| /        | Division                   | 8 / 2             | Always returns float    | Scalar-vector division         |
-| %        | Modulo                     | 17 % 5            | Remainder (int/float)  | Element-wise modulo            |
+| *        | Multiplication             | 2 * 3             | Multiplies numbers     | Scalar-Vec or element-wise     |
+| /        | Division                   | 8 / 2             | Always returns Real    | Scalar-Vec division            |
+| %        | Modulo                     | 17 % 5            | Remainder (Int/Real)   | Element-wise modulo            |
 | ^        | Exponentiation             | 2 ^ 3              | Raises to power        | Element-wise power             |
 
-#### Examples
+#### Arithmetic Examples
 
 ```bm
 [1, 2, 3] + [4, 5, 6]   # [5, 7, 9]
@@ -145,18 +145,18 @@ print(z)
 
 | Operator | Description      | Example      | Notes |
 |----------|------------------|-------------|-------|
-| ==       | Equality         | 3 == 3.0    | Type promotion applies |
+| ==       | Equality         | 3 == 3.0    | Type promotion applies (Int/Real/Complex) |
 | !=       | Inequality       | 3 != 4      |       |
-| <, <=    | Less/Equal       | 2 < 5       | Complex numbers not allowed |
-| >, >=    | Greater/Equal    | 5 >= 5      | Complex numbers not allowed |
+| <, <=    | Less/Equal       | 2 < 5       | Complex values not allowed |
+| >, >=    | Greater/Equal    | 5 >= 5      | Complex values not allowed |
 
 ### Logical Operators
 
 | Operator | Description      | Example      | Accepted Types |
 |----------|------------------|-------------|---------------|
-| !        | Not              | !true       | Boolean       |
-| &        | And              | true & false| Boolean       |
-| \|        | Or               | true \| false| Boolean       |
+| !        | Not              | !true       | Bool          |
+| &        | And              | true & false| Bool          |
+| \|        | Or               | true \| false| Bool          |
 
 ### Built-in Functions
 
@@ -187,7 +187,7 @@ sqrt([4, 9, 16])         # [2, 3, 4]
 abs([-1, -2, 3])         # [1, 2, 3]
 min([5, 2, 8])           # 2
 max(seq(10, |i| i^2))    # 81
-print([1,2,3])           # prints vector
+print([1,2,3])           # prints Vec
 ```
 
 ---

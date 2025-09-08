@@ -155,7 +155,8 @@ proc parseFunction(parser: var Parser): Expression =
       var typ = AnyType
       if parser.match({tkColon}):
         if not parser.match({tkType}):
-          raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+          raise
+            newMissingTokenError("Expected type after ':'", parser.previous().position)
         typ = parser.previous().value.typ
       params.add(Parameter(name: name, typ: typ))
     elif parser.match({tkLine}):
@@ -171,7 +172,9 @@ proc parseFunction(parser: var Parser): Expression =
       raise newMissingTokenError("Expected type after '=>'", parser.previous().position)
     returnType = parser.previous().value.typ
 
-  return newFuncExpr(parser.previous().position, params, parser.parseExpression(), returnType)
+  return newFuncExpr(
+    parser.previous().position, params, parser.parseExpression(), returnType
+  )
 
 proc parseVector*(parser: var Parser): Expression =
   ## Parses vector literals
@@ -553,12 +556,10 @@ proc parseEquality*(parser: var Parser): Expression =
 
     if prev.kind == tkIs:
       # we need rap left in a get_type call and compare equal to right
-      let getTypeCall = newFuncCallExpr(
-        prev.position, newIdentExpr(prev.position, "type"), @[result]
-      )
+      let getTypeCall =
+        newFuncCallExpr(prev.position, newIdentExpr(prev.position, "type"), @[result])
       result = newBinaryExpr(prev.position, ekEq, getTypeCall, right)
       continue
-        
 
     # Optimize for numbers and booleans
     if (

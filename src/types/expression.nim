@@ -73,7 +73,10 @@ proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.in
     Expression(kind: ekBlock, position: pos, blockExpr: Block(expressions: expressions))
 
 proc newFuncExpr*(
-    pos: Position, params: seq[Parameter], body: Expression, returnType: BMathType = AnyType
+    pos: Position,
+    params: seq[Parameter],
+    body: Expression,
+    returnType: BMathType = AnyType,
 ): Expression {.inline.} =
   result = Expression(
     kind: ekFuncDef,

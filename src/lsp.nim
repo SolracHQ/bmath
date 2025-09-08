@@ -52,17 +52,19 @@ proc sendJson(node: JsonNode) =
 
 proc posToRange(p: Position): JsonNode =
   ## Convert internal Position (1-based) to LSP range (0-based)
-  result = %*{
-    "start": {"line": p.line - 1, "character": max(0, p.column - 1)},
-    "end":   {"line": p.line - 1, "character": max(0, p.column)}
-  }
+  result =
+    %*{
+      "start": {"line": p.line - 1, "character": max(0, p.column - 1)},
+      "end": {"line": p.line - 1, "character": max(0, p.column)},
+    }
 
 proc publishDiagnostics(uri: string, diagnostics: seq[JsonNode]) =
-  let notif = %*{
-    "jsonrpc": "2.0",
-    "method": "textDocument/publishDiagnostics",
-    "params": {"uri": uri, "diagnostics": diagnostics}
-  }
+  let notif =
+    %*{
+      "jsonrpc": "2.0",
+      "method": "textDocument/publishDiagnostics",
+      "params": {"uri": uri, "diagnostics": diagnostics},
+    }
   sendJson(notif)
 
 proc writeLog(msg: string) =
@@ -77,12 +79,15 @@ proc writeLog(msg: string) =
     discard
 
 proc makeDiagnostic(msg: string, p: Position): JsonNode =
-  result = %*{
-    "range": {"start": {"line": p.line - 1, "character": max(0, p.column - 1)},
-               "end":   {"line": p.line - 1, "character": max(0, p.column)}},
-    "severity": 1,
-    "message": msg
-  }
+  result =
+    %*{
+      "range": {
+        "start": {"line": p.line - 1, "character": max(0, p.column - 1)},
+        "end": {"line": p.line - 1, "character": max(0, p.column)},
+      },
+      "severity": 1,
+      "message": msg,
+    }
 
 proc analyzeText(uri: string, text: string) =
   ## Tokenize and parse the given text and publish diagnostics (empty if ok).
@@ -103,7 +108,8 @@ proc analyzeText(uri: string, text: string) =
       if tokens.len == 0:
         continue
       # collect tokens for the whole document
-      for t in tokens: tokensAcc.add(t)
+      for t in tokens:
+        tokensAcc.add(t)
       let ast = parse(tokens)
       # Use the expression position (if present) to optionally attach info-level diagnostics
       if ast != nil:
@@ -141,10 +147,14 @@ proc findTokenHover(uri: string, text: string, line0: int, char0: int): string =
       var lx = newLexer(text)
       while not lx.atEnd:
         let toks = lx.tokenizeExpression()
-        if toks.len == 0: continue
-        for t in toks: allTokens.add(t)
+        if toks.len == 0:
+          continue
+        for t in toks:
+          allTokens.add(t)
 
-    writeLog("findTokenHover: tokens=" & $allTokens.len & " at " & $line0 & "," & $char0)
+    writeLog(
+      "findTokenHover: tokens=" & $allTokens.len & " at " & $line0 & "," & $char0
+    )
     var bestIndex = -1
     for i in 0 ..< allTokens.len:
       let t = allTokens[i]
@@ -161,19 +171,24 @@ proc findTokenHover(uri: string, text: string, line0: int, char0: int): string =
       if docASTs.hasKey(uri):
         let asts = docASTs[uri]
         for a in asts:
-          if a.position.line == best.position.line and a.position.column == best.position.column:
+          if a.position.line == best.position.line and
+              a.position.column == best.position.column:
             info.add(" (AST: " & $(a.kind) & ")")
             break
       return info
     of tkNumber:
       if best.value.kind == vkNumber:
         case best.value.number.kind
-        of nkInteger: return "integer literal: " & $best.value.number.integer
-        of nkReal: return "real literal: " & $best.value.number.real
-        of nkComplex: return "complex literal"
+        of nkInteger:
+          return "integer literal: " & $best.value.number.integer
+        of nkReal:
+          return "real literal: " & $best.value.number.real
+        of nkComplex:
+          return "complex literal"
       else:
         return "number literal"
-    of tkString:return "string literal: " & best.value.content
+    of tkString:
+      return "string literal: " & best.value.content
     else:
       return $best.kind
   except Exception:
@@ -191,11 +206,12 @@ proc handleRequest(j: JsonNode) =
       let id = j["id"]
       # Log destination: stderr (writeLog writes to stderr)
       writeLog("Logging initialized to stderr")
-      let resp = %*{
-        "jsonrpc": "2.0",
-        "id": id,
-        "result": {"capabilities": {"textDocumentSync": 1, "hoverProvider": true}}
-      }
+      let resp =
+        %*{
+          "jsonrpc": "2.0",
+          "id": id,
+          "result": {"capabilities": {"textDocumentSync": 1, "hoverProvider": true}},
+        }
       sendJson(resp)
     elif m == "textDocument/didOpen":
       let uri = j["params"]["textDocument"]["uri"].getStr()
@@ -224,18 +240,21 @@ proc handleRequest(j: JsonNode) =
     else:
       try:
         let path = uri.replace("file://", "")
-        if fileExists(path): text = readFile(path)
-      except: discard
+        if fileExists(path):
+          text = readFile(path)
+      except:
+        discard
     var contents = ""
     if text.len > 0:
       contents = findTokenHover(uri, text, line, character)
     if contents.len == 0:
       contents = "(no hover information)"
-    let resp = %*{
-      "jsonrpc": "2.0",
-      "id": id,
-      "result": {"contents": {"kind": "plaintext", "value": contents}}
-    }
+    let resp =
+      %*{
+        "jsonrpc": "2.0",
+        "id": id,
+        "result": {"contents": {"kind": "plaintext", "value": contents}},
+      }
     sendJson(resp)
 
 when isMainModule:
@@ -244,7 +263,8 @@ when isMainModule:
     writeLog("Waiting for LSP message...")
     let raw = readMessageRaw()
     writeLog("Received raw message: " & raw)
-    if raw.len == 0: continue
+    if raw.len == 0:
+      continue
     var ok = true
     var j: JsonNode
     try:

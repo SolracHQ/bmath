@@ -5,19 +5,21 @@ BMath features a rich type system that supports both simple types and type compo
 ## Type Hierarchy
 
 ### Simple Types
-- `integer`: Whole number values (e.g., `42`, `-7`)
-- `real`: Floating-point numbers (e.g., `3.14`, `-0.5`)
-- `complex`: Complex numbers with real and imaginary components (e.g., `3i`, `4+2i`)
-- `boolean`: Logic values (`true` or `false`)
-- `vector`: Eager collections of values (e.g., `[1, 2, 3]`)
-- `sequence`: Lazy collections of values 
-- `function`: First-class callable values
-- `type`: Type values themselves
+
+- `Int`: Whole number values (e.g., `42`, `-7`)
+- `Real`: Floating-point numbers (e.g., `3.14`, `-0.5`)
+- `Complex`: Complex numbers with real and imaginary components (e.g., `3i`, `4+2i`)
+- `Bool`: Logic values (`true` or `false`)
+- `Vec`: Eager collections of values (e.g., `[1, 2, 3]`)
+- `Seq`: Lazy collections of values
+- `Function`: First-class callable values
+- `Type`: Type values themselves
 
 ### Special Types
-- `any`: The union of all types (matches any value)
-- `number`: The union of integer, real, and complex types
-- `error`: Special type representing runtime errors
+
+- `Any`: The union of all types (matches any value)
+- `Number`: The union of Int, Real, and Complex types
+- `Error`: Special type representing runtime errors
 
 ## Type Functions
 
@@ -26,17 +28,20 @@ BMath features a rich type system that supports both simple types and type compo
 Returns the type of the given value.
 
 **Parameters:**
+
 - `value`: Any BMath value
 
 **Returns:**
+
 - A type value representing the type of the input
 
 **Examples:**
+
 ```
-type(5)         # Returns integer
-type(3.14)      # Returns real
-type([1, 2, 3]) # Returns vector
-type(|x| x + 1) # Returns function
+type(5)         # Returns Int
+type(3.14)      # Returns Real
+type([1, 2, 3]) # Returns Vec
+type(|x| x + 1) # Returns Function
 ```
 
 ### Type Checking
@@ -57,9 +62,9 @@ BMath supports two syntactically equivalent methods for type conversion:
 Uses the arrow operator (`->`) followed by a type:
 
 ```
-42 -> real       # Converts integer 42 to real (42.0)
-3.14 -> integer  # Converts real 3.14 to integer (3)
-[1, 2, 3] -> sequence  # Converts a vector to a sequence
+42 -> Real       # Converts Int 42 to Real (42.0)
+3.14 -> Int      # Converts Real 3.14 to Int (3)
+[1, 2, 3] -> Seq # Converts a Vec to a Seq
 ```
 
 ### Function-Style Casting
@@ -67,9 +72,9 @@ Uses the arrow operator (`->`) followed by a type:
 Uses a type name as a function:
 
 ```
-real(42)         # Same as 42 -> real
-integer(3.14)    # Same as 3.14 -> integer 
-sequence([1, 2]) # Same as [1, 2] -> sequence
+Real(42)         # Same as 42 -> Real
+Int(3.14)        # Same as 3.14 -> Int
+Seq([1, 2])      # Same as [1, 2] -> Seq
 ```
 
 ## Type Conversion Rules
@@ -78,19 +83,19 @@ sequence([1, 2]) # Same as [1, 2] -> sequence
 
 | From       | To         | Behavior                             | Example          |
 |------------|------------|--------------------------------------|------------------|
-| `integer`  | `real`     | Preserves numeric value              | `5 -> real` → 5.0 |
-| `integer`  | `complex`  | Creates complex with zero imaginary  | `5 -> complex` → 5+0i |
-| `real`     | `integer`  | Truncates decimal portion            | `5.7 -> integer` → 5 |
-| `real`     | `complex`  | Creates complex with zero imaginary  | `5.7 -> complex` → 5.7+0i |
-| `complex`  | `real`     | Extracts real part if im=0 or error  | `(5+0i) -> real` → 5.0 |
-| `complex`  | `integer`  | Real part to int if im=0 or error    | `(5+0i) -> integer` → 5 |
+| `Int`      | `Real`     | Preserves numeric value              | `5 -> Real` → 5.0 |
+| `Int`      | `Complex`  | Creates Complex with zero imaginary  | `5 -> Complex` → 5+0i |
+| `Real`     | `Int`      | Truncates decimal portion            | `5.7 -> Int` → 5 |
+| `Real`     | `Complex`  | Creates Complex with zero imaginary  | `5.7 -> Complex` → 5.7+0i |
+| `Complex`  | `Real`     | Extracts real part if im=0 or error  | `(5+0i) -> Real` → 5.0 |
+| `Complex`  | `Int`      | Real part to Int if im=0 or error    | `(5+0i) -> Int` → 5 |
 
 ### Collection Conversions
 
 | From       | To         | Behavior                             | Example          |
 |------------|------------|--------------------------------------|------------------|
-| `vector`   | `sequence` | Creates a lazy sequence from vector  | `[1,2] -> sequence` |
-| `sequence` | `vector`   | Evaluates and collects all elements  | `seq -> vector` (like `collect()`) |
+| `Vec`      | `Seq`      | Creates a lazy Seq from Vec          | `[1,2] -> Seq` |
+| `Seq`      | `Vec`      | Evaluates and collects all elements  | `seq -> Vec` (like `collect()`) |
 
 ### Other Conversions
 
@@ -103,8 +108,8 @@ sequence([1, 2]) # Same as [1, 2] -> sequence
 When a type conversion cannot be performed, an `InvalidArgumentError` is raised:
 
 ```
-false -> integer  # Raises InvalidArgumentError
-true -> real        # Raises InvalidArgumentError
+false -> Int  # Raises InvalidArgumentError
+true -> Real  # Raises InvalidArgumentError
 ```
 
 Use the `try_or` or `try_catch` functions to handle potential conversion errors:
@@ -122,9 +127,9 @@ result = try_catch(
 
 The `is` operator checks if a value matches a type:
 
-```
-5 is number      # true (integer is a subtype of number)
-5 is integer     # true
-5 is real        # false
-5 is any         # true (all values match any)
+```bm
+5 is Number      # true (Int is a subtype of Number)
+5 is Int         # true
+5 is Real        # false
+5 is Any         # true (all values match Any)
 ```

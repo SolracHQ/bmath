@@ -14,7 +14,7 @@ import std/[sets, tables, macros, complex]
 import
   ../../stdlib/[
     arithmetic, trigonometry, vector, sequence, functional, comparison, control,
-    assertions,types
+    assertions, types,
   ]
 import ../../types/[value, expression, errors]
 

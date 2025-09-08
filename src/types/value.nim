@@ -115,8 +115,10 @@ when defined(showSize):
     echo "   │  └─ Bool component: ", sizeof(bool), " bytes"
     echo "   ├─ vkNativeFunc variant"
     echo "   │  ├─ NativeFn whole: ", sizeof(NativeFn), " bytes"
-    echo "   │  ├─  - callable (proc type): ", sizeof(proc(args: openArray[Value], invoker: FnInvoker): Value), " bytes"
-    echo "   │  └─  - signatures (seq[Signature]): ", sizeof(seq[Signature]), " bytes"
+    echo "   │  ├─  - callable (proc type): ",
+      sizeof(proc(args: openArray[Value], invoker: FnInvoker): Value), " bytes"
+    echo "   │  └─  - signatures (seq[Signature]): ",
+      sizeof(seq[Signature]), " bytes"
     echo "   ├─ vkFunction variant"
     echo "   │  ├─ Function ref size: ", sizeof(ref Function), " bytes"
     echo "   │  └─  Function fields:"
@@ -124,8 +126,10 @@ when defined(showSize):
     echo "   │     - env (ref Environment): ", sizeof(ref Environment), " bytes"
     echo "   │     - params (seq[Parameter]): ", sizeof(seq[Parameter]), " bytes"
     echo "   │     - signature (Signature): ", sizeof(Signature), " bytes"
-    echo "   │       - Signature.params (seq[Parameter]): ", sizeof(seq[Parameter]), " bytes"
-    echo "   │       - Signature.returnType (BMathType): ", sizeof(BMathType), " bytes"
+    echo "   │       - Signature.params (seq[Parameter]): ",
+      sizeof(seq[Parameter]), " bytes"
+    echo "   │       - Signature.returnType (BMathType): ",
+      sizeof(BMathType), " bytes"
     echo "   ├─ vkVector variant"
     echo "   │  └─ Vector ref size: ", sizeof(Vector[Value]), " bytes"
     echo "   ├─ vkSeq variant"

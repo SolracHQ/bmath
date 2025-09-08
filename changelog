@@ -1,6 +1,29 @@
 # Changelog
 
+## Version 0.11.0
+
+- Runtime types: added a runtime type system. Types are first-class values, there are helpers for inspecting types at runtime, and the `is` operator enables clear runtime type checks.
+
+- Strings: introduced a `string` type with basic literals and interop utilities. Strings can be converted to and from vectors for low-level byte/character operations. Common helpers (length, simple slicing and conversion helpers) were added to the stdlib.
+
+- Explicit casting and conversions: function-style casts (e.g. `int(x)`) and arrow-style casts (e.g. `x->int`) are supported. Casting helpers were added to the stdlib to make conversions explicit and predictable.
+
+- Assertions / test helpers: lightweight assertion helpers (used by the new test files) were added to make writing interpreter-level tests easier (e.g. assert_eq, assert_error, assert_gt/lt).
+
+- Control flow & error handling extensions: implemented the `try_or` and `try_catch` helpers (and related error-handling utilities) to make it easier to handle recoverable errors in expressions. These complement the existing verbal conditionals and improve robustness of stdlib functions.
+
+- Editor integration: included a VS Code extension in `vscode-ext/` and a minimal Language Server (LSP). The extension provides basic syntax support, diagnostics hooks and simple completions to improve day-to-day editing.
+
+- Core refactor: reorganized core type modules and refactored internal type/value representations to remove cyclic dependencies. This simplifies the interpreter internals and makes adding new types/features safer.
+
+- Standard library: extended with type-inspection helpers, string/vector interop utilities, casting helpers, and a set of small convenience functions used by examples and tests.
+
+- Tooling, tests & docs: added a small test runner and a number of `.bm` tests under `bmath_test/`, updated examples and documentation to highlight new types and string usage, and included VS Code extension scaffolding.
+
+- Miscellaneous: assorted bug fixes, small performance improvements, and documentation cleanups.
+
 ## Version 0.10.0
+
 - Redesigned vector internal representation to modify by reference:
   - Implemented custom vector type with fixed-size memory allocation
   - Added set function to modify vector elements at specific indices
@@ -23,6 +46,7 @@
   - Maintained backward compatibility with parameterless calls
 
 ## Version 0.9.0
+
 - Removed AST optimizer after benchmarking with hyperfine and valgrind/callgrind:
   - Performance impact was significantly negative (1.9x to 2.6x slower)
   - Eliminated redundant code paths that effectively required maintaining two interpreters
@@ -48,6 +72,7 @@
   - Added comprehensive documentation for mathematical constants
 
 ## Version 0.8.0
+
 - Revamped error handling system with specific error types replacing generic errors:
   - Interpreter errors: DivideByZeroError, TypeError, UnsupportedTypeError, InvalidArgumentError, etc.
   - Parser errors: UnexpectedTokenError, MissingTokenError, InvalidExpressionError
@@ -70,28 +95,38 @@
   - Updated standard library reference with complete function signatures
 
 ## Version 0.7.0
+
 - Added explicit support for complex numbers. Complex literals (e.g., 3+4i) work in arithmetic operations and functions.
 - Updated promotion rules: operations mixing int, float, and complex now promote to complex when needed.
 - Revised documentation and examples to reflect complex arithmetic behavior.
 
 ## Version 0.6.1
+
 - Removed the requirement for the `endif` keyword in conditional expressions.
 - Enhanced the lexer and parser to allow more flexible use of newlines. Not only blocks, but group and vector literals now allow newlines.
 
 ## Version 0.6.0
+
 - Introduced the arrow operator (`->`) as syntactic sugar for chained function calls. Expressions like  
+
   ```
   A -> f(arg1, arg2)
   ```  
+
   are transformed to  
+
   ```
   f(A, arg1, arg2)
   ```  
+
   and support chaining such as  
+
   ```
   A -> f -> g(arg)
   ```  
+
   which becomes  
+
   ```
   g(f(A), arg)
   ```
@@ -99,7 +134,9 @@
 - Added a new lazy-evaluated sequence data type (`seq`). This type extends vector functionality by allowing operations like `map` and `filter` to return a sequence, and includes a `collect(seq)` function to convert a sequence into a vector.
 
 ## Version 0.5.0
+
 New core functions are now available:
+
 - `map(vector, lambda)` – Applies a function to each element in a vector.
 - `filter(vector, lambda)` – Returns a new vector with elements that satisfy the lambda condition.
 - `reduce(vector, lambda)` – Combines vector elements into a single value using the lambda function.
@@ -108,12 +145,14 @@ New core functions are now available:
 - `any(vector, lambda)` – Verifies if at least one element meets the lambda condition.
 
 Additionally:
+
 - Enhanced performance with an optimization mechanism to reduce redundant computations.
 - Updated core library documentation with comprehensive usage guidelines.
 - Refactored the interpreter for clearer error messages and easier debugging.
 - Improved documentation examples for smoother feature adoption.
 
 ## Version 0.4.0
+
 - Added support for comparison operators (==, !=, <, <=, >, >=).
 - Implemented conditional expressions (if, else, elif, endif).
 - Added support for boolean literals (true, false).
@@ -122,6 +161,7 @@ Additionally:
 - Added local keyword to declare variables in the current scope.
 
 ## Version 0.3.0
+
 - Added support for vectors and operations over vectors.
 - Enabled native functions (host language functions) to access interpreter capabilities.
 - Core library add the following native functions:
@@ -132,10 +172,12 @@ Additionally:
   - `last(a)` - Returns the last element of vector `a`.
 
 ## Version 0.2.0
+
 - Introduced lambda expressions (user-defined functions) and environments.
 - Functions are first-class citizens and can be assigned to variables.
 
 ## Version 0.1.0
+
 - Implemented core arithmetic operations (+, -, *, /, ^).
 - Added support for native function calls.
 - core library consist on:

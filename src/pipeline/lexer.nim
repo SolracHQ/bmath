@@ -229,7 +229,8 @@ proc parseString*(lexer: var Lexer, start: int): Token =
     if lexer.source[lexer.current] == '\\':
       lexer.advance() # Skip the backslash
       if lexer.atEnd:
-        raise newIncompleteInputError("Unterminated escape sequence in string", startPos)
+        raise
+          newIncompleteInputError("Unterminated escape sequence in string", startPos)
       case lexer.source[lexer.current]
       of 'n':
         content.add('\n')
@@ -255,8 +256,7 @@ proc parseString*(lexer: var Lexer, start: int): Token =
     return newToken(content, startPos)
   # If not, it's unterminated
   raise newIncompleteInputError(
-    "Unterminated string literal starting at " & $startPos,
-    startPos,
+    "Unterminated string literal starting at " & $startPos, startPos
   )
 
 proc checkNext*(lexer: Lexer): char =
