@@ -86,3 +86,14 @@
   - [ ] Navigate history with up/down arrow keys
   - [ ] Implement history search (Ctrl+R)
   - [ ] Allow recalling, editing, and re-executing past expressions
+
+## Editor / LSP Improvements
+
+- [ ] Improve LSP server (src/lsp.nim)
+  - [ ] Add incremental sync support and document versioning (textDocumentSync incremental)
+  - [ ] Implement completion (textDocument/completion) and signature help
+  - [ ] Expand navigation/features: definition, implementation, references, rename
+  - [ ] Improve diagnostics: accurate ranges, severity mapping and fewer false positives
+  - [ ] Add unit/integration tests for hover and diagnostics behavior
+  - [ ] Performance: incremental parsing, efficient caching for large files
+  - [ ] Harden error handling and logging (reduce noisy stderr logs in production)

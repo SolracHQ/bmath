@@ -78,31 +78,31 @@ proc `$`*(t: BMathType): string =
   of tkSimple:
     case t.simpleType
     of stInteger:
-      return "integer"
+      return "Int"
     of stString:
-      return "string"
+      return "String"
     of stReal:
-      return "real"
+      return "Real"
     of stComplex:
-      return "complex"
+      return "Complex"
     of stBoolean:
-      return "boolean"
+      return "Bool"
     of stVector:
-      return "vector"
+      return "Vec"
     of stSequence:
-      return "sequence"
+      return "Seq"
     of stFunction:
-      return "function"
+      return "Function"
     of stType:
-      return "type"
+      return "Type"
     of stError:
-      return "error"
+      return "Error"
   of tkSum:
     if t.types == AnyType.types:
-      return "any"
+      return "Any"
     if t.types == NumberType.types:
-      return "number"
+      return "Number"
     else:
-      result = "sum(" & $t.types & ")"
+      result = "Sum(" & $t.types & ")"
   of tkError:
-    result = "error(" & $t.error & ")"
+    result = "Error(" & $t.error & ")"

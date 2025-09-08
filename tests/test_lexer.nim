@@ -196,7 +196,7 @@ suite "Lexer tests":
       discard lex.next() # parse number
 
   test "Tokenizing type identifiers":
-    var l = newLexer("Int Real Complex Bool Vec Sequence Function Type Any Number")
+    var l = newLexer("Int Real Complex Bool Vec Seq Function Type Any Number")
     
     # Check each type token
     let tok1 = l.next()
