@@ -1,0 +1,79 @@
+# Print Usage Examples
+# ===================
+# This file demonstrates when and how to use print() effectively in BMath.
+
+# [1] At top level - expressions are automatically printed
+"This will be printed automatically"
+42
+true
+
+# [2] In blocks - only the last expression is returned/printed
+{
+  a = 10
+  b = 20
+  a + b  # This result (30) will be printed
+}
+
+# [3] Using print() inside blocks for intermediate output
+{
+  x = 5
+  y = 7
+  print("Calculating sum...")
+  result = x + y
+  print("The sum is calculated")
+  result  # This will also be printed as the block's return value
+}
+
+# [4] Testing with assertions and intermediate output
+{
+  print("Starting assertion tests...")
+  
+  # Test basic assertions
+  assert(true, "Basic assertion test")
+  print("✓ Basic assertion passed")
+  
+  # Test equality
+  assert_eq(2 + 2, 4, "Addition test")
+  print("✓ Addition assertion passed")
+  
+  # Test inequality
+  assert_neq(5, 3, "Inequality test")
+  print("✓ Inequality assertion passed")
+  
+  "All tests completed successfully!"
+}
+
+# [5] Function with internal printing
+testFunction = |n| {
+  print("Processing number...")
+  doubled = n * 2
+  print("Value doubled")
+  doubled  # Return the doubled value
+}
+
+# Call the function
+result = testFunction(15)
+
+# [6] Assertion testing with progress reporting
+{
+  print("Running comprehensive tests...")
+  
+  # Vector tests
+  vec1 = [1, 2, 3]
+  vec2 = [1, 2, 3]
+  assert_eq(vec1, vec2, "Vector equality test")
+  print("✓ Vector tests passed")
+  
+  # Math function tests
+  assert_eq(sqrt(16), 4, "Square root test")
+  print("✓ Math function tests passed")
+  
+  # String tests
+  str1 = "hello"
+  str2 = "hello"
+  assert_eq(str1, str2, "String equality test")
+  print("✓ String tests passed")
+  
+  print("Test suite completed!")
+  "Final result: All assertions passed"
+}

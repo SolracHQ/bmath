@@ -10,8 +10,7 @@
 ## 3. Execute through engine.run()
 ## 4. Output result
 import std/terminal
-import cli, engine, types/[errors, value]
-import pipeline/lexer/errors
+import cli, engine, types/[value, errors]
 
 proc handleHelp() =
   echo HELP

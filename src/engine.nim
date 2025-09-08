@@ -9,8 +9,8 @@
 ## API endpoint for expression evaluation.
 
 import
-  pipeline/lexer/lexer,
-  pipeline/parser/parser,
+  pipeline/lexer,
+  pipeline/parser,
   pipeline/interpreter/interpreter,
   logging,
   types/[value, errors]
@@ -48,8 +48,6 @@ iterator run*(engine: Engine, source: string): LabeledValue =
       tokens.parse()
 
     debug("AST: \n", $ast)
-
-    debug("Starting optimization process")
 
     debug("Starting evaluation")
     wrapError("RUNTIME", fatal = not engine.replMode):

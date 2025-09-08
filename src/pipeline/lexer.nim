@@ -12,8 +12,7 @@
 
 import std/[strutils, tables, complex]
 
-import ../../types/[position, token]
-import errors
+import ../types/[position, token, bm_types, errors]
 
 type
   StackableKind* = enum
@@ -49,6 +48,21 @@ const KEYWORDS: Table[string, TokenKind] = {
   "local": tkLocal,
   "true": tkTrue,
   "false": tkFalse,
+  "is": tkIs,
+}.toTable
+
+const TYPES: Table[string, BMathType] = {
+  "Int": stInteger.newType,
+  "Real": stReal.newType,
+  "Complex": stComplex.newType,
+  "Bool": stBoolean.newType,
+  "Vec": stVector.newType,
+  "Seq": stSequence.newType,
+  "Function": stFunction.newType,
+  "String": stString.newType,
+  "Type": stType.newType,
+  "Any": AnyType,
+  "Number": NumberType,
 }.toTable
 
 proc atEnd*(lexer: Lexer): bool {.inline.} =
@@ -184,9 +198,12 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
   lexer.readWhile(isIdentChar)
   let ident = lexer.source[start ..< lexer.current]
   let position = pos(lexer.line, startCol)
-  result = Token(kind: tkIdent, position: position, name: ident)
+  result = newIdentToken(ident, position)
   if KEYWORDS.hasKey(ident):
     result = Token(kind: KEYWORDS[ident], position: position)
+  elif TYPES.hasKey(ident):
+    result = TYPES[ident].newToken(position)
+
   if result.kind == tkIf:
     lexer.stack.add(StackableElement(kind: skIf, position: pos(lexer.line, lexer.col)))
   elif result.kind == tkElse:
@@ -195,6 +212,52 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
     let last = lexer.stack.pop
     if last.kind != skIf:
       raise newUnexpectedCharacterError("Unexpected 'else' at " & $position, position)
+
+proc parseString*(lexer: var Lexer, start: int): Token =
+  ## Parses a string literal.
+  ##
+  ## Params:
+  ##   lexer: var Lexer - the current lexer instance.
+  ##   start: int - the starting index of the string in the source.
+  ## Returns: Token - a token representing the string literal.
+  ## Record starting column so the returned token points to the opening quote
+  let startCol = lexer.col
+  let startPos = pos(lexer.line, startCol)
+  lexer.advance() # Skip opening quote
+  var content = ""
+  while not lexer.atEnd and lexer.source[lexer.current] != '"':
+    if lexer.source[lexer.current] == '\\':
+      lexer.advance() # Skip the backslash
+      if lexer.atEnd:
+        raise
+          newIncompleteInputError("Unterminated escape sequence in string", startPos)
+      case lexer.source[lexer.current]
+      of 'n':
+        content.add('\n')
+      of 't':
+        content.add('\t')
+      of 'r':
+        content.add('\r')
+      of '"':
+        content.add('"')
+      of '\\':
+        content.add('\\')
+      else:
+        raise newInvalidEscapeSequenceError(
+          "Invalid escape sequence '\\" & lexer.source[lexer.current] & "'",
+          pos(lexer.line, lexer.col),
+        )
+    else:
+      content.add(lexer.source[lexer.current])
+    lexer.advance()
+  # After loop, check if we are at a closing quote
+  if not lexer.atEnd and lexer.source[lexer.current] == '"':
+    lexer.advance() # Skip closing quote
+    return newToken(content, startPos)
+  # If not, it's unterminated
+  raise newIncompleteInputError(
+    "Unterminated string literal starting at " & $startPos, startPos
+  )
 
 proc checkNext*(lexer: Lexer): char =
   ## Returns the next character in the source without advancing the lexer.
@@ -234,6 +297,9 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of '=':
     if checkNext(lexer) == '=':
       kind = tkEq
+      lexer.advance()
+    elif checkNext(lexer) == '>':
+      kind = tkFatArrow
       lexer.advance()
     else:
       kind = tkAssign
@@ -282,6 +348,8 @@ proc parseSymbol*(lexer: var Lexer): Token =
     kind = tkLSquare
   of ']':
     kind = handleClosing(lexer, skSquare, '[', ']', tkRSquare)
+  of ':':
+    kind = tkColon
   else:
     raise newUnexpectedCharacterError(
       "Unexpected character '" & $(lexer.source[lexer.current]) & "'",
@@ -333,6 +401,8 @@ proc next*(lexer: var Lexer): Token =
     # Check for identifiers
     if lexer.source[lexer.current] in {'a' .. 'z', 'A' .. 'Z', '_'}:
       return parseIdentifier(lexer, start)
+    if lexer.source[lexer.current] == '"':
+      return parseString(lexer, start)
     # Otherwise, parse as symbol/operator
     return parseSymbol(lexer)
   # End of input

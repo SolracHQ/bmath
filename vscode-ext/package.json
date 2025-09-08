@@ -1,0 +1,76 @@
+{
+  "name": "bmath-vscode",
+  "displayName": "BMath Language Support",
+  "description": "Support for the BMath language including syntax highlighting, type inference, and more.",
+  "version": "0.1.0",
+  "publisher": "SolracHQ",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:bmath"
+  ],
+  "main": "./out/client/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SolracHQ/bmath"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "bmath.showServerStatus",
+        "title": "BMath: Show Server Status",
+        "category": "BMath"
+      }
+    ],
+    "languages": [
+      {
+        "id": "bmath",
+        "extensions": [".bm"],
+        "aliases": ["BMath", "bmath"]
+      }
+    ],
+    "snippets": [
+      {
+        "language": "bmath",
+        "path": "./snippets/bmath.code-snippets"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "bmath",
+        "scopeName": "source.bmath",
+        "path": "./syntaxes/bmath.tmLanguage.json"
+      }
+    ]
+  },
+  "configuration": {
+    "type": "object",
+    "title": "BMath",
+    "properties": {
+      "bmath.lspPath": {
+        "type": "string",
+        "description": "Path to the external BMath LSP server executable. If empty the extension will try workspace/bin/lsp or the extension's bundled bin/lsp.",
+        "default": ""
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runTests"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "vscode": "^1.1.37",
+    "eslint": "^7.0.0",
+    "@types/node": "^18.0.0"
+  }
+}

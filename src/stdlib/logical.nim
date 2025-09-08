@@ -1,7 +1,6 @@
 ## logical.nim
 
-import ../../../types/[value]
-import ../errors
+import ../types/[value, errors]
 
 template `and`*(a, b: Value): Value =
   ## Compute the logical AND of two boolean values

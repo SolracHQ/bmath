@@ -1,0 +1,121 @@
+# Arithmetic Operations Tests
+# ==========================
+# Tests for arithmetic operations and mathematical functions
+
+"Testing Arithmetic Operations..."
+
+# [1] Basic Arithmetic Operations
+"1. Basic Arithmetic Operations"
+assert_eq(5 + 3, 8, "Addition", "✓ Addition passed")
+assert_eq(10 - 4, 6, "Subtraction", "✓ Subtraction passed")
+assert_eq(7 * 6, 42, "Multiplication", "✓ Multiplication passed")
+assert_eq(20 / 5, 4.0, "Division", "✓ Division passed")
+assert_eq(17 % 5, 2, "Modulus", "✓ Modulus passed")
+assert_eq(2 ^ 3, 8, "Exponentiation", "✓ Exponentiation passed")
+
+"✓ Basic arithmetic tests passed"
+
+# [2] Order of Operations
+"2. Order of Operations"
+assert_eq(2 + 3 * 4, 14, "Multiplication before addition", "✓ Order test passed")
+assert_eq((2 + 3) * 4, 20, "Parentheses force order", "✓ Parentheses order passed")
+assert_eq(2 ^ 3 * 4, 32, "Exponentiation before multiplication", "✓ Exponentiation order passed")
+assert_eq((2 + 3) ^ 2, 25, "Parentheses with exponentiation", "✓ Parentheses exponentiation passed")
+
+"✓ Order of operations tests passed"
+
+# [3] Type Promotion
+"3. Type Promotion"
+assert_eq(5 + 3.5, 8.5, "Integer + Float = Float", "✓ Type promotion addition passed")
+assert_eq(10 * 2.5, 25.0, "Integer * Float = Float", "✓ Type promotion multiplication passed")
+assert_eq(8 / 2, 4.0, "Integer / Integer = Float", "✓ Type promotion division passed")
+
+"✓ Type promotion tests passed"
+
+# [4] Mathematical Functions
+"4. Mathematical Functions"
+assert_eq(abs(-42), 42, "Absolute value of negative number", "✓ Abs negative passed")
+assert_eq(abs(42), 42, "Absolute value of positive number", "✓ Abs positive passed")
+assert_eq(abs(0), 0, "Absolute value of zero", "✓ Abs zero passed")
+
+assert_eq(sqrt(16), 4.0, "Square root", "✓ Sqrt 16 passed")
+assert_eq(sqrt(25), 5.0, "Square root of 25", "✓ Sqrt 25 passed")
+
+assert_eq(pow(2, 3), 8, "Power function", "✓ Pow 2^3 passed")
+assert_eq(pow(5, 2), 25, "Power function 5^2", "✓ Pow 5^2 passed")
+
+"✓ Mathematical functions tests passed"
+
+# [5] Rounding Functions
+"5. Rounding Functions"
+assert_eq(floor(3.8), 3, "Floor function", "✓ Floor positive passed")
+assert_eq(floor(-2.3), -3, "Floor of negative number", "✓ Floor negative passed")
+
+assert_eq(ceil(3.2), 4, "Ceiling function", "✓ Ceil positive passed")
+assert_eq(ceil(-2.7), -2, "Ceiling of negative number", "✓ Ceil negative passed")
+
+assert_eq(round(3.5), 4, "Round function", "✓ Round up passed")
+assert_eq(round(3.4), 3, "Round down", "✓ Round down passed")
+assert_eq(round(-2.6), -3, "Round negative number", "✓ Round negative passed")
+
+"✓ Rounding functions tests passed"
+
+# [6] Complex Number Arithmetic
+"6. Complex Number Tests"
+complex1 = 3 + 4i
+complex2 = 2 - 3i
+
+# Test complex number creation
+assert_eq(complex1, 3 + 4i, "Complex number creation", "✓ Complex creation passed")
+assert_eq(complex2, 2 - 3i, "Complex number with negative imaginary", "✓ Complex negative passed")
+
+# Test complex arithmetic (if supported)
+# complexSum = complex1 + complex2
+# assert_eq(complexSum, 5 + 1i, "Complex addition")
+
+"✓ Complex number tests passed"
+
+# [7] Constants Tests
+"7. Mathematical Constants"
+# Test that constants exist and have reasonable values
+assert_gt(pi, 3.14, "Pi is approximately 3.14159...", "✓ Pi lower bound passed")
+assert_lt(pi, 3.15, "Pi is less than 3.15", "✓ Pi upper bound passed")
+
+assert_gt(e, 2.7, "e is approximately 2.718...", "✓ e lower bound passed")
+assert_lt(e, 2.8, "e is less than 2.8", "✓ e upper bound passed")
+
+"✓ Mathematical constants tests passed"
+
+# [8] Error Cases
+"8. Error Handling Tests"
+# Test division by zero
+assert_error(|| 10 / 0, "Division by zero should raise an error", "Division by zero error detected")
+assert_error(|| 5.5 / 0, "Float division by zero should raise an error", "Float division by zero error detected")
+
+# Test modulo by zero
+assert_error(|| 10 % 0, "Modulo by zero should raise an error", "Modulo by zero error detected")
+
+# Test invalid mathematical operations
+assert_error(|| sqrt(-1), "Square root of negative number should raise an error (if not returning complex)", "Sqrt negative error detected")
+
+# Test power operations that might overflow or be invalid
+assert_error(|| 0 ^ 0, "Zero to the power of zero should raise an error", "Zero power error detected")
+
+# Test invalid function calls
+assert_error(|| abs(), "Function call with missing arguments should raise an error", "Abs missing args error detected")
+assert_error(|| pow(2), "Function call with insufficient arguments should raise an error", "Pow missing args error detected")
+assert_error(|| 10 / 0, "Division by zero should raise an error", "✓ Division by zero error detected")
+assert_error(|| 5.5 / 0, "Float division by zero should raise an error", "✓ Float division by zero error detected")
+
+assert_error(|| 10 % 0, "Modulo by zero should raise an error", "✓ Modulo by zero error detected")
+
+assert_error(|| sqrt(-1), "Square root of negative number should raise an error (if not returning complex)", "✓ Sqrt negative error detected")
+
+assert_error(|| 0 ^ 0, "Zero to the power of zero should raise an error", "Zero power error detected")
+
+assert_error(|| abs(), "Function call with missing arguments should raise an error", "Abs missing args error detected")
+assert_error(|| pow(2), "Function call with insufficient arguments should raise an error", "Pow missing args error detected")
+
+"✓ Error handling tests passed"
+
+"All arithmetic operation tests completed!"

@@ -1,0 +1,222 @@
+## typed.nim
+
+import ../types/[value, bm_types, number, vector, errors]
+import sequence
+import std/[complex]
+
+proc getType*(value: Value): BMathType =
+  ## Returns the type of a value.
+  ##
+  ## Parameters:
+  ##   value: Value - The value to get the type of.
+  ##
+  ## Returns:
+  ##   Type - The type of the value.
+
+  case value.kind
+  of vkNumber:
+    case value.number.kind
+    of nkInteger:
+      return newType(stInteger)
+    of nkReal:
+      return newType(stReal)
+    of nkComplex:
+      return newType(stComplex)
+  of vkBool:
+    return newType(stBoolean)
+  of vkFunction, vkNativeFunc:
+    return newType(stFunction)
+  of vkVector:
+    return newType(stVector)
+  of vkSeq:
+    return newType(stSequence)
+  of vkType:
+    return newType(stType)
+  of vkString:
+    return newType(stString)
+  of vkError:
+    return newType(stError)
+
+proc extractType*(value: Value): Value =
+  ## Extracts the type from a value.
+  ## 
+  ## Parameters:
+  ##   value: Value - The value to extract the type from.
+  ## 
+  ## Returns:
+  ##   Value - A Value object representing the type of the input value.
+  return value.getType().newValue()
+
+proc casting*(target: BMathType, source: Value): Value =
+  ## Casts a value to a specified type.
+  ## 
+  ## Parameters:
+  ##   target: Type - The target type to cast to.
+  ##   source: Value - The source value to be casted.
+  ##
+  ## Returns:
+  ##   Value - The casted value of the specified type.
+  ##
+  ## Raises:
+  ##   InvalidArgumentError - If the source value cannot be casted to the target type.
+
+  # Handle simple type conversions
+  if target.kind == tkSimple:
+    case target.simpleType
+    of stError:
+      if source.kind == vkError:
+        return source
+      else:
+        raise newInvalidArgumentError("Cannot convert to an error type")
+    of stInteger:
+      if source.kind == vkNumber:
+        case source.number.kind
+        of nkInteger:
+          return source # Already an integer
+        of nkReal:
+          return newValue(int(source.number.real)) # Convert float to int
+        of nkComplex:
+          return
+            newValue(int(source.number.complex.re)) # Take real part and convert to int
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Integer type")
+    of stReal:
+      if source.kind == vkNumber:
+        case source.number.kind
+        of nkInteger:
+          return newValue(float(source.number.integer)) # Convert int to float
+        of nkReal:
+          return source # Already a real number
+        of nkComplex:
+          return newValue(source.number.complex.re) # Take real part
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Real type")
+    of stComplex:
+      if source.kind == vkNumber:
+        case source.number.kind
+        of nkInteger:
+          return
+            newValue(complex(float(source.number.integer))) # Convert int to complex
+        of nkReal:
+          return newValue(complex(source.number.real)) # Convert real to complex
+        of nkComplex:
+          return source # Already a complex number
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Complex type")
+    of stBoolean:
+      if source.kind == vkBool:
+        return source
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Boolean type")
+    of stString:
+      if source.kind == vkString:
+        return source
+      elif source.kind == vkVector:
+        # only integer vectors with values in ASCII range can be converted to string
+        for v in source.vector:
+          if v.kind != vkNumber or v.number.kind != nkInteger or v.number.integer < 0 or
+              v.number.integer > 127:
+            raise newInvalidArgumentError(
+              "Cannot convert vector with non-integer or out-of-ASCII-range values to String type"
+            )
+        var chars = newString(source.vector.size)
+        for i, v in source.vector:
+          chars[i] = char(v.number.integer)
+        return Value(kind: vkString, content: chars)
+      elif source.kind == vkSeq:
+        # Convert sequence of single-character strings to a single string
+        var chars = newString(0)
+        for item in source.sequence:
+          if item.kind == vkNumber and item.number.kind == nkInteger and
+              item.number.integer >= 0 and item.number.integer <= 127:
+            chars.add(char(item.number.integer))
+          else:
+            raise newInvalidArgumentError(
+              "Cannot convert sequence with non-integer or out-of-ASCII-range values to String type"
+            )
+        return Value(kind: vkString, content: chars)
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to String type")
+    of stVector:
+      if source.kind == vkVector:
+        return source
+      elif source.kind == vkSeq:
+        # Convert sequence to vector (similar to collect function)
+        var elements: seq[Value] = @[]
+        for item in source.sequence:
+          elements.add(item)
+
+        result = Value(kind: vkVector)
+        result.vector = elements.fromSeq
+
+        return result
+      elif source.kind == vkString:
+        # Convert string to vector of single-character strings
+        var elements: seq[Value] = @[]
+        for c in source.content:
+          elements.add(Value(kind: vkNumber, number: newNumber(int(c))))
+        result = Value(kind: vkVector)
+        result.vector = fromSeq(elements)
+      else:
+        raise
+          newInvalidArgumentError("Cannot convert " & $source.kind & " to Vector type")
+    of stSequence:
+      if source.kind == vkSeq:
+        return source
+      elif source.kind == vkVector:
+        # Convert vector to sequence
+        var resultSeq = Sequence(transformers: @[])
+        let vec = source.vector
+        var index = 0
+
+        resultSeq.generator = Generator(
+          atEnd: proc(): bool =
+            index >= vec.size,
+          next: proc(peek: bool = false): Value =
+            if index >= vec.size:
+              raise newSequenceExhaustedError(
+                "Sequence exhausted: attempted to access beyond the end of sequence derived from vector of length " &
+                  $vec.size
+              )
+            result = vec[index]
+            if not peek:
+              inc index
+          ,
+        )
+
+        return Value(kind: vkSeq, sequence: resultSeq)
+      else:
+        raise newInvalidArgumentError(
+          "Cannot convert " & $source.kind & " to Sequence type"
+        )
+    of stFunction:
+      if source.kind == vkFunction or source.kind == vkNativeFunc:
+        return source
+      else:
+        raise newInvalidArgumentError(
+          "Cannot convert " & $source.kind & " to Function type"
+        )
+    of stType:
+      if source.kind == vkType:
+        return source
+      else:
+        return source.getType().newValue()
+
+  # Handle sum types
+  elif target.kind == tkSum:
+    # For sum types, get value type and check if it is in the sum type
+    let valueType = getType(source)
+    if target == valueType:
+      return source
+
+    # If no conversion worked
+    raise newInvalidArgumentError("Cannot convert " & $valueType & " to " & $target)
+
+  # Error types
+  else:
+    raise newInvalidArgumentError("Cannot convert to an error type")

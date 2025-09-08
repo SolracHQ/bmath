@@ -126,16 +126,19 @@ bmath provides clear error messages that include position information to help lo
 
 - Detailed error messages with the specific type of error
 - Stack traces showing the execution path leading to the error, for example:
-  ```
+
+  ```bash
   [DivideByZeroError] Division by zero is not allowed
   Stack Trace:
     - 4:3
     - 2:9
     - 1:11
   ```
+
 - Position information to help locate the exact point of failure
 
 Future enhancements will include:
+
 - Planned support for error handling expressions (implementation details still being considered)
 
 ## ToDo
@@ -165,3 +168,31 @@ For a complete history of updates and feature additions, please refer to the [Ch
 ## License
 
 MIT License – See [LICENSE](LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome. If you're unsure about a design or API change, open an issue or draft PR first. Keep changes small and well tested. Below is a short quick-start and checklist to help contributors get started (details in `CONTRIBUTING.md`).
+
+Quick start (developer environment):
+
+```bash
+# build the `bm` binary via nimble
+nimble build bm
+
+# run Nim unit tests (nimble task)
+nimble test
+
+# run the project's BM-style integration tests
+./bmath_test/run_tests.sh
+```
+
+Checklist for PRs:
+
+- Brief description of change in PR title and body
+- Add/modify tests under `tests/` and/or `bmath_test/` depending on scope
+- Update `docs/` for any stdlib or public API changes
+- Use existing error constructors from `src/types/errors.nim` for runtime errors
+- Run `nimble test` and `./bmath_test/run_tests.sh` to verify new and existing tests
+- Format code with `nph` before submitting (run `./format_all.sh` or `nph --check src/**/*.nim`)
+
+See `CONTRIBUTING.md` for full contribution guidance, development notes, and conventions for adding stdlib functions and tests.

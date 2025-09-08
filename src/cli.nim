@@ -31,7 +31,9 @@ type
 
 import std/[strformat, parsecfg, streams]
 
-const VERSION = staticRead("../bmath.nimble").newStringStream.loadConfig().getSectionValue("", "version")
+const VERSION = staticRead("../bmath.nimble").newStringStream
+  .loadConfig()
+  .getSectionValue("", "version")
 
 const
   RESET: string = "\x1B[0m"

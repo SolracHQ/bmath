@@ -1,7 +1,6 @@
 ## sequence.nim
 
-import ../../../types/[value, number, vector]
-import ../errors
+import ../types/[value, number, vector, errors]
 
 proc sequence*(values: openArray[Value], invoker: FnInvoker): Value =
   ## Create a sequence 
@@ -70,7 +69,7 @@ proc sequence*(values: openArray[Value], invoker: FnInvoker): Value =
       )
   of 2:
     # Case 3: Number and function (finite sequence up to the given number)
-    if values[0].kind != vkNumber or values[0].number.kind != nkInt:
+    if values[0].kind != vkNumber or values[0].number.kind != nkInteger:
       raise newTypeError(
         "sequence expects an integer value for the sequence length, but got " & (
           if values[0].kind == vkNumber: "a " & $values[0].number.kind & " number"
@@ -84,7 +83,7 @@ proc sequence*(values: openArray[Value], invoker: FnInvoker): Value =
           $values[1].kind
       )
 
-    let limit = values[0].number.iValue
+    let limit = values[0].number.integer
     if limit <= 0:
       raise newInvalidArgumentError(
         "sequence expects a positive integer for the sequence length, but got " & $limit
@@ -133,19 +132,19 @@ proc skip*(sequence: Value, n: Value): Value =
     raise newTypeError(
       "skip requires a sequence as the first argument, but got a " & $sequence.kind
     )
-  if n.kind != vkNumber or n.number.kind != nkInt:
+  if n.kind != vkNumber or n.number.kind != nkInteger:
     raise newTypeError(
       "skip requires an integer as the second argument, but got " &
         (if n.kind == vkNumber: "a " & $n.number.kind & " number"
         else: "a " & $n.kind)
     )
-  if n.number.iValue < 0:
+  if n.number.integer < 0:
     raise newInvalidArgumentError(
       "skip requires a non-negative integer as the second argument, but got " &
-        $n.number.iValue
+        $n.number.integer
     )
 
-  for _ in 0 ..< n.number.iValue:
+  for _ in 0 ..< n.number.integer:
     discard sequence.sequence.generator.next()
   result = sequence
 
@@ -166,21 +165,21 @@ proc take*(sequence: Value, n: Value): Value =
     raise newTypeError(
       "take requires a sequence as the first argument, but got a " & $sequence.kind
     )
-  if n.kind != vkNumber or n.number.kind != nkInt:
+  if n.kind != vkNumber or n.number.kind != nkInteger:
     raise newTypeError(
       "take requires an integer as the second argument, but got " &
         (if n.kind == vkNumber: "a " & $n.number.kind & " number"
         else: "a " & $n.kind)
     )
-  if n.number.iValue < 0:
+  if n.number.integer < 0:
     raise newInvalidArgumentError(
       "take requires a non-negative integer as the second argument, but got " &
-        $n.number.iValue
+        $n.number.integer
     )
 
   result = sequence
   var taken = 0
-  var limit = n.number.iValue
+  var limit = n.number.integer
   let originalAtEnd = result.sequence.generator.atEnd
   result.sequence.generator.atEnd = proc(): bool =
     taken >= limit or originalAtEnd()

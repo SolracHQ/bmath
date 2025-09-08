@@ -1,7 +1,6 @@
 ## functional.nim
 
-import ../../../types/[value, vector, number]
-import ../errors
+import ../types/[value, vector, number, errors]
 import sequence, arithmetic
 
 proc map*(values: openArray[Value], invoker: FnInvoker): Value =
@@ -196,9 +195,10 @@ proc any*(a: Value): Value {.inline.} =
   ## - TypeError: if argument is not a vector or sequence
   ## - TypeError: if any element is not a boolean
 
+  result = Value(kind: vkBool, boolean: false)
+
   case a.kind
   of vkVector:
-    result = Value(kind: vkBool, boolean: false)
     for i in 0 ..< a.vector.size:
       let val = a.vector[i]
       if val.kind != vkBool:
@@ -207,7 +207,6 @@ proc any*(a: Value): Value {.inline.} =
         result.boolean = true
         break
   of vkSeq:
-    result = Value(kind: vkBool, boolean: false)
     for v in a.sequence:
       if v.kind != vkBool:
         raise newTypeError("any requires boolean values, but found " & $v.kind)
@@ -268,7 +267,8 @@ proc nth*(value: Value, index: Value): Value =
   ##
   ## Returns:
   ## - The value at the specified index
-  if index.kind != vkNumber or (index.kind == vkNumber and index.number.kind != nkInt):
+  if index.kind != vkNumber or
+      (index.kind == vkNumber and index.number.kind != nkInteger):
     raise newTypeError(
       "nth expects an integer as the second argument, but got " & (
         if index.kind == vkNumber: "a " & $index.number.kind & " number"
@@ -278,25 +278,25 @@ proc nth*(value: Value, index: Value): Value =
 
   case value.kind
   of vkVector:
-    if index.number.iValue < 0 or index.number.iValue >= value.vector.size:
+    if index.number.integer < 0 or index.number.integer >= value.vector.size:
       raise newInvalidArgumentError(
-        "Index out of bounds for nth: index " & $index.number.iValue &
+        "Index out of bounds for nth: index " & $index.number.integer &
           " is outside valid range [0, " & $(value.vector.size - 1) &
           "] for vector of length " & $value.vector.size
       )
-    result = value.vector[index.number.iValue]
+    result = value.vector[index.number.integer]
   of vkSeq:
-    if index.number.iValue < 0:
+    if index.number.integer < 0:
       raise newInvalidArgumentError(
-        "Invalid negative index " & $index.number.iValue & " for nth on sequence"
+        "Invalid negative index " & $index.number.integer & " for nth on sequence"
       )
 
     var i = 0
     # Iterate exactly up to the desired index
-    while i <= index.number.iValue:
+    while i <= index.number.integer:
       if value.sequence.generator.atEnd():
         raise newInvalidArgumentError(
-          "Index out of bounds for nth: index " & $index.number.iValue &
+          "Index out of bounds for nth: index " & $index.number.integer &
             " is beyond the length of the sequence which only contains " & $i &
             " elements"
         )

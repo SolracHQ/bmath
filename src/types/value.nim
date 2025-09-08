@@ -1,78 +1,21 @@
-## types.nim
+## value.nim
 ## 
 ## This module contains all type definitions for the interpreter to avoid cyclic dependencies.
 ## It includes fundamental types for values, tokens, AST nodes, and errors, along with their
 ## string representation implementations.
 
-import std/[strutils, tables, sequtils, complex]
+import std/[strutils, tables, sequtils, complex, sets]
 
-import position, expression, number, vector
-export Position
+import position, expression, number, vector, bm_types
 
-type
-  ValueKind* = enum
-    ## Discriminator for runtime value types stored in `Value` objects.
-    vkNumber ## Numeric value stored in `nValue` field
-    vkBool ## Boolean value stored in `bValue` field
-    vkNativeFunc ## Native function stored in `nativeFunc` field
-    vkFunction ## User-defined function stored as reference
-    vkVector ## Vector value
-    vkSeq ## Sequence value, lazily evaluated and stored as reference
+from core import
+  Value, ValueKind, NativeFn, Function, Environment, LabeledValue, Parameter, FnInvoker,
+  Sequence, Generator, Transformer, TransformerKind, Signature
+export
+  Value, ValueKind, NativeFn, Function, Environment, LabeledValue, FnInvoker, Sequence,
+  Generator, Transformer, TransformerKind
 
-  Function* = ref object ## User-defined function data
-    body*: Expression ## Function body
-    env*: Environment ## Environment for variable bindings
-    params*: seq[string] ## Parameter names for the function
-
-  Sequence* = ref object ## Lazily evaluated sequence
-    generator*: Generator ## Function to generate sequence values
-    transformers*: seq[Transformer] ## Functions to transform sequence values
-
-  Value* = object
-    ## Variant type representing runtime numeric values with type tracking.
-    case kind*: ValueKind ## Type discriminator determining active field
-    of vkNumber:
-      number*: Number ## Numeric storage when kind is `vkNumber`
-    of vkBool:
-      boolean*: bool ## Boolean storage when kind is `vkBool`
-    of vkNativeFunc:
-      nativeFn*: NativeFn ## Native function storage when kind is `vkNativeFunc`
-    of vkFunction:
-      function*: Function ## User-defined function storage when kind is `vkFunction`
-    of vkVector:
-      vector*: Vector[Value] ## Vector storage when kind is `vkVector`
-    of vkSeq:
-      sequence*: Sequence ## Sequence storage when kind is `vkSeq`
-
-  TransformerKind* = enum
-    ## Discriminator for runtime transformer types stored in `Transformer` objects.
-    tkMap ## Map transformer
-    tkFilter ## Filter transformer
-
-  Transformer* = object
-    kind*: TransformerKind ## Type of transformer
-    fun*: proc(x: Value): Value ## Function to transform each item in a sequence.
-
-  Generator* {.exportc.} = object
-    atEnd*: proc(): bool ## Function to check if the sequence is exhausted.
-    next*: proc(peek: bool = false): Value ## Function to generate sequence values.
-
-  LabeledValue* = object
-    label*: string
-    value*: Value
-
-  FnInvoker* = proc(function: Value, args: openArray[Value]): Value
-    ## Function type for invoking functions in the runtime.
-
-  NativeFn* = proc(args: openArray[Value], invoker: FnInvoker): Value
-    ## Function in the host language callable from the interpreter.
-
-  Environment* = ref object
-    ## Environment for storing variable bindings and parent scopes.
-    values*: Table[string, Value]
-    parent*: Environment
-
-template newValue*[T](n: T): Value =
+template newValue*(n: typed): Value =
   ## Create a new Value object from a number
   when n is SomeInteger:
     Value(kind: vkNumber, number: newNumber(n))
@@ -86,12 +29,16 @@ template newValue*[T](n: T): Value =
     Value(kind: vkBool, boolean: n.bool)
   elif n is seq[Value]:
     Value(kind: vkVector, vector: n)
+  elif n is BMathType:
+    Value(kind: vkType, typ: n)
+  elif n is string:
+    Value(kind: vkString, content: n)
   else:
     const message = "Unsupported type '" & $T & "' for Value"
     {.error: message.}
 
 proc newValue*(
-    body: Expression, env: Environment, params: seq[string]
+    body: Expression, env: Environment, params: seq[Parameter]
 ): Value {.inline.} =
   ## Creates a new Value object wrapping a user-defined function.
   var functionObj = Function(body: body, env: env, params: params)
@@ -119,6 +66,9 @@ proc `$`*(kind: ValueKind): string =
   of vkFunction: "function"
   of vkVector: "vector"
   of vkSeq: "seq"
+  of vkType: "type"
+  of vkString: "string"
+  of vkError: "error"
 
 proc `$`*(value: Value): string =
   ## Returns string representation of numeric value
@@ -135,6 +85,12 @@ proc `$`*(value: Value): string =
     "[" & value.vector.toSeq.mapIt($it).join(", ") & "]"
   of vkSeq:
     "<seq>"
+  of vkType:
+    $value.typ
+  of vkString:
+    "\"" & value.content & "\""
+  of vkError:
+    "Error: " & value.error
 
 proc `$`*(val: LabeledValue): string =
   if val.label != "":
@@ -158,10 +114,39 @@ when defined(showSize):
     echo "   ├─ vkBool variant"
     echo "   │  └─ Bool component: ", sizeof(bool), " bytes"
     echo "   ├─ vkNativeFunc variant"
-    echo "   │  └─ NativeFunc component: ", sizeof(NativeFn), " bytes"
+    echo "   │  ├─ NativeFn whole: ", sizeof(NativeFn), " bytes"
+    echo "   │  ├─  - callable (proc type): ",
+      sizeof(proc(args: openArray[Value], invoker: FnInvoker): Value), " bytes"
+    echo "   │  └─  - signatures (seq[Signature]): ",
+      sizeof(seq[Signature]), " bytes"
     echo "   ├─ vkFunction variant"
-    echo "   │  └─ Function pointer size: ", sizeof(ref Function), " bytes"
+    echo "   │  ├─ Function ref size: ", sizeof(ref Function), " bytes"
+    echo "   │  └─  Function fields:"
+    echo "   │     - body (ref Expression): ", sizeof(ref Expression), " bytes"
+    echo "   │     - env (ref Environment): ", sizeof(ref Environment), " bytes"
+    echo "   │     - params (seq[Parameter]): ", sizeof(seq[Parameter]), " bytes"
+    echo "   │     - signature (Signature): ", sizeof(Signature), " bytes"
+    echo "   │       - Signature.params (seq[Parameter]): ",
+      sizeof(seq[Parameter]), " bytes"
+    echo "   │       - Signature.returnType (BMathType): ",
+      sizeof(BMathType), " bytes"
     echo "   ├─ vkVector variant"
-    echo "   │  └─ Vector component: ", sizeof(Vector[Value]), " bytes"
-    echo "   └─ vkSeq variant"
-    echo "      └─ Sequence pointer size: ", sizeof(ref Sequence), " bytes"
+    echo "   │  └─ Vector ref size: ", sizeof(Vector[Value]), " bytes"
+    echo "   ├─ vkSeq variant"
+    echo "   │  ├─ Sequence ref size: ", sizeof(ref Sequence), " bytes"
+    echo "   │  ├─  - Generator: ", sizeof(Generator), " bytes"
+    echo "   │  │    - atEnd (proc): ", sizeof(proc(): bool), " bytes"
+    echo "   │  │    - next (proc): ", sizeof(proc(peek: bool): Value), " bytes"
+    echo "   │  └─  - Transformer (seq): ", sizeof(seq[Transformer]), " bytes"
+    echo "   │       - Transformer size: ", sizeof(Transformer), " bytes"
+    echo "   │         - kind (TransformerKind): ", sizeof(TransformerKind), " bytes"
+    echo "   │         - fun (proc): ", sizeof(proc(x: Value): Value), " bytes"
+    echo "   ├─ vkType variant"
+    echo "   │  ├─ BMathType whole: ", sizeof(BMathType), " bytes"
+    echo "   │  ├─  - simple type enum: ", sizeof(BMathSimpleType), " bytes"
+    echo "   │  ├─  - sum types set: ", sizeof(HashSet[BMathSimpleType]), " bytes"
+    echo "   │  └─  - error cstring: ", sizeof(cstring), " bytes"
+    echo "   ├─ vkString variant"
+    echo "   │  └─ string component: ", sizeof(string), " bytes"
+    echo "   └─ vkError variant"
+    echo "      └─ error component (string): ", sizeof(string), " bytes"

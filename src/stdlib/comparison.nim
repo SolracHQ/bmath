@@ -1,8 +1,7 @@
 ## comparison.nim
 
 import utils, sequence
-import ../../../types/[value, number, vector]
-import ../errors
+import ../types/[value, number, vector, bm_types, errors]
 
 proc `<`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Compare two values for less than
@@ -138,6 +137,14 @@ proc `==`*(a, b: Value): Value {.inline, captureNumericError.} =
           eq = false
           break
       result = newValue(eq)
+  elif a.kind == vkType and b.kind == vkType:
+    result = newValue(a.typ == b.typ)
+  elif a.kind == vkBool and b.kind == vkBool:
+    result = newValue(a.boolean == b.boolean)
+  elif a.kind == vkNativeFunc and b.kind == vkNativeFunc:
+    result = newValue(a.nativeFn == b.nativeFn)
+  elif a.kind == vkString and b.kind == vkString:
+    result = newValue(a.content == b.content)
   else:
     result = newValue(false)
 

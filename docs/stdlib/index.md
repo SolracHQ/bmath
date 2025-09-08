@@ -12,6 +12,7 @@ This index provides links to all sections of the standard library documentation.
 - [Vector Operations](vector-operations.md)
 - [Sequence Operations](sequence-operations.md)
 - [Functional Utilities](functional.md)
+- [Types](types.md)
 
 ## General Notes
 

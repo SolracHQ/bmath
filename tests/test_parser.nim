@@ -1,8 +1,8 @@
 ## test_parser.nim
 import unittest, math
-import ../src/pipeline/parser/parser
-import ../src/pipeline/lexer/lexer
-import ../src/types/[expression]
+import ../src/pipeline/parser
+import ../src/pipeline/lexer
+import ../src/types/[expression, vector, bm_types, core]
 
 suite "Parser tests":
   test "parses addition of identifiers":
@@ -10,65 +10,65 @@ suite "Parser tests":
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekAdd
-    check ast.left.kind == ekIdent
-    check ast.left.name == "a"
-    check ast.right.kind == ekIdent
-    check ast.right.name == "b"
+    check ast.binaryOp.left.kind == ekIdent
+    check ast.binaryOp.left.identifier.ident == "a"
+    check ast.binaryOp.right.kind == ekIdent
+    check ast.binaryOp.right.identifier.ident == "b"
 
   test "addition of literals without constant folding":
-    var lexer = newLexer("2 + 3")
+    var lexer = newLexer("a + 3")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # now we expect an addition node and not a folded literal
     check ast.kind == ekAdd
-    check ast.left.kind == ekNumber
-    check ast.left.nValue.iValue == 2
-    check ast.right.kind == ekNumber
-    check ast.right.nValue.iValue == 3
+    check ast.binaryOp.left.kind == ekIdent
+    check ast.binaryOp.left.identifier.ident == "a"
+    check ast.binaryOp.right.kind == ekValue
+    check ast.binaryOp.right.value.number.integer == 3
 
   test "unary negation with constant folding":
     var lexer = newLexer("-4")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == ekNumber
-    check ast.nValue.iValue == -4
+    check ast.kind == ekValue
+    check ast.value.number.integer == -4
 
   test "unary negation without constant folding":
     var lexer = newLexer("-a")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekNeg
-    check ast.operand.kind == ekIdent
-    check ast.operand.name == "a"
+    check ast.unaryOp.operand.kind == ekIdent
+    check ast.unaryOp.operand.identifier.ident == "a"
 
   test "group expression returns inner literal":
     var lexer = newLexer("(5.8)")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # groups now simply return the inner expression
-    check ast.kind == ekNumber
-    check ast.nValue.fValue == 5.8
+    check ast.kind == ekValue
+    check ast.value.number.real == 5.8
 
   test "power operation without constant folding":
-    var lexer = newLexer("2 ^ 3")
+    var lexer = newLexer("b ^ 3")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # expect a power node instead of a folded literal
     check ast.kind == ekPow
-    check ast.left.kind == ekNumber
-    check ast.left.nValue.iValue == 2
-    check ast.right.kind == ekNumber
-    check ast.right.nValue.iValue == 3
+    check ast.binaryOp.left.kind == ekIdent
+    check ast.binaryOp.left.identifier.ident == "b"
+    check ast.binaryOp.right.kind == ekValue
+    check ast.binaryOp.right.value.number.integer == 3
 
   test "multiplication without full constant folding":
     var lexer = newLexer("a * 3e0")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekMul
-    check ast.left.kind == ekIdent
-    check ast.left.name == "a"
-    check ast.right.kind == ekNumber
-    check ast.right.nValue.fValue == 3.0
+    check ast.binaryOp.left.kind == ekIdent
+    check ast.binaryOp.left.identifier.ident == "a"
+    check ast.binaryOp.right.kind == ekValue
+    check ast.binaryOp.right.value.number.real == 3.0
 
   test "lambda function definition with block":
     ## Test that a lambda function with a block is parsed correctly.
@@ -76,11 +76,11 @@ suite "Parser tests":
     var lexer = newLexer(src)
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == ekFunc
+    check ast.kind == ekFuncDef
     # The lambda node should contain a block with several expressions.
-    check ast.body.kind == ekBlock
+    check ast.functionDef.body.kind == ekBlock
     # Check that the last expression in the block is a multiplication.
-    let lastExpr = ast.body.expressions[^1]
+    let lastExpr = ast.functionDef.body.blockExpr.expressions[^1]
     check lastExpr.kind == ekMul
 
   test "function call":
@@ -88,42 +88,42 @@ suite "Parser tests":
     var lexer = newLexer("main()")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
-    check ast.kind == ekFuncInvoke
+    check ast.kind == ekFuncCall
     # Depending on the implementation, ast.fun can be a string or an identifier node.
     # Here we assume it is stored as an identifier.
-    check ast.fun.kind == ekIdent
-    check ast.fun.name == "main"
+    check ast.functionCall.function.kind == ekIdent
+    check ast.functionCall.function.identifier.ident == "main"
 
   test "vector literal parsing":
     var lexer = newLexer("v = [1, 2, 3]")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekAssign
-    check ast.ident == "v"
-    check ast.expr.kind == ekVector
-    check ast.expr.values.len == 3
-    check ast.expr.values[0].kind == ekNumber
-    check ast.expr.values[0].nValue.iValue == 1
-    check ast.expr.values[1].kind == ekNumber
-    check ast.expr.values[1].nValue.iValue == 2
-    check ast.expr.values[2].kind == ekNumber
-    check ast.expr.values[2].nValue.iValue == 3
+    check ast.assign.ident == "v"
+    check ast.assign.expr.kind == ekVector
+    check ast.assign.expr.vector.size == 3
+    check ast.assign.expr.vector[0].kind == ekValue
+    check ast.assign.expr.vector[0].value.number.integer == 1
+    check ast.assign.expr.vector[1].kind == ekValue
+    check ast.assign.expr.vector[1].value.number.integer == 2
+    check ast.assign.expr.vector[2].kind == ekValue
+    check ast.assign.expr.vector[2].value.number.integer == 3
 
   test "vec function call parsing":
     var lexer = newLexer("v2 = vec(3, 4)")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekAssign
-    check ast.ident == "v2"
-    check ast.expr.kind == ekFuncInvoke
+    check ast.assign.ident == "v2"
+    check ast.assign.expr.kind == ekFuncCall
     # Assuming the function expression is an identifier.
-    check ast.expr.fun.kind == ekIdent
-    check ast.expr.fun.name == "vec"
-    check ast.expr.arguments.len == 2
-    check ast.expr.arguments[0].kind == ekNumber
-    check ast.expr.arguments[0].nValue.iValue == 3
-    check ast.expr.arguments[1].kind == ekNumber
-    check ast.expr.arguments[1].nValue.iValue == 4
+    check ast.assign.expr.functionCall.function.kind == ekIdent
+    check ast.assign.expr.functionCall.function.identifier.ident == "vec"
+    check ast.assign.expr.functionCall.params.len == 2
+    check ast.assign.expr.functionCall.params[0].kind == ekValue
+    check ast.assign.expr.functionCall.params[0].value.number.integer == 3
+    check ast.assign.expr.functionCall.params[1].kind == ekValue
+    check ast.assign.expr.functionCall.params[1].value.number.integer == 4
 
   test "parses well formed if expression with elif":
     let src = "if(a == b) 1 elif(a != b) 2 else 3"
@@ -131,9 +131,9 @@ suite "Parser tests":
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekIf
-    check ast.branches.len == 2
-    check ast.elseBranch.kind == ekNumber
-    check ast.elseBranch.nValue.iValue == 3
+    check ast.ifExpr.branches.len == 2
+    check ast.ifExpr.elseBranch.kind == ekValue
+    check ast.ifExpr.elseBranch.value.number.integer == 3
 
   test "parses well formed if expression without elif":
     let src = "if(a < b) 10 else 20"
@@ -141,7 +141,7 @@ suite "Parser tests":
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekIf
-    check ast.branches.len == 1
+    check ast.ifExpr.branches.len == 1
 
   test "parses comparison and boolean operators":
     # Equality operator ==
@@ -190,6 +190,7 @@ suite "Parser tests":
     lexer = newLexer("a | b")
     tokens = tokenizeExpression(lexer)
     ast = parse(tokens)
+    check ast.kind == ekOr
 
   test "parses chain operator with nested function calls":
     ## Test that the chain operator '->' is parsed correctly.
@@ -198,43 +199,43 @@ suite "Parser tests":
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     # The outermost call should be g(f(a), x)
-    check ast.kind == ekFuncInvoke
-    check ast.fun.kind == ekIdent
-    check ast.fun.name == "g"
-    check ast.arguments.len == 2
+    check ast.kind == ekFuncCall
+    check ast.functionCall.function.kind == ekIdent
+    check ast.functionCall.function.identifier.ident == "g"
+    check ast.functionCall.params.len == 2
 
     # First argument should be the result of f(a)
-    let firstArg = ast.arguments[0]
-    check firstArg.kind == ekFuncInvoke
-    check firstArg.fun.kind == ekIdent
-    check firstArg.fun.name == "f"
-    check firstArg.arguments.len == 1
-    check firstArg.arguments[0].kind == ekIdent
-    check firstArg.arguments[0].name == "a"
+    let firstArg = ast.functionCall.params[0]
+    check firstArg.kind == ekFuncCall
+    check firstArg.functionCall.function.kind == ekIdent
+    check firstArg.functionCall.function.identifier.ident == "f"
+    check firstArg.functionCall.params.len == 1
+    check firstArg.functionCall.params[0].kind == ekIdent
+    check firstArg.functionCall.params[0].identifier.ident == "a"
 
     # Second argument should be the identifier x
-    let secondArg = ast.arguments[1]
+    let secondArg = ast.functionCall.params[1]
     check secondArg.kind == ekIdent
-    check secondArg.name == "x"
+    check secondArg.identifier.ident == "x"
 
   test "parses function definition inside block":
     var lexer = newLexer("{ a = |x| if(x == 2) 2 else x\na(x) }")
     let tokens = tokenizeExpression(lexer)
     var ast = parse(tokens)
     check ast.kind == ekBlock
-    check ast.expressions.len == 2
+    check ast.blockExpr.expressions.len == 2
     
     # First expression should be a function assignment
-    let assignment = ast.expressions[0]
+    let assignment = ast.blockExpr.expressions[0]
     check assignment.kind == ekAssign
-    check assignment.ident == "a"
-    check assignment.expr.kind == ekFunc
+    check assignment.assign.ident == "a"
+    check assignment.assign.expr.kind == ekFuncDef
     
     # Second expression should be a function call
-    let call = ast.expressions[1]
-    check call.kind == ekFuncInvoke
-    check call.fun.kind == ekIdent
-    check call.fun.name == "a"
+    let call = ast.blockExpr.expressions[1]
+    check call.kind == ekFuncCall
+    check call.functionCall.function.kind == ekIdent
+    check call.functionCall.function.identifier.ident == "a"
 
   test "parses arrow operator with addition":
     var lexer = newLexer("4->double + 4->double")
@@ -245,22 +246,22 @@ suite "Parser tests":
     check ast.kind == ekAdd
     
     # Both sides should be function calls from arrow operation
-    check ast.left.kind == ekFuncInvoke
-    check ast.right.kind == ekFuncInvoke
+    check ast.binaryOp.left.kind == ekFuncCall
+    check ast.binaryOp.right.kind == ekFuncCall
     
     # Check the function name is "double" on both sides
-    check ast.left.fun.kind == ekIdent
-    check ast.left.fun.name == "double"
-    check ast.right.fun.kind == ekIdent
-    check ast.right.fun.name == "double"
+    check ast.binaryOp.left.functionCall.function.kind == ekIdent
+    check ast.binaryOp.left.functionCall.function.identifier.ident == "double"
+    check ast.binaryOp.right.functionCall.function.kind == ekIdent
+    check ast.binaryOp.right.functionCall.function.identifier.ident == "double"
     
     # Check that the argument to both functions is 4
-    check ast.left.arguments.len == 1
-    check ast.left.arguments[0].kind == ekNumber
-    check ast.left.arguments[0].nValue.iValue == 4
-    check ast.right.arguments.len == 1
-    check ast.right.arguments[0].kind == ekNumber
-    check ast.right.arguments[0].nValue.iValue == 4
+    check ast.binaryOp.left.functionCall.params.len == 1
+    check ast.binaryOp.left.functionCall.params[0].kind == ekValue
+    check ast.binaryOp.left.functionCall.params[0].value.number.integer == 4
+    check ast.binaryOp.right.functionCall.params.len == 1
+    check ast.binaryOp.right.functionCall.params[0].kind == ekValue
+    check ast.binaryOp.right.functionCall.params[0].value.number.integer == 4
 
   test "parses nested arrow operations":
     var lexer = newLexer("5->double->increment->square")
@@ -268,25 +269,25 @@ suite "Parser tests":
     var ast = parse(tokens)
     
     # Should be nested function calls
-    check ast.kind == ekFuncInvoke
-    check ast.fun.kind == ekIdent
-    check ast.fun.name == "square"
-    check ast.arguments.len == 1
+    check ast.kind == ekFuncCall
+    check ast.functionCall.function.kind == ekIdent
+    check ast.functionCall.function.identifier.ident == "square"
+    check ast.functionCall.params.len == 1
     
     # First argument should be increment(double(5))
-    let firstArg = ast.arguments[0]
-    check firstArg.kind == ekFuncInvoke
-    check firstArg.fun.kind == ekIdent
-    check firstArg.fun.name == "increment"
-    check firstArg.arguments.len == 1
+    let firstArg = ast.functionCall.params[0]
+    check firstArg.kind == ekFuncCall
+    check firstArg.functionCall.function.kind == ekIdent
+    check firstArg.functionCall.function.identifier.ident == "increment"
+    check firstArg.functionCall.params.len == 1
     
-    let innerArg = firstArg.arguments[0]
-    check innerArg.kind == ekFuncInvoke
-    check innerArg.fun.kind == ekIdent
-    check innerArg.fun.name == "double"
-    check innerArg.arguments.len == 1
-    check innerArg.arguments[0].kind == ekNumber
-    check innerArg.arguments[0].nValue.iValue == 5
+    let innerArg = firstArg.functionCall.params[0]
+    check innerArg.kind == ekFuncCall
+    check innerArg.functionCall.function.kind == ekIdent
+    check innerArg.functionCall.function.identifier.ident == "double"
+    check innerArg.functionCall.params.len == 1
+    check innerArg.functionCall.params[0].kind == ekValue
+    check innerArg.functionCall.params[0].value.number.integer == 5
 
   test "parses complex if-else inside function definition":
     var lexer = newLexer("|x| if(x > 10) 1 elif(x > 5) 2 else 3")
@@ -294,27 +295,127 @@ suite "Parser tests":
     var ast = parse(tokens)
     
     # Should be a function node
-    check ast.kind == ekFunc
-    check ast.params.len == 1
-    check ast.params[0] == "x"
+    check ast.kind == ekFuncDef
+    check ast.functionDef.params.len == 1
+    check ast.functionDef.params[0].name == "x"
     
     # Body should be an if expression
-    check ast.body.kind == ekIf
-    check ast.body.branches.len == 2
-    check ast.body.elseBranch.kind == ekNumber
-    check ast.body.elseBranch.nValue.iValue == 3
+    check ast.functionDef.body.kind == ekIf
+    check ast.functionDef.body.ifExpr.branches.len == 2
+    check ast.functionDef.body.ifExpr.elseBranch.kind == ekValue
+    check ast.functionDef.body.ifExpr.elseBranch.value.number.integer == 3
     
     # Check conditions
-    let firstCondition = ast.body.branches[0].condition
+    let firstCondition = ast.functionDef.body.ifExpr.branches[0].condition
     check firstCondition.kind == ekGt
-    let secondCondition = ast.body.branches[1].condition
+    let secondCondition = ast.functionDef.body.ifExpr.branches[1].condition
     check secondCondition.kind == ekGt
     
     # Check branch values are numbers
-    let firstBranchValue = ast.body.branches[0].then
-    check firstBranchValue.kind == ekNumber
-    check firstBranchValue.nValue.iValue == 1
+    let firstBranchValue = ast.functionDef.body.ifExpr.branches[0].then
+    check firstBranchValue.kind == ekValue
+    check firstBranchValue.value.number.integer == 1
     
-    let secondBranchValue = ast.body.branches[1].then
-    check secondBranchValue.kind == ekNumber
-    check secondBranchValue.nValue.iValue == 2
+    let secondBranchValue = ast.functionDef.body.ifExpr.branches[1].then
+    check secondBranchValue.kind == ekValue
+    check secondBranchValue.value.number.integer == 2
+
+  test "parses type checking with is operator":
+    var lexer = newLexer("x is complex")
+    let tokens = tokenizeExpression(lexer)
+    var ast = parse(tokens)
+    
+    # Should be an is expression
+    check ast.kind == ekEq
+    check ast.binaryOp.left.kind == ekFuncCall
+    check ast.binaryOp.left.functionCall.function.kind == ekIdent
+    check ast.binaryOp.left.functionCall.params.len == 1
+    check ast.binaryOp.left.functionCall.params[0].kind == ekIdent
+    check ast.binaryOp.left.functionCall.params[0].identifier.ident == "x"
+    check ast.binaryOp.right.kind == ekIdent
+    
+  test "parses function with type checking":
+    var lexer = newLexer("|x| if(x is complex) 1 else 2")
+    let tokens = tokenizeExpression(lexer)
+    var ast = parse(tokens)
+    
+    # Should be a function definition
+    check ast.kind == ekFuncDef
+    check ast.functionDef.params.len == 1
+    check ast.functionDef.params[0].name == "x"
+    
+    # Body should be if expression
+    check ast.functionDef.body.kind == ekIf
+    
+    # Check the condition (x is complex)
+    let condition = ast.functionDef.body.ifExpr.branches[0].condition
+    check condition.kind == ekEq
+    check condition.binaryOp.left.kind == ekFuncCall
+    check condition.binaryOp.left.functionCall.function.kind == ekIdent
+    check condition.binaryOp.left.functionCall.params.len == 1
+    check condition.binaryOp.left.functionCall.params[0].kind == ekIdent
+    check condition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
+    check condition.binaryOp.right.kind == ekIdent
+    
+    # Check branches
+    check ast.functionDef.body.ifExpr.branches.len == 1
+    check ast.functionDef.body.ifExpr.branches[0].then.kind == ekValue
+    check ast.functionDef.body.ifExpr.branches[0].then.value.number.integer == 1
+    check ast.functionDef.body.ifExpr.elseBranch.kind == ekValue
+    check ast.functionDef.body.ifExpr.elseBranch.value.number.integer == 2
+    
+  test "parses function with type checking and function call":
+    var lexer = newLexer("|x| if(x is complex) x->re elif(x is integer) x->real else x")
+    let tokens = tokenizeExpression(lexer)
+    var ast = parse(tokens)
+    
+    # Should be a function definition
+    check ast.kind == ekFuncDef
+    check ast.functionDef.params.len == 1
+    check ast.functionDef.params[0].name == "x"
+    
+    # Body should be if expression
+    check ast.functionDef.body.kind == ekIf
+    check ast.functionDef.body.ifExpr.branches.len == 2
+    
+    # Check the first condition (x is complex)
+    let firstCondition = ast.functionDef.body.ifExpr.branches[0].condition
+    check firstCondition.kind == ekEq
+    check firstCondition.binaryOp.left.kind == ekFuncCall
+    check firstCondition.binaryOp.left.functionCall.function.kind == ekIdent
+    check firstCondition.binaryOp.left.functionCall.params.len == 1
+    check firstCondition.binaryOp.left.functionCall.params[0].kind == ekIdent
+    check firstCondition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
+    check firstCondition.binaryOp.right.kind == ekIdent
+    
+    # Check the first "then" branch (x->re)
+    let firstThenBranch = ast.functionDef.body.ifExpr.branches[0].then
+    check firstThenBranch.kind == ekFuncCall
+    check firstThenBranch.functionCall.function.kind == ekIdent
+    check firstThenBranch.functionCall.function.identifier.ident == "re"
+    check firstThenBranch.functionCall.params.len == 1
+    check firstThenBranch.functionCall.params[0].kind == ekIdent
+    check firstThenBranch.functionCall.params[0].identifier.ident == "x"
+    
+    # Check the second condition (x is integer)
+    let secondCondition = ast.functionDef.body.ifExpr.branches[1].condition
+    check secondCondition.kind == ekEq
+    check secondCondition.binaryOp.left.kind == ekFuncCall
+    check secondCondition.binaryOp.left.functionCall.function.kind == ekIdent
+    check secondCondition.binaryOp.left.functionCall.params.len == 1
+    check secondCondition.binaryOp.left.functionCall.params[0].kind == ekIdent
+    check secondCondition.binaryOp.left.functionCall.params[0].identifier.ident == "x"
+    check secondCondition.binaryOp.right.kind == ekIdent
+    
+    # Check the second "then" branch (x->real)
+    let secondThenBranch = ast.functionDef.body.ifExpr.branches[1].then
+    check secondThenBranch.kind == ekFuncCall
+    check secondThenBranch.functionCall.function.kind == ekIdent
+    check secondThenBranch.functionCall.params.len == 1
+    check secondThenBranch.functionCall.params[0].kind == ekIdent
+    check secondThenBranch.functionCall.params[0].identifier.ident == "x"
+    
+    # Check the "else" branch (x)
+    let elseBranch = ast.functionDef.body.ifExpr.elseBranch
+    check elseBranch.kind == ekIdent
+    check elseBranch.identifier.ident == "x"

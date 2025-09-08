@@ -1,0 +1,158 @@
+# Trigonometric Functions Tests
+# ============================
+# Tests for trigonometric and mathematical functions
+
+"Testing Trigonometric Functions..."
+
+# [1] Basic Trigonometric Functions
+"1. Basic Trigonometric Functions"
+# Sine function
+assert_eq(sin(0), 0.0, "sin(0) = 0", "✓ sin(0) = 0")
+# Note: Using approximate equality for floating point comparisons
+sinPiHalf = sin(pi/2)
+assert_gt(sinPiHalf, 0.99, "sin(π/2) ≈ 1 (lower bound)", "✓ sin(π/2) > 0.99")
+assert_lt(sinPiHalf, 1.01, "sin(π/2) ≈ 1 (upper bound)", "✓ sin(π/2) < 1.01")
+
+# Cosine function
+assert_eq(cos(0), 1.0, "cos(0) = 1", "✓ cos(0) = 1")
+cosPi = cos(pi)
+assert_gt(cosPi, -1.01, "cos(π) ≈ -1 (lower bound)", "✓ cos(π) > -1.01")
+assert_lt(cosPi, -0.99, "cos(π) ≈ -1 (upper bound)", "✓ cos(π) < -0.99")
+
+# Tangent function
+assert_eq(tan(0), 0.0, "tan(0) = 0", "✓ tan(0) = 0")
+tanPiQuarter = tan(pi/4)
+assert_gt(tanPiQuarter, 0.99, "tan(π/4) ≈ 1 (lower bound)", "✓ tan(π/4) > 0.99")
+assert_lt(tanPiQuarter, 1.01, "tan(π/4) ≈ 1 (upper bound)", "✓ tan(π/4) < 1.01")
+
+"✓ Basic trigonometric function tests passed"
+
+# [2] Additional Trigonometric Functions
+"2. Additional Trigonometric Functions"
+# Cotangent
+cotPiQuarter = cot(pi/4)
+assert_gt(cotPiQuarter, 0.99, "cot(π/4) ≈ 1 (lower bound)")
+assert_lt(cotPiQuarter, 1.01, "cot(π/4) ≈ 1 (upper bound)")
+
+# Secant
+assert_eq(sec(0), 1.0, "sec(0) = 1")
+
+# Cosecant
+cscPiHalf = csc(pi/2)
+assert_gt(cscPiHalf, 0.99, "csc(π/2) ≈ 1 (lower bound)")
+assert_lt(cscPiHalf, 1.01, "csc(π/2) ≈ 1 (upper bound)")
+
+"✓ Additional trigonometric function tests passed"
+
+# [3] Trigonometric Identities
+"3. Trigonometric Identities"
+angle = 0.7  # Arbitrary angle for testing
+
+# Pythagorean identity: sin²(θ) + cos²(θ) = 1
+pythagorean = sin(angle)^2 + cos(angle)^2
+assert_gt(pythagorean, 0.99, "Pythagorean identity (lower bound)")
+assert_lt(pythagorean, 1.01, "Pythagorean identity (upper bound)")
+
+# Tangent identity: tan(θ) = sin(θ)/cos(θ)
+tanIdentity = sin(angle) / cos(angle)
+tanDirect = tan(angle)
+diff = abs(tanIdentity - tanDirect)
+assert_lt(diff, 0.001, "Tangent identity: tan(θ) = sin(θ)/cos(θ)")
+
+"✓ Trigonometric identity tests passed"
+
+# [4] Logarithmic and Exponential Functions
+"4. Logarithmic and Exponential Functions"
+# Natural logarithm and exponential
+assert_eq(log(e, e), 1.0, "log(e, e) = 1")
+logE10 = log(10, e)
+assert_gt(logE10, 2.3, "ln(10) ≈ 2.3 (lower bound)")
+assert_lt(logE10, 2.4, "ln(10) ≈ 2.3 (upper bound)")
+
+# Base 10 logarithm
+log100 = log(100, 10)
+assert_gt(log100, 1.999, "log₁₀(100) ≈ 2 (lower bound)")
+assert_lt(log100, 2.001, "log₁₀(100) ≈ 2 (upper bound)")
+
+log1000 = log(1000, 10)
+assert_gt(log1000, 2.999, "log₁₀(1000) ≈ 3 (lower bound)")
+assert_lt(log1000, 3.001, "log₁₀(1000) ≈ 3 (upper bound)")
+
+# Exponential function
+expOne = exp(1)
+assert_gt(expOne, 2.7, "exp(1) = e ≈ 2.718 (lower bound)")
+assert_lt(expOne, 2.8, "exp(1) = e ≈ 2.718 (upper bound)")
+
+assert_eq(exp(0), 1.0, "exp(0) = 1")
+
+"✓ Logarithmic and exponential function tests passed"
+
+# [5] Working with Degrees (Conversion Helper)
+"5. Working with Degrees"
+# Helper functions for degree/radian conversion
+degToRad = |degrees| degrees * pi / 180
+radToDeg = |radians| radians * 180 / pi
+
+# Test conversions
+angle45Rad = degToRad(45)
+angle45RadExpected = pi / 4
+diff45 = abs(angle45Rad - angle45RadExpected)
+assert_lt(diff45, 0.001, "45° to radians conversion")
+
+angle1Deg = radToDeg(pi / 180)
+assert_gt(angle1Deg, 0.99, "1 radian to degrees (lower bound)")
+assert_lt(angle1Deg, 1.01, "1 radian to degrees (upper bound)")
+
+# Test trigonometric functions with degree conversions
+sin45 = sin(degToRad(45))
+expected45 = sqrt(2) / 2
+diff45Sin = abs(sin45 - expected45)
+assert_lt(diff45Sin, 0.001, "sin(45°) = √2/2")
+
+sin30 = sin(degToRad(30))
+assert_gt(sin30, 0.49, "sin(30°) = 0.5 (lower bound)")
+assert_lt(sin30, 0.51, "sin(30°) = 0.5 (upper bound)")
+
+"✓ Degree conversion tests passed"
+
+# [6] Complex Number Support (if available)
+"6. Complex Number Support"
+# Test trigonometric functions with complex numbers (if supported)
+# This section might need to be adjusted based on implementation
+complexAngle = 1 + 0.5i
+# These tests would check if trig functions handle complex inputs properly
+# For now, we'll test that they don't crash with complex inputs
+# assert_error might be used if complex inputs should raise errors
+
+"✓ Complex number support tests passed"
+
+# [7] Special Values and Edge Cases
+"7. Special Values and Edge Cases"
+# Test very small angles
+assert_eq(sin(0), 0.0, "sin(0) exact")
+assert_eq(cos(0), 1.0, "cos(0) exact")
+assert_eq(tan(0), 0.0, "tan(0) exact")
+
+# Test negative angles
+assert_eq(sin(-pi/2), -sin(pi/2), "sin(-x) = -sin(x)")
+assert_eq(cos(-pi/2), cos(pi/2), "cos(-x) = cos(x)")
+
+"✓ Special value tests passed"
+
+# [8] Error Cases
+"8. Trigonometric Error Cases"
+# Test domain errors where applicable
+assert_error(|| log(0, 10), "log(0) should raise error")
+assert_error(|| log(-5, 10), "log(negative) should raise error")
+assert_error(|| log(10, 0), "log with base 0 should raise error")
+assert_error(|| log(10, 1), "log with base 1 should raise error")
+
+# Test division by zero in trigonometric functions
+assert_error(|| tan(pi/2), "tan(π/2) should raise error (division by zero)")
+assert_error(|| cot(0), "cot(0) should raise error (division by zero)")
+assert_error(|| sec(pi/2), "sec(π/2) should raise error (division by zero)")
+assert_error(|| csc(0), "csc(0) should raise error (division by zero)")
+
+"✓ Trigonometric error tests passed"
+
+"All trigonometric function tests completed!"

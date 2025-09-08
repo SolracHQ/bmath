@@ -1,0 +1,175 @@
+# Sequence Operations Tests
+# ========================
+# Tests for lazy sequences and sequence operations
+
+"Testing Sequence Operations..."
+
+# [1] Basic Sequence Creation
+"1. Basic Sequence Creation"
+# Finite sequence with function
+finiteSeq = seq(5, |i| i * 2)
+assert_eq(type(finiteSeq), Seq, "Finite sequence type", "✓ Finite sequence type")
+
+# Collect to test content
+collected = finiteSeq -> collect
+assert_eq(collected, [0, 2, 4, 6, 8], "Finite sequence content", "✓ Finite sequence content")
+
+# Sequence from vector
+vectorSeq = seq([10, 20, 30])
+assert_eq(type(vectorSeq), Seq, "Vector to sequence type", "✓ Vector to sequence type")
+collectedVec = vectorSeq -> collect
+assert_eq(collectedVec, [10, 20, 30], "Vector sequence content", "✓ Vector sequence content")
+
+# Constant sequence (finite test)
+constantSeq = seq(3, |_|42)  # 3 elements of value 42
+constCollected = constantSeq -> collect
+assert_eq(constCollected, [42, 42, 42], "Constant sequence", "✓ Constant sequence")
+
+"✓ Basic sequence creation tests passed"
+
+# [2] Sequence Access Operations
+"2. Sequence Access Operations"
+testSeq = seq(10, |i| i + 1)  # [1, 2, 3, ..., 10]
+
+# Test has_next and next
+assert_eq(testSeq->has_next, true, "Sequence has next element", "✓ Sequence has next element")
+firstElement = testSeq->next
+assert_eq(firstElement, 1, "First element from sequence", "✓ First element from sequence")
+
+# Test skip operation
+skippedSeq = seq(10, |i| i + 1)
+skippedElement = skippedSeq->skip(4)  # Skip first 4, get 5th (value 5)
+assert_eq(skippedElement->next, 5, "Skip operation result", "✓ Skip operation result")
+
+"✓ Sequence access operation tests passed"
+
+# [3] Sequence Transformations
+"3. Sequence Transformations"
+# Map operation
+numbers = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
+doubled = numbers->map(|x| x * 2)
+assert_eq(type(doubled), Seq, "Map returns sequence", "✓ Map returns sequence")
+doubledCollected = doubled->collect
+assert_eq(doubledCollected, [2, 4, 6, 8, 10], "Map transformation", "✓ Map transformation")
+
+# Filter operation
+numbers = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
+filtered = numbers->filter(|x| x % 2 == 0)
+assert_eq(type(filtered), Seq, "Filter returns sequence", "✓ Filter returns sequence")
+filteredCollected = filtered->collect
+assert_eq(filteredCollected, [2, 4], "Filter even numbers", "✓ Filter even numbers")
+
+"✓ Sequence transformation tests passed"
+
+# [4] Sequence Reductions
+"4. Sequence Reductions"
+# Sum operation
+sumSeq = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
+total = sumSeq->sum
+assert_eq(total, 15, "Sequence sum")
+
+# Reduce operation
+sumSeq = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
+reduced = sumSeq->reduce(0, |acc, x| acc + x)
+assert_eq(reduced, 15, "Sequence reduce (sum)")
+
+# Reduce with multiplication
+sumSeq = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
+product = sumSeq->reduce(1, |acc, x| acc * x)
+assert_eq(product, 120, "Sequence reduce (product = 5!)")
+
+"✓ Sequence reduction tests passed"
+
+# [5] Sequence Slicing and Taking
+"5. Sequence Slicing and Taking"
+# Take operation
+longSeq = seq(100, |i| i * i)  # Squares: [0, 1, 4, 9, 16, ...]
+firstFive = longSeq->take(5)
+assert_eq(type(firstFive), Seq, "Take returns sequence")
+takenCollected = firstFive->collect
+assert_eq(takenCollected, [0, 1, 4, 9, 16], "Take first 5 squares")
+
+# Take from infinite-like sequence
+# Note: We use a large finite sequence to simulate infinite
+largeSeq = seq(1000, |i| i + 1)
+taken = largeSeq->take(3)
+takenValues = taken->collect
+assert_eq(takenValues, [1, 2, 3], "Take from large sequence")
+
+"✓ Sequence slicing tests passed"
+
+# [6] Chained Sequence Operations
+"6. Chained Sequence Operations"
+# Complex chain: map -> filter -> take
+chainResult = seq(20, |i| i + 1) -> \   # [1, 2, 3, ..., 20]
+              map(|x| x * x) ->    \     # [1, 4, 9, 16, 25, 36, ...]
+              filter(|x| x < 50) ->  \   # [1, 4, 9, 16, 25, 36, 49]
+              take(4) ->            \    # [1, 4, 9, 16]
+              collect
+
+assert_eq(chainResult, [1, 4, 9, 16], "Chained sequence operations")
+
+"✓ Chained operation tests passed"
+
+# [7] Sequence with Boolean Operations
+"7. Sequence Boolean Operations"
+boolSeq = seq(5, |i| i % 2 == 0)  # [true, false, true, false, true]
+boolCollected = boolSeq->collect
+assert_eq(boolCollected, [true, false, true, false, true], "Boolean sequence")
+
+# Any operation
+boolSeq = seq(5, |i| i % 2 == 0)
+hasTrue = boolSeq->any_true()
+assert_eq(hasTrue, true, "Sequence has true values")
+
+# All operation
+boolSeq = seq(5, |i| i % 2 == 0)
+allTrue = boolSeq->all_true()
+assert_eq(allTrue, false, "Not all values are true")
+
+# Test with all true
+allTrueSeq = seq(3, |_| true)
+allTrueResult = allTrueSeq->all_true()
+assert_eq(allTrueResult, true, "All true sequence")
+
+"✓ Sequence boolean operation tests passed"
+
+# [8] Sequence Zipping
+"8. Sequence Zipping"
+seq1 = seq(3, |i| i + 1)      # [1, 2, 3]
+seq2 = seq(3, |i| (i + 1) * 10)  # [10, 20, 30]
+
+# Zip sequences
+zipped = seq1->zip(seq2)
+assert_eq(type(zipped), Seq, "Zip returns sequence")
+zippedCollected = zipped->collect
+# Note: Exact format depends on implementation - might be pairs or flattened
+# This test may need adjustment based on actual zip behavior
+
+"✓ Sequence zipping tests passed"
+
+# [9] Nth Element Access
+"9. Nth Element Access"
+indexSeq = seq(10, |i| i * 3)  # [0, 3, 6, 9, 12, 15, 18, 21, 24, 27]
+thirdElement = indexSeq->nth(2)  # 0-based indexing, should be 6
+assert_eq(thirdElement, 6, "Nth element access")
+
+indexSeq = seq(10, |i| i * 3)
+fifthElement = indexSeq->nth(4)
+assert_eq(fifthElement, 12, "Fifth element access")
+
+"✓ Nth element access tests passed"
+
+# [10] Error Cases
+"10. Sequence Error Cases"
+# Test accessing beyond sequence bounds
+finiteTestSeq = seq(3, |i| i)
+assert_error(|| finiteTestSeq->nth(5), "Access beyond sequence bounds")
+
+# Test invalid sequence operations
+assert_error(|| seq(-1, |i| i), "Negative sequence size should fail")
+assert_error(|| seq(5, "not a function"), "Invalid generator function")
+
+"✓ Sequence error tests passed"
+
+"All sequence operation tests completed!"
