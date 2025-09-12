@@ -23,7 +23,7 @@ suite "Interpreter tests":
   test "Weird but valid expressions":
     check evalString("---5").number.integer == -5
     check evalString("3 * -(-4)").number.integer == 12
-    check evalString("2^3^2").number.integer == 64 # Left associative
+    check evalString("2^3^2").number.integer == 512 # 2^(3^2) = 2^9 = 512
 
   test "Function call evaluation":
     check evalString("pow(2, 3+1)").number.integer == 16

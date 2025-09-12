@@ -386,11 +386,18 @@ proc next*(lexer: var Lexer): Token =
         return Token(kind: tkEoe, position: pos(lexer.line, lexer.col))
       else:
         return Token(kind: tkNewline, position: pos(lexer.line, lexer.col))
-    # Skip comments
+    # Parse comments
     if lexer.source[lexer.current] == '#':
+      let start = lexer.current
+      let startCol = lexer.col
+      lexer.advance() # Skip the '#'
+      
+      var commentText = ""
       while lexer.current < lexer.source.len and lexer.source[lexer.current] != '\n':
+        commentText.add(lexer.source[lexer.current])
         lexer.advance()
-      continue
+      
+      return Token(kind: tkComment, comment: commentText, position: pos(lexer.line, startCol))
     let start = lexer.current
     # Check for number: digit or a dot with a digit following (as in '.5')
     if lexer.source[lexer.current] in {'0' .. '9'} or (

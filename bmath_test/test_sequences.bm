@@ -101,7 +101,7 @@ assert_eq(takenValues, [1, 2, 3], "Take from large sequence")
 # [6] Chained Sequence Operations
 "6. Chained Sequence Operations"
 # Complex chain: map -> filter -> take
-chainResult = seq(20, |i| i + 1) -> \   # [1, 2, 3, ..., 20]
+chainResult = seq(20, |i| i + 1) -> \    # [1, 2, 3, ..., 20]
               map(|x| x * x) ->    \     # [1, 4, 9, 16, 25, 36, ...]
               filter(|x| x < 50) ->  \   # [1, 4, 9, 16, 25, 36, 49]
               take(4) ->            \    # [1, 4, 9, 16]

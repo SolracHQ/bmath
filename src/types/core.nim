@@ -201,6 +201,7 @@ type
     tkComma ## Argument separator ','
     tkFatArrow ## Return type arrow '=>'
     tkNewline # End of expression marker for parser (due multiline blocks support)
+    tkComment ## Comment text starting with '#'
     tkEoe ## End of expression marker for lexer
 
   Token* = object
@@ -216,6 +217,8 @@ type
       value*: Value
     of tkIdent:
       name*: string ## Identifier name for tkIdent tokens
+    of tkComment:
+      comment*: string ## Comment content for tkComment tokens
     else:
       discard
 
@@ -227,6 +230,7 @@ type
 
     # Literals
     ekValue ## Value literal (number or string or boolean or type)
+    ekGroup ## Grouping expression to preserve parentheses
     ekVector ## Vector literal
 
     # Unary operations
@@ -347,6 +351,8 @@ type
     case kind*: ExpressionKind
     of ekValue:
       value*: Value
+    of ekGroup:
+      groupExpr*: Expression
     of ekVector:
       vector*: Vector[Expression]
     of ekNeg, ekNot:

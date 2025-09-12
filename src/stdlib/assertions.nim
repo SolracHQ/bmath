@@ -3,7 +3,6 @@
 
 import ../types/[value, number, bm_types, errors]
 from types import getType
-from comparison import `==`, `<`, `>`
 
 type AssertionError* = object of RuntimeError ## Raised when an assertion fails
 

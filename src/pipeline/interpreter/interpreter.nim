@@ -15,7 +15,7 @@
 import std/[sequtils]
 import ../../types/[value, expression, vector, errors]
 import environment
-import ../../stdlib/[arithmetic, comparison, logical, types]
+import ../../stdlib/types
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment ## The global environment for storing variables
@@ -185,6 +185,8 @@ proc evalExpression(
 
   try:
     case expression.kind
+    of ekGroup:
+      return interpreter.evalExpression(expression.groupExpr, env)
     of ekValue:
       return expression.value
     of ekAdd:

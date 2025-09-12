@@ -1,7 +1,7 @@
 ## functional.nim
 
 import ../types/[value, vector, number, errors]
-import sequence, arithmetic
+import sequence
 
 proc map*(values: openArray[Value], invoker: FnInvoker): Value =
   ## Map a function over a vector or sequence

@@ -6,7 +6,7 @@ import bm_types
 import vector
 
 from core import
-  Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, Assign,
+  Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
   FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch
 export Expression, ExpressionKind, Parameter, Branch
 
@@ -29,6 +29,9 @@ proc newLiteralExpr*[T](pos: Position, value: T): Expression =
 
 proc newNotExpr*(pos: Position, operand: Expression): Expression {.inline.} =
   result = Expression(kind: ekNot, position: pos, unaryOp: UnaryOp(operand: operand))
+
+proc newGroupExpr*(pos: Position, inner: Expression): Expression =
+  result = Expression(position: pos, kind: ekGroup, groupExpr: inner)
 
 proc newValueExpr*(pos: Position, value: Value): Expression {.inline.} =
   result = Expression(kind: ekValue, position: pos, value: value)
@@ -157,6 +160,9 @@ proc stringify(node: Expression, indent: int): string =
     if node.ifExpr.elseBranch != nil:
       result.add("\n" & indentation & "else:\n")
       result.add(node.ifExpr.elseBranch.stringify(indent + 2))
+  of ekGroup:
+    result.add indentation & "group:\n"
+    result.add(node.groupExpr.stringify(indent + 2))
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -171,6 +177,94 @@ proc `$`*(node: Expression): string =
 proc `$`(param: Parameter): string =
   ## Returns string representation of function parameter
   return param.name & ": " & $param.typ
+
+proc asSexp*(expr: Expression): string =
+  ## Returns a string representation of the expression as an S-expression
+  if expr.isNil:
+    return "nil"
+  
+  case expr.kind
+  of ekValue:
+    case expr.value.kind
+    of vkNumber:
+      return $expr.value.number
+    of vkBool:
+      return $expr.value.boolean
+    of vkString:
+      return "\"" & expr.value.content & "\""
+    of vkType:
+      return $expr.value.typ
+    else:
+      return $expr.value
+  of ekIdent:
+    return expr.identifier.ident
+  of ekNeg:
+    return "(neg " & expr.unaryOp.operand.asSexp() & ")"
+  of ekNot:
+    return "(not " & expr.unaryOp.operand.asSexp() & ")"
+  of ekAdd:
+    return "(+ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekSub:
+    return "(- " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekMul:
+    return "(* " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekDiv:
+    return "(/ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekMod:
+    return "(% " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekPow:
+    return "(^ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekEq:
+    return "(== " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekNe:
+    return "(!= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekLt:
+    return "(< " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekLe:
+    return "(<= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekGt:
+    return "(> " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekGe:
+    return "(>= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekAnd:
+    return "(& " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekOr:
+    return "(| " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+  of ekAssign:
+    let localStr = if expr.assign.isLocal: "local " else: ""
+    return "(= " & localStr & expr.assign.ident & " " & expr.assign.expr.asSexp() & ")"
+  of ekFuncCall:
+    var argsStr = ""
+    for i, arg in expr.functionCall.params:
+      if i > 0: argsStr.add(" ")
+      argsStr.add(arg.asSexp())
+    return "(call " & expr.functionCall.function.asSexp() & " " & argsStr & ")"
+  of ekFuncDef:
+    var paramsStr = ""
+    for i, param in expr.functionDef.params:
+      if i > 0: paramsStr.add(" ")
+      paramsStr.add(param.name)
+    return "(lambda (" & paramsStr & ") " & expr.functionDef.body.asSexp() & ")"
+  of ekVector:
+    var elementsStr = ""
+    for i in 0..<expr.vector.size:
+      if i > 0: elementsStr.add(" ")
+      elementsStr.add(expr.vector[i].asSexp())
+    return "(vector " & elementsStr & ")"
+  of ekBlock:
+    var exprsStr = ""
+    for i, e in expr.blockExpr.expressions:
+      if i > 0: exprsStr.add(" ")
+      exprsStr.add(e.asSexp())
+    return "(block " & exprsStr & ")"
+  of ekIf:
+    var branchesStr = ""
+    for branch in expr.ifExpr.branches:
+      branchesStr.add("(if " & branch.condition.asSexp() & " " & branch.then.asSexp() & ") ")
+    branchesStr.add("(else " & expr.ifExpr.elseBranch.asSexp() & ")")
+    return "(cond " & branchesStr & ")"
+  of ekGroup:
+    return "(group " & expr.groupExpr.asSexp() & ")"
 
 proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format
@@ -245,3 +339,5 @@ proc asSource*(expr: Expression, ident: int = 0): string =
     if expr.ifExpr.elseBranch != nil:
       src.add(" else " & asSource(expr.ifExpr.elseBranch))
     return src
+  of ekGroup:
+    return "(" & asSource(expr.groupExpr) & ")"

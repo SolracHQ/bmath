@@ -9,24 +9,25 @@
 ## API endpoint for expression evaluation.
 
 import
+  std/sequtils,
   pipeline/lexer,
   pipeline/parser,
   pipeline/interpreter/interpreter,
+  pipeline/optimization,
   logging,
-  types/[value, errors]
-
-when defined(debug):
-  import types/expression
+  types/[value, errors, core]
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter
   replMode*: bool
+  optimizationLevel*: OptimizationLevel
 
-proc newEngine*(replMode: bool = false): Engine =
+proc newEngine*(replMode: bool = false, optimizationLevel: OptimizationLevel = olFull): Engine =
   ## Creates a new evaluation engine with fresh state
   new(result)
   result.interpreter = newInterpreter()
   result.replMode = replMode
+  result.optimizationLevel = optimizationLevel
 
 iterator run*(engine: Engine, source: string): LabeledValue =
   ## Executes source while maintaining interpreter state
@@ -41,11 +42,17 @@ iterator run*(engine: Engine, source: string): LabeledValue =
     if tokens.len == 0:
       continue
 
-    debug("Tokens: ", tokens)
+    # Filter out comment tokens - engine only processes actual expressions
+    let filteredTokens = tokens.filterIt(it.kind != tkComment)
+    
+    if filteredTokens.len == 0:
+      continue
+
+    debug("Tokens: ", filteredTokens)
 
     debug("Starting parsing process")
     var ast = wrapError("PARSING", fatal = not engine.replMode):
-      tokens.parse()
+      parse(filteredTokens, engine.optimizationLevel)
 
     debug("AST: \n", $ast)
 

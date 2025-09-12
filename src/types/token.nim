@@ -26,92 +26,98 @@ template newToken*(the_value: typed, pos: Position): Token =
 template newIdentToken*(identname: string, pos: Position): Token =
   Token(kind: tkIdent, name: identname, position: pos)
 
+# Helper for comments
+template newCommentToken*(commentText: string, pos: Position): Token =
+  Token(kind: tkComment, comment: commentText, position: pos)
+
 proc `$`*(token: Token): string =
   ## Returns human-readable token representation
   case token.kind
   # Operators
   of tkAdd:
-    "'+'"
+    return "'+'"
   of tkSub:
-    "'-'"
+    return "'-'"
   of tkMul:
-    "'*'"
+    return "'*'"
   of tkDiv:
-    "'/'"
+    return "'/'"
   of tkPow:
-    "'^'"
+    return "'^'"
   of tkMod:
-    "'%'"
+    return "'%'"
   of tkAssign:
-    "'='"
+    return "'='"
   of tkChain:
-    "'->'"
+    return "'->'"
   # Boolean operators
   of tkAnd:
-    "'&'" ## Logical AND operator
+    return "'&'" ## Logical AND operator
   of tkNot:
-    "'!'" ## Logical NOT operator
+    return "'!'" ## Logical NOT operator
   # Comparison operators
   of tkEq:
-    "'=='"
+    return "'=='"
   of tkNe:
-    "'!='"
+    return "'!='"
   of tkLt:
-    "'<'"
+    return "'<'"
   of tkLe:
-    "'<='"
+    return "'<='"
   of tkGt:
-    "'>'"
+    return "'>'"
   of tkGe:
-    "'>='"
+    return "'>='"
   # Structural tokens
   of tkLPar:
-    "'('"
+    return "'('"
   of tkRPar:
-    "')'"
+    return "')'"
   of tkLCurly:
-    "'{'"
+    return "'{'"
   of tkRCurly:
-    "'}'"
+    return "'}'"
   of tkRSquare:
-    "'['"
+    return "'['"
   of tkLSquare:
-    "']'"
+    return "']'"
   of tkLine:
-    "'|'"
+    return "'|'"
   of tkFatArrow:
-    "'=>'"
+    return "'=>'"
   # Literals and identifiers
   of tkNumber:
-    $token.value
+    return $token.value
   of tkTrue:
-    "true"
+    return "true"
   of tkFalse:
-    "false"
+    return "false"
   of tkIdent:
-    "'" & token.name & "'"
+    return "'" & token.name & "'"
   of tkString:
-    $token.value
+    return $token.value
   # Keywords
   of tkIf:
-    "if"
+    return "if"
   of tkElse:
-    "else"
+    return "else"
   of tkElif:
-    "elif"
+    return "elif"
   of tkLocal:
-    "local"
+    return "local"
   # Types
   of tkType:
-    $token.value
+    return $token.value
   of tkIs:
-    "'is'"
+    return "'is'"
   of tkColon:
-    "':'"
+    return "':'"
   # Control tokens
   of tkComma:
-    "','"
+    return "','"
   of tkNewline:
-    "'\\n'"
+    return "'\\n'"
+  of tkComment:
+    return "'#" & token.comment & "'"
   of tkEoe:
-    "EOF"
+    return "EOF"

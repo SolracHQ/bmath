@@ -1,7 +1,6 @@
 ## vector.nim
 
 import ../types/[value, number, vector, errors]
-import arithmetic
 
 proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
   ## Create a vector of specified length where each element is calculated by applying 
@@ -71,7 +70,7 @@ proc dotProduct*(a, b: Value): Value =
         else: "a vector as second argument"
       )
     )
-  return a.vector * b.vector
+  return a * b
 
 proc first*(vector: Value): Value =
   ## Get the first element of a vector
