@@ -26,9 +26,9 @@
 - [ ] Importing a module does not make the caller impure; calling impure functions does
 - [ ] Top-level side-effects in modules mark import as impure; consider explicit opt-in for side-effecting modules
 
-## Variable Scoping Overhaul (Symbol-Based Capture System)
+## Variable Scoping Overhaul (Symbol-Based Capture System) (Related Github Issue #17)
 
-### Language Design Changes
+### Language Design Changes (Related Github Issue #17)
 
 - [ ] **Symbol-Based Capture Syntax**:
   - [ ] Use `!` suffix for captured variables: `captured! = captured! + 1`
@@ -36,7 +36,7 @@
   - [ ] Only function bodies `|| { ... }` create isolated scopes by default
   - [ ] Regular blocks `{ ... }` remain non-isolating (current behavior)
 
-### Capture Semantics Design
+### Capture Semantics Design (Related Github Issue #17)
 
 - [ ] Define capture behavior with `!` syntax:
   - [ ] `variable!` captures from outer scope (read/write access)
@@ -47,7 +47,7 @@
   - [ ] Module-level variables require explicit capture
   - [ ] Built-in functions always accessible (no capture needed)
 
-### Implementation Changes
+### Implementation Changes (Related Github Issue #17)
 
 - [ ] Update lexer to recognize `!` suffix on identifiers
 - [ ] Modify parser for new capture syntax
@@ -56,16 +56,16 @@
 - [ ] Implement capture validation and error reporting
 - [ ] Add Unicode/UTF-8 support to lexer and file name handling
 
-### Documentation and Examples Updates
+### Documentation and Examples Updates (Related Github Issue #17)
 
 - [ ] Update language manual for new scoping rules
 - [ ] Revise all example files (.bm files in examples/)
 - [ ] Update test files to use new scoping syntax
 - [ ] Create migration guide from old to new syntax
 
-## Pure Function System with Runtime Purity Tracking
+## Pure Function System with Runtime Purity Tracking (Related Github Issue #17)
 
-### Runtime Purity Analysis
+### Runtime Purity Analysis (Related Github Issue #17)
 
 - [ ] **Dynamic Purity Determination**:
   - [ ] Functions with no `!` captures are pure
@@ -77,7 +77,7 @@
   - [ ] Purity inheritance: functions calling impure functions become impure
   - [ ] Cache purity results to avoid repeated analysis
 
-### Purity for Parallelization
+### Purity for Parallelization (Related Github Issue #17)
 
 - [ ] **Iterator Parallelization**:
   - [ ] `map`, `filter`, `reduce` operations check lambda purity
@@ -85,14 +85,14 @@
   - [ ] Impure lambdas run sequentially
   - [ ] Runtime decision making for parallel execution
 
-### Pure Function Optimizations
+### Pure Function Optimizations (Related Github Issue #17)
 
 - [ ] Implement function memoization for pure functions
 - [ ] Add compile-time evaluation for pure expressions
 - [ ] Create pure function call optimization
 - [ ] Design immutable data structure optimizations
 
-### Advanced Pure Function Features
+### Advanced Pure Function Features (Related Github Issue #17)
 
 - [ ] **Function Auto-Differentiation** (if feasible):
   - [ ] Implement automatic derivative computation
@@ -108,27 +108,6 @@
   - [ ] Associativity detection
   - [ ] Identity element detection
   - [ ] Inverse function detection
-
-## Additional Pure Function Opportunities
-
-### Parallelization
-
-- [ ] Automatic parallelization of pure vector operations
-- [ ] Parallel map/reduce implementations
-- [ ] Safe concurrent execution of pure functions
-
-### Mathematical Verification
-
-- [ ] Property-based testing for pure functions
-- [ ] Symbolic execution for pure functions
-- [ ] Formal verification helpers
-
-### Performance Optimizations
-
-- [ ] Dead code elimination in pure functions
-- [ ] Common subexpression elimination
-- [ ] Constant folding and propagation
-- [ ] Tail call optimization
 
 ## Error Handling System Redesign
 
