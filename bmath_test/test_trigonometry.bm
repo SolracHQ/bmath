@@ -2,6 +2,10 @@
 # ============================
 # Tests for trigonometric and mathematical functions
 
+# Import standard library with trigonometric and assertion functions
+use "std" as std
+use std::{assert_eq, assert_gt, assert_lt, sin, cos, tan, cot, sec, csc, log, exp, sqrt, abs, pi, e, assert_error}
+
 "Testing Trigonometric Functions..."
 
 # [1] Basic Trigonometric Functions

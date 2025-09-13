@@ -14,6 +14,8 @@ BMath features a rich type system that supports both simple types and type compo
 - `Seq`: Lazy collections of values
 - `Function`: First-class callable values
 - `Type`: Type values themselves
+- `String`: Textual data (e.g., `"Hello, World!"`)
+- `Module`: Represents a module in BMath
 
 ### Special Types
 
@@ -37,7 +39,7 @@ Returns the type of the given value.
 
 **Examples:**
 
-```
+```bm
 type(5)         # Returns Int
 type(3.14)      # Returns Real
 type([1, 2, 3]) # Returns Vec
@@ -48,7 +50,7 @@ type(|x| x + 1) # Returns Function
 
 To check if a value is of a specific type:
 
-```
+```bm
 value is integer     # Checks if value is an integer
 type(value) == real  # Checks if value is a real number
 ```
@@ -61,7 +63,7 @@ BMath supports two syntactically equivalent methods for type conversion:
 
 Uses the arrow operator (`->`) followed by a type:
 
-```
+```bm
 42 -> Real       # Converts Int 42 to Real (42.0)
 3.14 -> Int      # Converts Real 3.14 to Int (3)
 [1, 2, 3] -> Seq # Converts a Vec to a Seq
@@ -71,7 +73,7 @@ Uses the arrow operator (`->`) followed by a type:
 
 Uses a type name as a function:
 
-```
+```bm
 Real(42)         # Same as 42 -> Real
 Int(3.14)        # Same as 3.14 -> Int
 Seq([1, 2])      # Same as [1, 2] -> Seq
@@ -107,14 +109,14 @@ Seq([1, 2])      # Same as [1, 2] -> Seq
 
 When a type conversion cannot be performed, an `InvalidArgumentError` is raised:
 
-```
+```bm
 false -> Int  # Raises InvalidArgumentError
 true -> Real  # Raises InvalidArgumentError
 ```
 
 Use the `try_or` or `try_catch` functions to handle potential conversion errors:
 
-```
+```bm
 safe_int = try_or(|| false -> integer, 0)  # Returns 0 as fallback
 
 result = try_catch(

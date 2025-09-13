@@ -1,7 +1,7 @@
 ## cli.nim - Command Line Interface Module
 ##
 ## Implements command-line argument parsing and validation logic.
-## Defines the application's interface contract including:
+## Defines the application's interface contrac  # Handle positional arguments
 ## - Supported options and arguments
 ## - Input validation rules
 ## - Help documentation generation
@@ -25,6 +25,7 @@ type
 
   Arguments* = object ## Structured representation of validated command-line arguments
     optimizationLevel*: OptimizationLevel
+    disableGlobals*: bool ## Whether to disable global functions
     case kind*: ArgumentKind
     of akHelp: discard
     of akFile: filePath*: string
@@ -65,6 +66,7 @@ const HELP* =
   {GREEN}-f, --file{RESET}       Evaluate expressions from file
   {GREEN}-i, --interactive{RESET}  Start REPL mode
   {GREEN}-O, --opt-level{RESET}   Set optimization level (none, basic, full) [default: full]
+  {GREEN}--disable-globals{RESET}  Disable global functions (use modules only)
   {GREEN}--format{RESET}         Format a BMath file with pretty-printing
   {GREEN}--sexp{RESET}           Output S-expressions for debugging/analysis
   {GREEN}--compact{RESET}        Use compact S-expression format
@@ -74,6 +76,7 @@ const HELP* =
   {GREEN}bm "2 + 2 * 2"{RESET}        {GRAY}# Direct expression evaluation{RESET}
   {GREEN}bm -f:input.txt{RESET}       {GRAY}# Evaluate from file{RESET}
   {GREEN}bm -O:none "x + 1"{RESET}     {GRAY}# Disable optimizations{RESET}
+  {GREEN}bm --disable-globals "sqrt(4)"{RESET}  {GRAY}# Use modules only{RESET}
   {GREEN}bm --format input.bm{RESET}   {GRAY}# Format file to stdout{RESET}
   {GREEN}bm --format input.bm -o:formatted.bm{RESET}  {GRAY}# Format to file{RESET}
   {GREEN}bm --sexp input.bm{RESET}     {GRAY}# Show S-expressions{RESET}
@@ -100,6 +103,7 @@ proc parse*(): Arguments =
     optLevel = olFull  # Default to full optimization
     outputPath = ""
     compact = false
+    disableGlobals = false
 
   # First pass for option parsing
   while true:
@@ -110,19 +114,21 @@ proc parse*(): Arguments =
     of cmdShortOption, cmdLongOption:
       case parser.key.normalize
       of "h", "help":
-        return Arguments(kind: akHelp, optimizationLevel: optLevel)
+        return Arguments(kind: akHelp, optimizationLevel: optLevel, disableGlobals: disableGlobals)
       of "f", "file":
         if parser.val.len == 0:
           raise newException(InputError, "File path cannot be empty")
         if not parser.val.fileExists:
           raise newException(InputError, "File not found: " & parser.val)
-        return Arguments(kind: akFile, filePath: parser.val, optimizationLevel: optLevel)
+        return Arguments(kind: akFile, filePath: parser.val, optimizationLevel: optLevel, disableGlobals: disableGlobals)
       of "i", "interactive":
-        return Arguments(kind: akRepl, optimizationLevel: optLevel)
+        return Arguments(kind: akRepl, optimizationLevel: optLevel, disableGlobals: disableGlobals)
       of "o", "opt-level":
         if parser.val.len == 0:
           raise newException(InputError, "Optimization level cannot be empty")
         optLevel = parseOptLevel(parser.val)
+      of "disable-globals":
+        disableGlobals = true
       of "format":
         let filePath = if parser.val.len > 0: parser.val else:
           if positionalArgs.len > 0: positionalArgs[0] else: ""
@@ -130,7 +136,7 @@ proc parse*(): Arguments =
           raise newException(InputError, "Format command requires a file path")
         if not filePath.fileExists:
           raise newException(InputError, "File not found: " & filePath)
-        return Arguments(kind: akFormat, formatFilePath: filePath, outputPath: outputPath, optimizationLevel: optLevel)
+        return Arguments(kind: akFormat, formatFilePath: filePath, outputPath: outputPath, optimizationLevel: optLevel, disableGlobals: disableGlobals)
       of "sexp":
         let filePath = if parser.val.len > 0: parser.val else:
           if positionalArgs.len > 0: positionalArgs[0] else: ""
@@ -138,7 +144,7 @@ proc parse*(): Arguments =
           raise newException(InputError, "S-expression command requires a file path")
         if not filePath.fileExists:
           raise newException(InputError, "File not found: " & filePath)
-        return Arguments(kind: akSexp, sexpFilePath: filePath, compact: compact, optimizationLevel: optLevel)
+        return Arguments(kind: akSexp, sexpFilePath: filePath, compact: compact, optimizationLevel: optLevel, disableGlobals: disableGlobals)
       of "compact":
         compact = true
       of "output":
@@ -153,9 +159,9 @@ proc parse*(): Arguments =
   # Handle positional arguments
   case positionalArgs.len
   of 0:
-    Arguments(kind: akRepl, optimizationLevel: optLevel)
+    Arguments(kind: akRepl, optimizationLevel: optLevel, disableGlobals: disableGlobals)
   # Default to REPL mode
   of 1:
-    Arguments(kind: akExpression, expr: positionalArgs[0], optimizationLevel: optLevel)
+    Arguments(kind: akExpression, expr: positionalArgs[0], optimizationLevel: optLevel, disableGlobals: disableGlobals)
   else:
-    raise newException(InputError, "Too many positional arguments")
+    raise newException(InputError, "Too many positional arguments: " & $positionalArgs.len)

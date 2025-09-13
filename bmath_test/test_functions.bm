@@ -2,6 +2,10 @@
 # ==================================
 # Tests for function definition, invocation, and advanced features
 
+# Import standard library with assertion functions
+use "std" as std
+use std::{assert_eq, assert_error}
+
 "Testing Functions..."
 
 # [1] Basic Function Definition

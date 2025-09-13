@@ -1,7 +1,7 @@
 ## comparison.nim
 
 import sequence
-import ../types/[value, number, vector, errors]
+import ../types/[value, number, vector, errors, core]
 import std/options
 
 proc min*(args: openArray[Value], invoker: FnInvoker): Value =

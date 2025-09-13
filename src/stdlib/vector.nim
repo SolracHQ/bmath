@@ -1,53 +1,6 @@
 ## vector.nim
 
-import ../types/[value, number, vector, errors]
-
-proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
-  ## Create a vector of specified length where each element is calculated by applying 
-  ## a function to its index position
-  ##
-  ## Parameters:
-  ## - args: An array containing exactly 2 values:
-  ##   1. The length of the vector (must evaluate to an integer)
-  ##   2. A function to apply to each index or a value to repeat
-  ## - invoker: The function used to invoke functions with arguments
-  ##
-  ## Raises:
-  ## - InvalidArgumentError: If not exactly 2 values are provided
-  ## - TypeError: If the length is not an integer
-  ##
-  ## Returns:
-  ## - A new Value object containing the generated vector
-
-  # Check if we have exactly 2 arguments (length and function/value)
-  if args.len != 2:
-    raise newInvalidArgumentError(
-      "vec expects exactly 2 arguments (length and function/value), but got " & $args.len &
-        " arguments"
-    )
-
-  # Evaluate the first argument to get the vector length
-  let size = args[0]
-  if size.kind != vkNumber or (size.kind == vkNumber and size.number.kind != nkInteger):
-    raise newTypeError(
-      "vec expects an integer value for the vector length, but got " & (
-        if size.kind == vkNumber: "a " & $size.number.kind & " number"
-        else: "a " & $size.kind
-      )
-    )
-
-  # Initialize the result as a vector
-  result = Value(kind: vkVector)
-  result.vector = newVector[Value](size.number.integer)
-
-  if args[1].kind == vkFunction or args[1].kind == vkNativeFunc:
-    # If the second argument is a function, apply it to each index
-    for i in 0 ..< size.number.integer:
-      result.vector[i] = invoker(args[1], [newValue(i)])
-  else:
-    # If the second argument is a value, repeat it for each index
-    for i in 0 ..< size.number.integer:
-      result.vector[i] = args[1]
+import ../types/[value, number, vector, errors, core]
 
 proc dotProduct*(a, b: Value): Value =
   ## Compute the dot product of two vectors

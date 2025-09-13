@@ -9,27 +9,31 @@
 ## API endpoint for expression evaluation.
 
 import
-  std/sequtils,
   pipeline/lexer,
   pipeline/parser,
-  pipeline/interpreter/interpreter,
+  pipeline/interpreter,
   pipeline/optimization,
   logging,
   types/[value, errors, core]
+
+when defined(debug):
+  import types/expression
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter
   replMode*: bool
   optimizationLevel*: OptimizationLevel
+  disableGlobals*: bool
 
-proc newEngine*(replMode: bool = false, optimizationLevel: OptimizationLevel = olFull): Engine =
+proc newEngine*(replMode: bool = false, optimizationLevel: OptimizationLevel = olFull, scriptPath: string = "", disableGlobals: bool = false): Engine =
   ## Creates a new evaluation engine with fresh state
   new(result)
-  result.interpreter = newInterpreter()
+  result.interpreter = newInterpreter(scriptPath, disableGlobals)
   result.replMode = replMode
   result.optimizationLevel = optimizationLevel
+  result.disableGlobals = disableGlobals
 
-iterator run*(engine: Engine, source: string): LabeledValue =
+iterator run*(engine: Engine, source: string): Value =
   ## Executes source while maintaining interpreter state
   var lexer = newLexer(source)
 
@@ -42,17 +46,14 @@ iterator run*(engine: Engine, source: string): LabeledValue =
     if tokens.len == 0:
       continue
 
-    # Filter out comment tokens - engine only processes actual expressions
-    let filteredTokens = tokens.filterIt(it.kind != tkComment)
-    
-    if filteredTokens.len == 0:
+    if tokens.len == 0:
       continue
 
-    debug("Tokens: ", filteredTokens)
+    debug("Tokens: ", tokens)
 
     debug("Starting parsing process")
     var ast = wrapError("PARSING", fatal = not engine.replMode):
-      parse(filteredTokens, engine.optimizationLevel)
+      parse(tokens, engine.optimizationLevel)
 
     debug("AST: \n", $ast)
 

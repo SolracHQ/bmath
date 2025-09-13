@@ -97,6 +97,8 @@ proc `$`*(t: BMathType): string =
       return "Type"
     of stError:
       return "Error"
+    of stModule:
+      return "Module"
   of tkSum:
     if t.types == AnyType.types:
       return "Any"

@@ -2,6 +2,10 @@
 # ================
 # Tests for type system, type checking, and type conversions
 
+# Import standard library with type and assertion functions
+use "std" as std
+use std::{assert_eq, assert_error, type, seq, dot, collect, sum, nth}
+
 "Testing Type System..."
 
 # [1] Basic Type Checking

@@ -73,6 +73,7 @@ proc `$`*(kind: ValueKind): string =
   of vkType: "type"
   of vkString: "string"
   of vkError: "error"
+  of vkModule: "module"
 
 proc `$`*(value: Value): string =
   ## Returns string representation of numeric value
@@ -94,7 +95,13 @@ proc `$`*(value: Value): string =
   of vkString:
     "\"" & value.content & "\""
   of vkError:
-    "Error: " & value.error
+    # Format errors as `errorKind(error)` per preference.
+    if value.errKind != "":
+      value.errKind & "(" & value.error & ")"
+    else:
+      "error(" & value.error & ")"
+  of vkModule:
+    "<module>"
 
 proc `$`*(val: LabeledValue): string =
   if val.label != "":

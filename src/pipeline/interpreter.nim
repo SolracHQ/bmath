@@ -12,25 +12,152 @@
 ## The interpreter processes expressions recursively, maintaining an execution
 ## environment that tracks variable bindings and their values.
 
-import std/[sequtils]
-import ../../types/[value, expression, vector, errors]
-import environment
-import ../../stdlib/types
+import std/[sequtils, tables, os, strutils]
+import ../types/[value, expression, vector, errors, environment]
+import ../stdlib/stdlib
+import ../stdlib/types as typesStdlib
+import lexer
+import parser
 
 type Interpreter* = ref object ## Abstract Syntax Tree evaluator
   env: Environment ## The global environment for storing variables
+  importStack: seq[string] ## Stack to track imports for circular dependency detection
+  currentDir: string ## Current directory for relative path resolution
+  disableGlobals: bool ## Whether global functions are disabled
 
-proc newInterpreter*(): Interpreter =
+var loadedModules*: Table[string, Value] = {
+  # Unified standard library module
+  "std": stdlib.createStdModule(),
+}.toTable() 
+
+proc newInterpreter*(scriptPath: string = "", disableGlobals: bool = false): Interpreter =
   ## Initializes a new interpreter with an empty global environment.
+  ##
+  ## Parameters:
+  ##   scriptPath: string - Optional path to the initial script for relative path resolution
+  ##   disableGlobals: bool - Whether to disable global functions
   ##
   ## Returns: 
   ##   Interpreter - A new interpreter instance with initialized environment.
   result = Interpreter()
-  result.env = newEnv()
+  result.env = newEnv(disableGlobals = disableGlobals)
+  result.importStack = @[]
+  result.disableGlobals = disableGlobals
+  
+  # Set current directory based on script path or current working directory
+  if scriptPath != "":
+    result.currentDir = scriptPath.parentDir.absolutePath
+  else:
+    result.currentDir = getCurrentDir()
 
 proc evalExpression(
   interpreter: Interpreter, expression: Expression, environment: Environment
 ): Value
+
+proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment = nil): Value =
+  ## Loads and evaluates a module from the given file path or local environment.
+  ## Also handles module::member syntax for extracting specific members.
+  ##
+  ## Parameters:
+  ## 
+  ## path: string - The file path of the module to load, module name, or local variable name
+  ## interpreter: Interpreter - The interpreter instance for context (optional)
+  ## env: Environment - The current environment to check for local modules (optional)
+  ## 
+  ## Returns:
+  ##   Value - The evaluated module value or specific member if :: syntax is used.
+  ## 
+  ## Raises:
+  ##   IOError - If the file cannot be read.
+  ##   ParseError - If the module content cannot be parsed.
+  ##   CircularDependencyError - If a circular import is detected.
+  
+  # Handle module::member syntax
+  if "::" in path:
+    let parts = path.split("::", 1)
+    let modulePath = parts[0]
+    let memberSpec = parts[1]
+    
+    # Load the module first
+    let module = loadModule(modulePath, interpreter, env)
+    if module.kind != vkModule:
+      raise newTypeError("Base of module access is not a module")
+    
+    # Single member access (parser should handle {a,b,c} syntax)
+    return module.environment[memberSpec]
+  
+  # First, check if it's a local module in the current environment
+  if env != nil:
+    try:
+      let localValue = env[path]
+      if localValue.kind == vkModule:
+        return localValue
+    except UndefinedVariableError:
+      # Not a local variable, continue with other resolution methods
+      discard
+  
+  # Check if it's a stdlib module
+  if path in loadedModules:
+    return loadedModules[path]
+    
+  # Handle file-based modules
+  let currentDir = if interpreter != nil: interpreter.currentDir else: getCurrentDir()
+  var absPath: string
+  
+  # Resolve relative paths
+  if path.isAbsolute:
+    absPath = path
+  else:
+    absPath = currentDir / path
+  
+  # Add .bm extension if not present and no extension given
+  if fileExists(absPath & ".bm"):
+    absPath = absPath & ".bm"
+  elif not fileExists(absPath):
+    raise newRuntimeError("Module file not found: " & absPath)
+  
+  # Check for circular dependency
+  if interpreter != nil:
+    if absPath in interpreter.importStack:
+      let cycleStart = interpreter.importStack.find(absPath)
+      let cycle = interpreter.importStack[cycleStart..^1] & @[absPath]
+      raise newRuntimeError("Circular import detected: " & cycle.join(" -> "))
+    
+    # Add to import stack
+    interpreter.importStack.add(absPath)
+  
+  try:
+    # Check cache first
+    if absPath in loadedModules:
+      return loadedModules[absPath]
+
+    # Read file content
+    let content = readFile(absPath)
+
+    # Create module environment; prefer the provided env as parent when present
+    let parentEnv = env
+    var moduleEnv = newEnv(parent = parentEnv)
+
+    # Tokenize / parse / evaluate sequentially (the lexer/parser are designed
+    # to produce one expression per tokenizeExpression call, like the REPL loop)
+    var lx = newLexer(content)
+    while not lx.atEnd:
+      let tokens = lx.tokenizeExpression()
+      if tokens.len == 0:
+        continue
+      let ast = parse(tokens)
+      discard interpreter.evalExpression(ast, moduleEnv)
+
+    let moduleValue = Value(kind: vkModule, environment: moduleEnv)
+
+    # Cache the result
+    loadedModules[absPath] = moduleValue
+    return moduleValue
+  except IOError as e:
+    raise newRuntimeError("Could not read module file: " & absPath & " (" & e.msg & ")")
+  finally:
+    discard interpreter.importStack.pop()
+
 
 proc evalAssign(
     interpreter: Interpreter, expression: Expression, env: Environment
@@ -51,9 +178,6 @@ proc evalAssign(
   let val = interpreter.evalExpression(expression.assign.expr, env)
   env[expression.assign.ident, expression.assign.isLocal] = val
   return val
-
-template emptyLabeled(val: Value): LabeledValue =
-  LabeledValue(value: val)
 
 proc evalFunctionCall(
     interpreter: Interpreter, funValue: Value, args: openArray[Value], env: Environment
@@ -110,7 +234,7 @@ proc evalFunInvoke(
     if callee.kind == vkType:
       if expression.functionCall.params.len != 1:
         raise newInvalidArgumentError("Type constructor expects one argument")
-      return casting(
+      return typesStdlib.casting(
         callee.typ, interpreter.evalExpression(expression.functionCall.params[0], env)
       )
     if callee.kind != vkFunction and callee.kind != vkNativeFunc:
@@ -248,6 +372,26 @@ proc evalExpression(
         if condition.boolean:
           return interpreter.evalExpression(branch.then, env)
       return interpreter.evalExpression(expression.ifExpr.elseBranch, env)
+    of ekModule:
+      var modEnv = newEnv(parent = env)
+      for expr in expression.moduleDef.content:
+        discard interpreter.evalExpression(expr, modEnv)
+      return Value(kind: vkModule, environment: modEnv)
+    of ekModAccess:
+      let base = interpreter.evalExpression(expression.moduleAccess.target, env)
+      if base.kind != vkModule:
+        raise newTypeError("Base of module access is not a module")
+      let memberName = expression.moduleAccess.member
+      return base.environment[memberName]
+    of ekUse:
+      if expression.useModule.paths.len == 1:
+        return loadModule(expression.useModule.paths[0], interpreter, env)
+      else:
+        var vec = newVector[Value](expression.useModule.paths.len)
+        for i, path in expression.useModule.paths.pairs:
+          vec[i] = loadModule(path, interpreter, env)
+        return Value(kind: vkVector, vector: vec)
+
   except BMathError as e:
     if e.stack.len == 0:
       e.stack.add(expression.position)
@@ -255,9 +399,8 @@ proc evalExpression(
 
 proc eval*(
     interpreter: Interpreter, expression: Expression, environment: Environment = nil
-): LabeledValue {.inline.} =
-  ## Top-level evaluation returns a LabeledValue.
-  ## If the node is an assignment, the label is preserved.
+): Value {.inline.} =
+  ## Top-level evaluation returns a Value directly.
   ##
   ## Parameters:
   ##   interpreter: Interpreter - The current interpreter instance.
@@ -265,11 +408,6 @@ proc eval*(
   ##   environment: Environment - The current execution environment (optional).
   ##
   ## Returns:
-  ##   LabeledValue - The evaluated value with an optional label.
+  ##   Value - The evaluated value of the expression.
   let env = if environment == nil: interpreter.env else: environment
-  if expression.kind == ekAssign:
-    return LabeledValue(
-      label: expression.assign.ident, value: interpreter.evalExpression(expression, env)
-    )
-  else:
-    return emptyLabeled(interpreter.evalExpression(expression, env))
+  return interpreter.evalExpression(expression, env)

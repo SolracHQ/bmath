@@ -17,13 +17,13 @@ import pipeline/[optimization, parser, lexer]
 proc handleHelp() =
   echo HELP
 
-proc handleExpression(expr: string, optLevel: OptimizationLevel) =
-  let engine = newEngine(optimizationLevel = optLevel)
+proc handleExpression(expr: string, optLevel: OptimizationLevel, disableGlobals: bool) =
+  let engine = newEngine(optimizationLevel = optLevel, disableGlobals = disableGlobals)
   for value in engine.run(expr):
     echo value
 
-proc handleFile(filePath: string, optLevel: OptimizationLevel) =
-  let engine = newEngine(optimizationLevel = optLevel)
+proc handleFile(filePath: string, optLevel: OptimizationLevel, disableGlobals: bool) =
+  let engine = newEngine(optimizationLevel = optLevel, scriptPath = filePath, disableGlobals = disableGlobals)
   let content = readFile(filePath)
   for result in engine.run(content):
     echo result
@@ -38,14 +38,13 @@ proc handleFormat(filePath, outputPath: string, optLevel: OptimizationLevel) =
     
     # Parse all expressions in the file and collect tokens
     while not lexer.atEnd:
-      let tokens = lexer.tokenizeExpression()
-      if tokens.len > 0:
-        allTokens.add(tokens)
-        # Filter out comments before parsing
-        let filteredTokens = tokens.filterIt(it.kind != tkComment)
-        if filteredTokens.len > 0:
-          let ast = filteredTokens.parse(optLevel)
-          expressions.add(ast)
+      let tokens = lexer.tokenizeExpression(includeComments = true)
+      allTokens.add(tokens)
+      let filterd = tokens.filterIt(it.kind != tkComment)
+      if filterd.len > 0:
+        # Parse using tokens with comments removed by parser entrypoint
+        let ast = parse(filterd, optLevel)
+        expressions.add(ast)
     
     let config = newFormatterConfig()
     let formatted = format(expressions, allTokens, ofPretty, config)
@@ -71,16 +70,13 @@ proc handleSexp(filePath: string, compact: bool, optLevel: OptimizationLevel) =
     
     # Parse and output S-expressions for all expressions in the file
     while not lexer.atEnd:
-      let tokens = lexer.tokenizeExpression()
+      let tokens = lexer.tokenizeExpression(includeComments = false)
       if tokens.len > 0:
-        # Filter out comments before parsing
-        let filteredTokens = tokens.filterIt(it.kind != tkComment)
-        if filteredTokens.len > 0:
-          let ast = filteredTokens.parse(optLevel)
-          let sexp = formatSexp(ast, compact)
-          echo sexp
-          if not compact:
-            echo ""  # Add separator between expressions
+        let ast = parse(tokens, optLevel)
+        let sexp = formatSexp(ast, compact)
+        echo sexp
+        if not compact:
+          echo ""  # Add separator between expressions
         
   except IOError as e:
     stderr.writeLine "[ERROR] IO Error: " & e.msg
@@ -88,50 +84,16 @@ proc handleSexp(filePath: string, compact: bool, optLevel: OptimizationLevel) =
   except BMathError as e:
     stderr.writeLine "[ERROR] Parse Error: " & e.msg
     quit(1)
+
+proc handleRepl(optLevel: OptimizationLevel, disableGlobals: bool) =
   let isatty = stdin.isatty
 
   # Handle non-interactive input as a script
   if not isatty:
-    handleExpression(stdin.readAll(), optLevel)
+    handleExpression(stdin.readAll(), optLevel, disableGlobals)
     return
 
-  let engine = newEngine(replMode = true, optimizationLevel = optLevel)
-
-  # Interactive REPL mode
-  var input: string
-  var incompleteMode = false
-  while true:
-    if not incompleteMode:
-      stdout.write "bm> "
-    else:
-      stdout.write "... "
-    try:
-      if incompleteMode:
-        input.add "\n"
-        input &= stdin.readLine()
-      else:
-        input = stdin.readLine()
-      for result in engine.run(input):
-        echo "==> ", result
-      incompleteMode = false
-    except IncompleteInputError:
-      incompleteMode = true
-      continue
-    except BMathError as e:
-      discard
-    # error already handled
-    except IOError as e:
-      quit() # EOF reached or Ctrl+C
-
-proc handleRepl(optLevel: OptimizationLevel) =
-  let isatty = stdin.isatty
-
-  # Handle non-interactive input as a script
-  if not isatty:
-    handleExpression(stdin.readAll(), optLevel)
-    return
-
-  let engine = newEngine(replMode = true, optimizationLevel = optLevel)
+  let engine = newEngine(replMode = true, optimizationLevel = optLevel, disableGlobals = disableGlobals)
 
   # Interactive REPL mode
   var input: string
@@ -172,11 +134,11 @@ proc main() =
   of akHelp:
     handleHelp()
   of akExpression:
-    handleExpression(args.expr, args.optimizationLevel)
+    handleExpression(args.expr, args.optimizationLevel, args.disableGlobals)
   of akFile:
-    handleFile(args.filePath, args.optimizationLevel)
+    handleFile(args.filePath, args.optimizationLevel, args.disableGlobals)
   of akRepl:
-    handleRepl(args.optimizationLevel)
+    handleRepl(args.optimizationLevel, args.disableGlobals)
   of akFormat:
     handleFormat(args.formatFilePath, args.outputPath, args.optimizationLevel)
   of akSexp:

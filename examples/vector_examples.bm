@@ -2,101 +2,141 @@
 # =========================
 # This file demonstrates various vector operations in BMath language.
 
-# [1] Vector Creation
-# -----------------
-# Creating vectors with literals
-intVector = [1, 2, 3, 4, 5]             # A vector of integers
-floatVector = [1.1, 2.2, 3.3, 4.4, 5.5] # A vector of floats
-mixedVector = [1, 2.5, 3, 4.5]          # A mixed vector
-emptyVector = []                        # An empty vector
+# Import standard library
+use "std" as std
+use std::{print, vec, len, first, last, nth, dot, merge, slice, map, filter. reduce}
 
-# Creating vectors with the vec function
-zerosVector = vec(5, 0)               # [0, 0, 0, 0, 0]
-onesVector = vec(3, 1)                # [1, 1, 1]
+runVectorExamples = || {
+  print("=== Vector Operations Examples ===")
 
-# Creating a vector using a generator function
-indexVector = vec(5, |i| i + 1)        # [1, 2, 3, 4, 5]
-squaresVector = vec(5, |i| i^2)        # [0, 1, 4, 9, 16]
+  # [1] Vector Creation
+  # -----------------
+  # Creating vectors with literals
+  intVector = [1, 2, 3, 4, 5]             # A vector of integers
+  floatVector = [1.1, 2.2, 3.3, 4.4, 5.5] # A vector of floats
+  mixedVector = [1, 2.5, 3, 4.5]          # A mixed vector
+  emptyVector = []                        # An empty vector
 
-# [2] Vector Access and Information
-# -------------------------------
-# Getting vector length
-vectorLength = intVector->len          # Expected: 5
+  print("Integer vector:", intVector)
+  print("Float vector:", floatVector)
+  print("Mixed vector:", mixedVector)
 
-# Accessing elements
-firstElement = intVector->first        # Expected: 1
-lastElement = intVector->last          # Expected: 5
-thirdElement = intVector->nth(2)       # Expected: 3 (0-based indexing)
+  # Creating vectors with the vec function
+  zerosVector = vec(5, 0)               # [0, 0, 0, 0, 0]
+  onesVector = vec(3, 1)                # [1, 1, 1]
 
-# [3] Element-wise Arithmetic
-# -------------------------
-vectorA = [1, 2, 3]
-vectorB = [4, 5, 6]
+  print("Zeros vector:", zerosVector)
+  print("Ones vector:", onesVector)
 
-# Addition and subtraction
-vectorSum = vectorA + vectorB         # Expected: [5, 7, 9]
-vectorDiff = vectorB - vectorA        # Expected: [3, 3, 3]
+  # Creating a vector using a generator function
+  indexVector = vec(5, |i| i + 1)        # [1, 2, 3, 4, 5]
+  squaresVector = vec(5, |i| i^2)        # [0, 1, 4, 9, 16]
 
-# Scalar operations
-doubledVector = 2 * vectorA           # Expected: [2, 4, 6]
-halvedVector = vectorB / 2            # Expected: [2.0, 2.5, 3.0]
-poweredVector = vectorA ^ 2           # Expected: [1, 4, 9]
+  print("Index vector:", indexVector)
+  print("Squares vector:", squaresVector)
 
-# [4] Vector Products
-# ----------------
-# Dot product
-dotProduct = vectorA->dot(vectorB)    # Expected: 32 (1*4 + 2*5 + 3*6)
+  # [2] Vector Access and Information
+  # -------------------------------
+  # Getting vector length
+  vectorLength = intVector->len          # Expected: 5
+  
+  print("Vector length:", vectorLength)
 
-# [5] Vector Operations with Mixed Types
-# -----------------------------------
-intAndFloatVector = intVector + floatVector  # Type promotion to float
-                                           # Only first 3 elements are added
+  # Accessing elements
+  firstElement = intVector->first        # Expected: 1
+  lastElement = intVector->last          # Expected: 5
+  thirdElement = intVector->nth(2)       # Expected: 3 (0-based indexing)
 
-# [6] Higher-Order Functions with Vectors
-# ------------------------------------
-# Map: Apply a function to each element
-mappedVector = intVector->map(|x| x * 2)    # Expected: [2, 4, 6, 8, 10]
+  print("First element:", firstElement)
+  print("Last element:", lastElement)
+  print("Third element:", thirdElement)
 
-# Filter: Select elements that satisfy a predicate
-evenNumbers = intVector->filter(|x| x % 2 == 0)  # Expected: [2, 4]
+  # [3] Element-wise Arithmetic
+  # -------------------------
+  vectorA = [1, 2, 3]
+  vectorB = [4, 5, 6]
 
-# Reduce: Combine elements using a binary function
-vectorSum = intVector->reduce(0, |acc, x| acc + x)  # Expected: 15
+  # Addition and subtraction
+  vectorSum = vectorA + vectorB         # Expected: [5, 7, 9]
+  vectorDiff = vectorB - vectorA        # Expected: [3, 3, 3]
 
-# [7] Chaining Operations with Arrow Operator
-# ----------------------------------------
-processedVector = intVector -> \
-                 map(|x| x * 2) -> \
-                 filter(|x| x > 5) # Expected: [6, 8, 10]
+  print("Vector sum:", vectorSum)
+  print("Vector difference:", vectorDiff)
 
-# [8] Complex Number Vectors
-# -----------------------
-complexVector = [3+4i, 1-2i, 5i]
-complexVectorSum = complexVector->sum   # Expected: 4+7i
+  # Scalar operations
+  doubledVector = 2 * vectorA           # Expected: [2, 4, 6]
+  halvedVector = vectorB / 2            # Expected: [2.0, 2.5, 3.0]
+  poweredVector = vectorA ^ 2           # Expected: [1, 4, 9]
 
-# [9] Boolean Vector Operations
-# --------------------------
-boolVector1 = [true, true, false]
-boolVector2 = [true, false, false]
+  print("Doubled vector:", doubledVector)
+  print("Halved vector:", halvedVector)
+  print("Powered vector:", poweredVector)
 
-# Using any_true and all_true functions
-anyTrueResult = boolVector1->any_true()     # Expected: true
-allTrueResult = boolVector1->all_true()     # Expected: false
-allFalseResult = [false, false, false]->all_true()  # Expected: false
+  # [4] Vector Products
+  # ----------------
+  # Dot product
+  dotProduct = vectorA->dot(vectorB)    # Expected: 32 (1*4 + 2*5 + 3*6)
+  print("Dot product:", dotProduct)
 
-# [10] Nested Vectors
-# ----------------
-nestedVector = [[1, 2], [3, 4], [5, 6]]
-firstInnerVector = nestedVector->first  # Expected: [1, 2]
+  # [5] Higher-Order Functions with Vectors
+  # ------------------------------------
+  # Map: Apply a function to each element
+  mappedVector = intVector->map(|x| x * 2)    # Expected: [2, 4, 6, 8, 10]
 
-# [11] Vector Manipulation Functions
-# --------------------------------
-# Merge: Combine two vectors into one
-vector1 = [1, 2, 3]
-vector2 = [4, 5, 6]
-mergedVector = vector1->merge(vector2)  # Expected: [1, 2, 3, 4, 5, 6]
+  # Filter: Select elements that satisfy a predicate
+  evenNumbers = intVector->filter(|x| x % 2 == 0)  # Expected: [2, 4]
 
-# Slice: Extract a portion of a vector
-numbers = [10, 20, 30, 40, 50]
-firstThree = numbers->slice(3)          # Expected: [10, 20, 30]
-middleSlice = numbers->slice(1, 4)      # Expected: [20, 30, 40]
+  # Reduce: Combine elements using a binary function
+  totalSum = intVector->reduce(0, |acc, x| acc + x)  # Expected: 15
+
+  print("Mapped vector:", mappedVector)
+  print("Even numbers:", evenNumbers)
+  print("Total sum:", totalSum)
+
+  # [6] Chaining Operations with Arrow Operator
+  # ----------------------------------------
+  processedVector = intVector->map(|x| x * 2)->filter(|x| x > 5) # Expected: [6, 8, 10]
+  print("Processed vector:", processedVector)
+
+  # [7] Complex Number Vectors
+  # -----------------------
+  complexVector = [3+4i, 1-2i, 5i]
+  complexVectorSum = complexVector->sum   # Expected: 4+7i
+  print("Complex vector:", complexVector)
+  print("Complex sum:", complexVectorSum)
+
+  # [8] Boolean Vector Operations
+  # --------------------------
+  boolVector1 = [true, true, false]
+  boolVector2 = [true, false, false]
+
+  # Using any_true and all_true functions
+  anyTrueResult = boolVector1->any_true()     # Expected: true
+  allTrueResult = boolVector1->all_true()     # Expected: false
+  allFalseResult = [false, false, false]->all_true()  # Expected: false
+
+  print("Any true result:", anyTrueResult)
+  print("All true result:", allTrueResult)
+  print("All false result:", allFalseResult)
+
+  # [9] Vector Manipulation Functions
+  # --------------------------------
+  # Merge: Combine two vectors into one
+  vector1 = [1, 2, 3]
+  vector2 = [4, 5, 6]
+  mergedVector = vector1->merge(vector2)  # Expected: [1, 2, 3, 4, 5, 6]
+
+  # Slice: Extract a portion of a vector
+  numbers = [10, 20, 30, 40, 50]
+  firstThree = numbers->slice(3)          # Expected: [10, 20, 30]
+  middleSlice = numbers->slice(1, 4)      # Expected: [20, 30, 40]
+
+  print("Merged vector:", mergedVector)
+  print("First three:", firstThree)
+  print("Middle slice:", middleSlice)
+
+  print("=== Vector examples completed ===")
+}
+
+# Run the examples
+runVectorExamples()

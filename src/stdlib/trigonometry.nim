@@ -1,6 +1,6 @@
 ## trigonometry.nim
 
-import ../types/[value, number, vector, errors]
+import ../types/[value, number, vector, errors, core]
 
 proc cos*(a: Value): Value {.inline, captureNumericError.} =
   ## Compute the cosine of a value

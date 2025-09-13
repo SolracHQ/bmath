@@ -47,6 +47,7 @@ type
     stType
     stString
     stError
+    stModule
 
   BMathType* = object ## Represents a type in the BMath type system.
     case kind*: BMathTypeKind
@@ -68,6 +69,7 @@ type
     vkType ## Type value
     vkString ## String value
     vkError ## Error value
+    vkModule ## Module value
 
   Signature* = object
     ## Represents a function signature with parameter types.
@@ -106,7 +108,10 @@ type
     of vkString:
       content*: string ## String storage when kind is `vkString`
     of vkError:
+      errKind*: string ## Error kind when kind is `vkError`
       error*: string ## Error message when kind is `vkError`
+    of vkModule:
+      environment*: Environment ## Module environment when kind is `vkModule`
 
   TransformerKind* = enum
     ## Discriminator for runtime transformer types stored in `Transformer` objects.
@@ -191,6 +196,7 @@ type
     tkElse ## Else keyword
     tkElif ## Elif keyword
     tkLocal ## Local keyword
+    tkAs ## As keyword for aliasing
 
     # Types
     tkType ## Type Value
@@ -203,6 +209,11 @@ type
     tkNewline # End of expression marker for parser (due multiline blocks support)
     tkComment ## Comment text starting with '#'
     tkEoe ## End of expression marker for lexer
+
+    # Module system
+    tkModule ## Module definition keyword
+    tkUse ## Module import keyword
+    tkDoubleColon ## Module member access operator '::'
 
   Token* = object
     ## Lexical token with source position and type-specific data.
@@ -267,6 +278,11 @@ type
 
     # Block expression
     ekBlock ## Block expression (sequence of statements)
+
+    # Module expression
+    ekModule ## Module definition expression
+    ekUse ## Module import expression
+    ekModAccess ## Module member access expression
 
     # Control flow
     ekIf ## If-else conditional expression
@@ -342,6 +358,16 @@ type
     branches*: seq[Branch]
     elseBranch*: Expression ## Else branch expression
 
+  ModuleDef* = object
+    content*: seq[Expression] ## Expressions contained in the module
+
+  UseModule* = object
+    paths*: seq[string] ## Module import paths
+
+  ModuleAccess* = object
+    target*: Expression ## Expression evaluating to a module or vector
+    member*: string ## Member name being accessed
+
   Expression* = ref object
     ## Abstract Syntax Tree (AST) node (renamed to Expression).
     ##
@@ -372,6 +398,12 @@ type
       functionDef*: FunctionDef
     of ekIf:
       ifExpr*: IfExpr
+    of ekModule:
+      moduleDef*: ModuleDef
+    of ekUse:
+      useModule*: UseModule
+    of ekModAccess:
+      moduleAccess*: ModuleAccess
 
 # Required due nim GC
 proc `=destroy`*[T](v: VectorObj[T]) =

@@ -327,6 +327,37 @@ proc formatExpression(formatter: var FormatterWithTokens, expr: Expression): str
       ifResult.add(" else " & elseExpr)
     
     ifResult
+
+  of ekModule:
+    let indent = formatter.getIndent()
+    let bodyIndent = " ".repeat((formatter.currentIndent + 1) * formatter.config.indentSize)
+    var bodyLines: seq[string] = @[]
+    
+    for modExpr in expr.moduleDef.content:
+      let formattedExpr = formatExpression(formatter, modExpr)
+      let exprLine = modExpr.position.line
+      
+      # Check for inline comments
+      var lineWithComment = bodyIndent & formattedExpr
+      if exprLine in formatter.comments:
+        for comment in formatter.comments[exprLine]:
+          lineWithComment &= "     # " & comment.content.strip()
+          formatter.usedComments[exprLine] = true
+          break
+      
+      bodyLines.add(lineWithComment)
+    
+    "{\n" & bodyLines.join("\n") & "\n" & indent & "}"
+
+  of ekUse:
+    # use path1, path2
+    let paths = expr.useModule.paths.mapIt(it.join("::")).join(", ")
+    "use " & paths
+
+  of ekModAccess:
+    let base = formatExpression(formatter, expr.moduleAccess.target)
+    let member = expr.moduleAccess.member
+    base & "::" & member
   
   return mainExpr
 

@@ -105,6 +105,8 @@ proc `$`*(token: Token): string =
     return "elif"
   of tkLocal:
     return "local"
+  of tkAs:
+    return "as"
   # Types
   of tkType:
     return $token.value
@@ -121,3 +123,10 @@ proc `$`*(token: Token): string =
     return "'#" & token.comment & "'"
   of tkEoe:
     return "EOF"
+  # Module system
+  of tkModule:
+    return "mod"
+  of tkUse:
+    return "use"
+  of tkDoubleColon:
+    return "'::'"

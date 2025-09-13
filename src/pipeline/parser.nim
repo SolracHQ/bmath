@@ -198,6 +198,139 @@ proc parseFunction(parser: var Parser, token: Token): Expression =
   
   return funcExpr
 
+proc parseModule(parser: var Parser, token: Token): Expression =
+  ## Parses mod { ... } or mod identifier { ... }
+  ## The latter is syntactic sugar for identifier = mod { ... }
+  parser.cleanUpNewlines()
+  
+  # Check if we have an optional identifier
+  var identifierName: string = ""
+  if parser.match({tkIdent}):
+    identifierName = parser.previous().name
+    parser.cleanUpNewlines()
+  
+  # Expect a '{' after 'mod' (and optional identifier)
+  if not parser.match({tkLCurly}):
+    raise newMissingTokenError("Expected '{' after 'mod'", token.position)
+  let lcurly = parser.previous()
+  
+  # Reuse parseBlock logic by invoking it with the '{' token
+  let blockExpr = parseBlock(parser, lcurly)
+  let moduleExpr = newModuleExpr(token.position, blockExpr.blockExpr.expressions)
+  
+  # If we have an identifier, wrap in assignment (syntactic sugar)
+  if identifierName != "":
+    return newAssignExpr(token.position, identifierName, moduleExpr, false, AnyType)
+  else:
+    return moduleExpr
+
+proc parseUse(parser: var Parser, token: Token): Expression =
+  ## Parses use expressions. Supports:
+  ##   use "path" [as identifier]
+  ##   use modName [as identifier]
+  ##   use modName::member [as identifier]
+  ##   use modName::{a [as b], c [as d]}
+  parser.cleanUpNewlines()
+  var paths: seq[string] = @[]
+
+  if parser.match({tkString}):
+    # use "path/to/mod" [as identifier]
+    let sVal = parser.previous().value
+    let useExpr = newUseModuleExpr(token.position, @[sVal.content])
+    
+    parser.cleanUpNewlines()
+    if parser.match({tkAs}):
+      parser.cleanUpNewlines()
+      if not parser.match({tkIdent}):
+        raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+      let aliasName = parser.previous().name
+      return newAssignExpr(token.position, aliasName, useExpr, false, AnyType)
+    else:
+      return useExpr
+
+  if not parser.match({tkIdent}):
+    raise newMissingTokenError("Expected module name or string after 'use'", token.position)
+
+  let first = parser.previous().name
+
+  # If next is '::' we may have either a chain of idents or a '{' list
+  if parser.match({tkDoubleColon}):
+    # handle use mod::{a [as b], c [as d]}
+    if parser.match({tkLCurly}):
+      var assignments: seq[Expression] = @[]
+      
+      while not parser.match({tkRCurly}):
+        parser.cleanUpNewlines()
+        if not parser.match({tkIdent}):
+          raise newMissingTokenError("Expected identifier in module member list", parser.previous().position)
+        let memberName = parser.previous().name
+        let memberPath = first & "::" & memberName
+        
+        parser.cleanUpNewlines()
+        
+        # Check for 'as alias'
+        if parser.match({tkAs}):
+          parser.cleanUpNewlines()
+          if not parser.match({tkIdent}):
+            raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+          let aliasName = parser.previous().name
+          let useExpr = newUseModuleExpr(token.position, @[memberPath])
+          assignments.add(newAssignExpr(token.position, aliasName, useExpr, false, AnyType))
+        else:
+          # No alias, automatically bind with same name: memberName = module::memberName
+          let useExpr = newUseModuleExpr(token.position, @[memberPath])
+          assignments.add(newAssignExpr(token.position, memberName, useExpr, false, AnyType))
+        
+        parser.cleanUpNewlines()
+        if parser.match({tkRCurly}):
+          break
+        if not parser.match({tkComma}):
+          raise newMissingTokenError("Expected ','", parser.previous().position)
+      
+      # Now we always have assignments (either explicit with 'as' or automatic)
+      return newVectorExpr(token.position, assignments)
+
+    # otherwise collect chained idents into a single path: use mod::member [as alias]
+    var parts: seq[string] = @[first]
+    while true:
+      if not parser.match({tkIdent}):
+        raise newMissingTokenError("Expected identifier after '::'", parser.previous().position)
+      parts.add(parser.previous().name)
+      if not parser.match({tkDoubleColon}):
+        break
+    
+    # build joined path manually
+    var full = parts[0]
+    for i in 1 ..< parts.len:
+      full = full & "::" & parts[i]
+    
+    let useExpr = newUseModuleExpr(token.position, @[full])
+    
+    parser.cleanUpNewlines()
+    if parser.match({tkAs}):
+      parser.cleanUpNewlines()
+      if not parser.match({tkIdent}):
+        raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+      let aliasName = parser.previous().name
+      return newAssignExpr(token.position, aliasName, useExpr, false, AnyType)
+    else:
+      # Auto-bind with the last part of the path (e.g., std::PI -> PI = use std::PI)
+      let lastPart = parts[parts.len - 1]
+      return newAssignExpr(token.position, lastPart, useExpr, false, AnyType)
+
+  # simple use modName [as alias]
+  let useExpr = newUseModuleExpr(token.position, @[first])
+  
+  parser.cleanUpNewlines()
+  if parser.match({tkAs}):
+    parser.cleanUpNewlines()
+    if not parser.match({tkIdent}):
+      raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+    let aliasName = parser.previous().name
+    return newAssignExpr(token.position, aliasName, useExpr, false, AnyType)
+  else:
+    return useExpr
+
 proc parseIf(parser: var Parser, token: Token): Expression =
   ## Parses if(cond) then elif(cond) then else elseExpr
   parser.cleanUpNewlines()
@@ -285,6 +418,14 @@ proc parseCall(parser: var Parser, left: Expression, token: Token): Expression =
   let callExpr = newFuncCallExpr(token.position, left, args)
   
   return callExpr
+
+proc parseModuleAccess(parser: var Parser, left: Expression, token: Token): Expression =
+  ## Parses module access: left::identifier
+  parser.cleanUpNewlines()
+  if not parser.match({tkIdent}):
+    raise newMissingTokenError("Expected identifier after '::'", token.position)
+  let member = parser.previous().name
+  return newModuleAccessExpr(token.position, left, member)
 
 proc parseChain(parser: var Parser, left: Expression, token: Token): Expression =
   ## Parses left->right, where right can be a function or function call
@@ -460,9 +601,12 @@ proc initOperatorTable*() =
   registerPrefix(tkIf, parseIf)
   registerPrefix(tkSub, parseNeg)         # Unary minus
   registerPrefix(tkNot, parseNot)         # Unary not
+  registerPrefix(tkModule, parseModule)   # 'mod' starts module
+  registerPrefix(tkUse, parseUse)         # 'use' starts import
   
   # Infix operators (led) with precedence (higher = tighter binding)
   registerInfix(tkLpar, 80, parseCall)      # function(args) - highest precedence
+  registerInfix(tkDoubleColon, 78, parseModuleAccess) # module access '::'
   registerInfix(tkChain, 75, parseChain)    # left->right
   registerInfix(tkPow, 60, parseBinaryOp)   # ^ (right-associative)
   registerInfix(tkMul, 50, parseBinaryOp)   # *

@@ -7,7 +7,7 @@ import vector
 
 from core import
   Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
-  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch
+  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
 export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
@@ -74,6 +74,15 @@ proc newFuncCallExpr*(
 proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.inline.} =
   result =
     Expression(kind: ekBlock, position: pos, blockExpr: Block(expressions: expressions))
+
+proc newModuleExpr*(pos: Position, content: seq[Expression]): Expression {.inline.} =
+  result = Expression(kind: ekModule, position: pos, moduleDef: ModuleDef(content: content))
+
+proc newUseModuleExpr*(pos: Position, paths: seq[string]): Expression {.inline.} =
+  result = Expression(kind: ekUse, position: pos, useModule: UseModule(paths: paths))
+
+proc newModuleAccessExpr*(pos: Position, target: Expression, member: string): Expression {.inline.} =
+  result = Expression(kind: ekModAccess, position: pos, moduleAccess: ModuleAccess(target: target, member: member))
 
 proc newFuncExpr*(
     pos: Position,
@@ -163,6 +172,19 @@ proc stringify(node: Expression, indent: int): string =
   of ekGroup:
     result.add indentation & "group:\n"
     result.add(node.groupExpr.stringify(indent + 2))
+  of ekModule:
+    result.add indentation & "module:\n"
+    for expr in node.moduleDef.content:
+      result.add(expr.stringify(indent + 2))
+  of ekUse:
+    result.add indentation & "use module: "
+    for path in node.useModule.paths:
+      result.add("'" & path & "' ")
+    result.add("\n")
+  of ekModAccess:
+    result.add indentation & "module access: " & node.moduleAccess.member & "\n"
+    result.add(indentation & "  target:\n")
+    result.add(node.moduleAccess.target.stringify(indent + 4))
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -265,6 +287,20 @@ proc asSexp*(expr: Expression): string =
     return "(cond " & branchesStr & ")"
   of ekGroup:
     return "(group " & expr.groupExpr.asSexp() & ")"
+  of ekModule:
+    var exprsStr = ""
+    for e in expr.moduleDef.content:
+      if exprsStr.len > 0: exprsStr.add(" ")
+      exprsStr.add(e.asSexp())
+    return "(module " & exprsStr & ")"
+  of ekUse:
+    var pathsStr = ""
+    for path in expr.useModule.paths:
+      if pathsStr.len > 0: pathsStr.add(" ")
+      pathsStr.add("\"" & path & "\"")
+    return "(use " & pathsStr & ")"
+  of ekModAccess:
+    return "(access " & expr.moduleAccess.target.asSexp() & " \"" & expr.moduleAccess.member & "\")"
 
 proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format
@@ -341,3 +377,14 @@ proc asSource*(expr: Expression, ident: int = 0): string =
     return src
   of ekGroup:
     return "(" & asSource(expr.groupExpr) & ")"
+  of ekModule:
+    let indentation = " ".repeat(ident * 2)
+    let innerIndent = " ".repeat((ident + 1) * 2)
+    return
+      "{" & "\n" &
+      expr.moduleDef.content.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") &
+      "\n" & indentation & "}"
+  of ekUse:
+    return "use " & expr.useModule.paths.mapIt("\"" & it & "\"").join(", ")
+  of ekModAccess:
+    return asSource(expr.moduleAccess.target) & "::" & expr.moduleAccess.member

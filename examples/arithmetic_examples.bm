@@ -2,88 +2,75 @@
 # ====================================
 # This file showcases basic and advanced arithmetic operations.
 
-# [1] Basic Arithmetic Operations
-# ------------------------------
-# Addition
-addResult = 5 + 3                     # Expected: 8
+use "std" as std
+use std::{print, sqrt, pow, abs, floor, ceil, round}
 
-# Subtraction
-subResult = 10 - 4                     # Expected: 6
+runArithmeticExamples = || {
+  print("=== Arithmetic Examples ===")
 
-# Multiplication
-mulResult = 7 * 6                      # Expected: 42
+  # [1] Basic Arithmetic Operations
+  addResult = 5 + 3
+  subResult = 10 - 4
+  mulResult = 7 * 6
+  divResult = 20 / 5
+  intDivResult = floor(17 / 5)
+  expResult = 2 ^ 3
+  modResult = 17 % 5
 
-# Division (always returns float)
-divResult = 20 / 5                     # Expected: 4.0
+  print("Add:", addResult, "Sub:", subResult, "Mul:", mulResult)
+  print("Div:", divResult, "IntDiv:", intDivResult, "Exp:", expResult, "Mod:", modResult)
 
-# Integer Division with floor
-intDivResult = floor(17 / 5)           # Expected: 3
+  # [2] Order of Operations
+  orderedResult = 2 + 3 * 4
+  groupedResult = (2 + 3) * 4
+  print("Ordered:", orderedResult, "Grouped:", groupedResult)
 
-# Exponentiation
-expResult = 2 ^ 3                      # Expected: 8
+  # [3] Complex Expressions
+  complexCalc = (5 + 3) * (10 - 2) / 2
+  nestedCalc = ((4 + 6) / 2) ^ 2
+  print("Complex calc:", complexCalc, "Nested:", nestedCalc)
 
-# Modulus (remainder)
-modResult = 17 % 5                     # Expected: 2
+  # [4] Mathematical Functions
+  squareRoot = sqrt(16)
+  cubeRoot = pow(27, 1/3)
+  absValue = abs(-42)
+  print("Sqrt:", squareRoot, "Cuberoot:", cubeRoot, "Abs:", absValue)
 
-# [2] Order of Operations
-# ----------------------
-orderedResult = 2 + 3 * 4              # Expected: 14 (multiplication before addition)
-groupedResult = (2 + 3) * 4            # Expected: 20 (parentheses force order)
+  # [5] Working with Variables
+  a = 15
+  b = 4
+  varSum = a + b
+  varDiff = a - b
+  varProd = a * b
+  varDiv = a / b
+  print("Vars:", varSum, varDiff, varProd, varDiv)
 
-# [3] Complex Expressions
-# ----------------------
-complexCalc = (5 + 3) * (10 - 2) / 2   # Expected: 32.0
-nestedCalc = ((4 + 6) / 2) ^ 2         # Expected: 25.0
+  # [6] Scientific Notation
+  largeNum = 1e5
+  smallNum = 1.5e-4
+  combinedSci = largeNum + smallNum
+  print("Sci:", largeNum, smallNum, combinedSci)
 
-# [4] Mathematical Functions
-# -------------------------
-squareRoot = sqrt(16)                  # Expected: 4.0
-cubeRoot = pow(27, 1/3)                # Expected: 3.0
-absValue = abs(-42)                    # Expected: 42
+  # [7] Complex Number Arithmetic
+  complex1 = 3 + 4i
+  complex2 = 1 - 2i
+  complexAdd = complex1 + complex2
+  complexSub = complex1 - complex2
+  complexMul = complex1 * complex2
+  complexDiv = complex1 / complex2
+  complexSqrt = sqrt(-9)
+  complexAbs = abs(complex1)
+  print("Complex operations:", complexAdd, complexSub, complexMul, complexDiv)
+  print("Complex sqrt:", complexSqrt, "Complex abs:", complexAbs)
 
-# Rounding functions
-roundUp = ceil(3.2)                    # Expected: 4
-roundDown = floor(3.8)                 # Expected: 3
-roundedValue = round(3.5)              # Expected: 4
+  # [9] Mixed Type Arithmetic (Type Promotion)
+  intPlusFlt = 5 + 2.5
+  fltTimesInt = 2.5 * 4
+  mixedComplex = 3 + (2 + 3i)
+  print("Mixed types:", intPlusFlt, fltTimesInt, mixedComplex)
 
-# [5] Working with Variables
-# -------------------------
-a = 15
-b = 4
-varSum = a + b                         # Expected: 19
-varDiff = a - b                        # Expected: 11
-varProd = a * b                        # Expected: 60
-varDiv = a / b                         # Expected: 3.75
+  print("=== Arithmetic examples completed ===")
+}
 
-# [6] Scientific Notation
-# ---------------------
-largeNum = 1e5                         # Expected: 100000.0
-smallNum = 1.5e-4                      # Expected: 0.00015
-combinedSci = largeNum + smallNum      # Expected: 100000.00015
-
-# [7] Complex Number Arithmetic
-# ---------------------------
-# Basic complex number literals
-complex1 = 3 + 4i                      # Complex number (3+4i)
-complex2 = 1 - 2i                      # Complex number (1-2i)
-
-# Complex number operations
-complexAdd = complex1 + complex2       # Expected: 4+2i
-complexSub = complex1 - complex2       # Expected: 2+6i
-complexMul = complex1 * complex2       # Expected: 11-2i
-complexDiv = complex1 / complex2       # Expected: -0.2+2.4i
-
-# Complex number functions
-complexSqrt = sqrt(-9)                 # Expected: 3i
-complexAbs = abs(complex1)             # Expected: 5.0 (magnitude: √(3²+4²))
-
-# [8] Error Handling Examples
-# -------------------------
-# Division by zero is an error (commented to prevent execution)
-# errorDiv = 10 / 0                    # Will raise a division by zero error
-
-# [9] Mixed Type Arithmetic (Type Promotion)
-# ----------------------------------------
-intPlusFlt = 5 + 2.5                   # Expected: 7.5 (int promoted to float)
-fltTimesInt = 2.5 * 4                  # Expected: 10.0
-mixedComplex = 3 + (2 + 3i)            # Expected: 5+3i (int promoted to complex)
+# Run the examples
+runArithmeticExamples()

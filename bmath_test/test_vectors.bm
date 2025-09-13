@@ -2,6 +2,9 @@
 # ======================
 # Tests for vector creation, access, and operations
 
+# Import standard library with vector and assertion functions
+use std::{assert_eq, vec, len, first, last, dot, merge, slice, set, nth}
+
 "Testing Vector Operations..."
 
 # [1] Vector Creation

@@ -2,25 +2,23 @@
 # ====================
 # Quick test to show assertions working
 
-# Basic assertions
-assert(true)
-assert(5 > 3)
+use "std" as std
+use std::{print, assert, assert_eq, assert_neq, assert_lt, assert_gt}
 
-# Equality tests
-assert_eq(2 + 2, 4)
-assert_eq("hello", "hello")
+runSimpleAssertionDemo = || {
+  print("=== Simple Assertion Demo ===")
+  assert(true)
+  assert(5 > 3)
+  assert_eq(2 + 2, 4)
+  assert_eq("hello", "hello")
+  assert_neq(5, 3)
+  assert_neq(true, false)
+  assert_lt(1, 5)
+  assert_gt(10, 2)
+  testVec1 = [1, 2, 3]
+  testVec2 = [1, 2, 3]
+  assert_eq(testVec1, testVec2)
+  print("All assertions passed!")
+}
 
-# Inequality tests  
-assert_neq(5, 3)
-assert_neq(true, false)
-
-# Comparison tests
-assert_lt(1, 5)
-assert_gt(10, 2)
-
-# Vector tests
-testVec1 = [1, 2, 3]
-testVec2 = [1, 2, 3]
-assert_eq(testVec1, testVec2)
-
-"All assertions passed!"
+runSimpleAssertionDemo()

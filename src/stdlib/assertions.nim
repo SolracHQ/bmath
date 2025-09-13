@@ -1,7 +1,7 @@
 ## assertions.nim
 ## Standard library functions for testing and validation
 
-import ../types/[value, number, bm_types, errors]
+import ../types/[value, number, bm_types, errors, core]
 from types import getType
 
 type AssertionError* = object of RuntimeError ## Raised when an assertion fails

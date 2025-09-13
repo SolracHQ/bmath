@@ -1,6 +1,6 @@
 ## functional.nim
 
-import ../types/[value, vector, number, errors]
+import ../types/[value, vector, number, errors, core]
 import sequence
 
 proc map*(values: openArray[Value], invoker: FnInvoker): Value =

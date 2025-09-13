@@ -2,57 +2,24 @@
 
 ## Module System Implementation
 
-### Core Module Infrastructure
+### Core Module Infrastructure (Related Github Issue #16)
 
-- [ ] Design module value representation (modules as first-class values vs symbols)
-- [ ] Implement module namespace isolation
-- [ ] Create module loading and caching system
-- [ ] Define module file resolution strategy (relative/absolute paths)
+- [x] Design module value representation (modules as first-class values)
+- [x] Implement module namespace isolation
+- [x] Create module loading and caching system
 
-### Module Syntax Design
+### Module Syntax Design (Related Github Issue #16)
 
-- [ ] Chosen module declaration syntax: `mod name { ... }` (file-level modules allowed)
-- [ ] Chosen member access syntax: `module::member` (explicit, avoids dot ambiguity)
-- [ ] Import syntax to implement:
-  - [ ] `import module` (binds module value to `module`)
-  - [ ] `import module::{a, b as alias}` (selective imports)
-  - [ ] `import module::*` (explicit wildcard, discouraged)
-  - [ ] Allow relative path imports: `import "../../path/to/module.bm"` or `import ../math`
-- [ ] File-as-module semantics:
-  - [ ] Each file is a module by default (like Rust/Nim)
-  - [ ] Module name inferred from file stem; plan to add unicode filename support
-  - [ ] Document filename restrictions and plan to add unicode support for file names
-- [ ] Versioning and package management notes:
-  - [ ] No built-in `module@version` syntax; prefer external package manager
-  - [ ] Project is small — package manager is optional for now
+- [x] Chosen module declaration syntax: `mod name { ... }`
+- [x] Chosen member access syntax: `module::member`
+- [x] Basic `use` import forms implemented:
+  - [x] `use "module" as name` / `use module as name` — bind module value into scope
+  - [x] `use module::{a, b as alias}` — selective imports and automatic binding
+  - [ ] `use module::*` (wildcard import) — still TODO
+  - [x] Relative/filename imports supported: `use "../path/to/module"` (`.bm` inferred when appropriate)
+- [x] File-as-module semantics: basic behavior implemented
 
-### Examples
-
-````bmath
-# inline module
-mod linear_algebra {
-  export vec, dot
-  vec = |items| ...
-  dot = |v1, v2| ...
-}
-
-# file-based module import
-import math
-res = math::sin(1.0) + math::cos(1.0)
-
-# alias
-import math as m
-res2 = m::sin(0.5)
-
-# selective import
-import math::{sin, cos as c}
-res3 = sin(0.1) + c(0.2)
-
-# relative file import
-import ../utils/linear_algebra # .bm is impicit
-````
-
-### Module Visibility & Purity Notes
+### Module Visibility & Purity Notes (Related Github Issue #16)
 
 - [ ] `export` keyword to mark public members
 - [ ] Non-exported members are private to module
@@ -206,16 +173,6 @@ import ../utils/linear_algebra # .bm is impicit
 - [ ] Design module type checking and validation
 - [ ] Error type integration with existing types
 
-### Standard Library Reorganization
-
-- [ ] **Modularize Standard Library**:
-  - [ ] `core` module: basic operations, arithmetic, comparisons
-  - [ ] `math` module: advanced mathematical functions, trigonometry
-  - [ ] `io` module: input/output operations, file handling
-  - [ ] `test` module: assertion functions, unit testing utilities
-  - [ ] `vector` module: vector operations and transformations
-  - [ ] `sequence` module: lazy sequences and functional operations
-
 ## Development Infrastructure
 
 ### Migration and Compatibility
@@ -262,7 +219,7 @@ import ../utils/linear_algebra # .bm is impicit
   - [ ] Purity indicators in function signatures
   - [ ] Error handling snippets and templates
 
-## Parser Optimizations Modularization
+## Parser Optimizations Modularization (Related Github Issue #16)
 
 - [x] Extract parser optimization passes (constant folding, numeric folding, trivial-if simplification, etc.) into a separate `parser_opt` module
 - [x] Make optimizations toggleable via CLI flag and runtime config (enable/disable per-run)

@@ -36,6 +36,12 @@ type
   ReservedNameError* = object of EnvironmentError
   SequenceExhaustedError* = object of InvalidArgumentError
 
+# --- Module Errors ---
+type
+  ModuleError* = object of RuntimeError
+  ModuleNotFoundError* = object of ModuleError
+  CircularDependencyError* = object of ModuleError
+
 # --- Lexer Errors ---
 type
   LexerError* = object of BMathError
@@ -143,6 +149,13 @@ template newUnexpectedTokenError*(
 
 template newMissingTokenError*(message: string, pos: Position): ref MissingTokenError =
   (ref MissingTokenError)(msg: message, stack: @[pos])
+
+# Module error templates
+template newModuleNotFoundError*(message: string): ref ModuleNotFoundError =
+  (ref ModuleNotFoundError)(msg: message)
+
+template newCircularDependencyError*(message: string): ref CircularDependencyError =
+  (ref CircularDependencyError)(msg: message)
 
 template newInvalidExpressionError*(
     message: string, pos: Position

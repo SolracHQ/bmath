@@ -2,102 +2,132 @@
 # =================================
 # This file demonstrates function definition and usage.
 
-# [1] Basic Function Definition
-# ---------------------------
-# Define a function that adds two numbers
-add = |a, b| a + b
+# Import standard library
+use "std" as std
+use std::{print, map, filter, reduce, sum}
 
-# Function invocation
-result1 = add(5, 3)                 # Expected: 8
+runFunctionExamples = || {
+  print("=== Function Examples ===")
 
-# Function without parameters
-getPI = || 3.14159
-piValue = getPI()                   # Expected: 3.14159
+  # [1] Basic Function Definition
+  # ---------------------------
+  # Define a function that adds two numbers
+  add = |a, b| a + b
 
-# [2] Lambda Functions
-# ------------------
-# Inline lambda (anonymous function)
-square = |x| x * x
-cube = |x| x ^ 3
+  # Function invocation
+  result1 = add(5, 3)                 # Expected: 8
+  print("Addition result:", result1)
 
-# Using inline lambdas in expressions
-inlineResult = (|x| x * 2)(5)       # Expected: 10
+  # Function without parameters
+  getPI = || std::pi
+  piValue = getPI()                   # Expected: 3.14159
+  print("PI value:", piValue)
 
-# [3] Higher-Order Functions
-# ------------------------
-# Function that takes a function as parameter
-applyTwice = |f, x| f(f(x))
-doubleSquared = applyTwice(|x| x * 2, 3)  # Expected: 12
+  # [2] Lambda Functions
+  # ------------------
+  # Inline lambda (anonymous function)
+  square = |x| x * x
+  cube = |x| x ^ 3
 
-# Function that returns a function
-makeMultiplier = |factor| |x| x * factor
-doubler = makeMultiplier(2)
-tripler = makeMultiplier(3)
-doubled = doubler(7)                # Expected: 14
-tripled = tripler(7)                # Expected: 21
+  print("Square of 5:", square(5))
+  print("Cube of 3:", cube(3))
 
-# [4] Closures
-# ----------
-# Functions capture their environment
-makeCounter = || {
-  count = 0
-  |increment| {
-    count = count + increment
-    count
+  # Using inline lambdas in expressions
+  inlineResult = (|x| x * 2)(5)       # Expected: 10
+  print("Inline lambda result:", inlineResult)
+
+  # [3] Higher-Order Functions
+  # ------------------------
+  # Function that takes a function as parameter
+  applyTwice = |f, x| f(f(x))
+  doubleSquared = applyTwice(|x| x * 2, 3)  # Expected: 12
+  print("Apply twice result:", doubleSquared)
+
+  # Function that returns a function
+  makeMultiplier = |factor| |x| x * factor
+  doubler = makeMultiplier(2)
+  tripler = makeMultiplier(3)
+  doubled = doubler(7)                # Expected: 14
+  tripled = tripler(7)                # Expected: 21
+
+  print("Doubler result:", doubled)
+  print("Tripler result:", tripled)
+
+  # [4] Closures
+  # ----------
+  # Functions capture their environment
+  makeCounter = || {
+    count = 0
+    |increment| {
+      count = count + increment
+      count
+    }
   }
+
+  counter1 = makeCounter()
+  counter2 = makeCounter()
+  count1 = counter1(1)                # Expected: 1
+  count1 = counter1(2)                # Expected: 3
+  count2 = counter2(5)                # Expected: 5 (separate environment)
+
+  print("Counter 1 results:", count1)
+  print("Counter 2 result:", count2)
+
+  # [5] Function Composition
+  # ----------------------
+  # Compose two functions
+  doubleIt = |x| x * 2
+  addFive = |x| x + 5
+  doubleThenAdd = |x| addFive(doubleIt(x))
+  result2 = doubleThenAdd(7)          # Expected: 19 (7*2 + 5)
+
+  print("Composition result:", result2)
+
+  # [6] Recursive Functions
+  # ---------------------
+  # Factorial function using recursion
+  factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
+  fact5 = factorial(5)                # Expected: 120
+
+  # Fibonacci function using recursion
+  fibonacci = |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
+  fib6 = fibonacci(6)                 # Expected: 8
+
+  print("Factorial 5:", fact5)
+  print("Fibonacci 6:", fib6)
+
+  # [7] Functions with Block Bodies
+  # -----------------------------
+  # Function with multi-line block body
+  calculateStats = |numbers| {
+    local totalSum = numbers->reduce(0, |acc, n| acc + n)
+    mean = totalSum / numbers->len(numbers)
+    
+    # Return multiple values as a vector
+    [totalSum, mean]
+  }
+
+  stats = calculateStats([1, 2, 3, 4, 5])  # Expected: [15, 3.0]
+  print("Statistics:", stats)
+
+  # [8] Partial Application
+  # --------------------
+  # Simulate partial application of arguments
+  partial = |f, x| |y| f(x, y)
+  addToFive = partial(add, 5)
+  result3 = addToFive(10)             # Expected: 15
+
+  print("Partial application result:", result3)
+
+  # [9] Function Chaining with Functional Programming
+  # -----------------------------------------------
+  numbers = [1, 2, 3, 4, 5]
+  result4 = numbers->map(doubleIt)->map(square)->sum   # Expected: 220
+
+  print("Chained operations result:", result4)
+
+  print("=== Function examples completed ===")
 }
 
-counter1 = makeCounter()
-counter2 = makeCounter()
-count1 = counter1(1)                # Expected: 1
-count1 = counter1(2)                # Expected: 3
-count2 = counter2(5)                # Expected: 5 (separate environment)
-
-# [5] Function Composition
-# ----------------------
-# Compose two functions
-doubleIt = |x| x * 2
-addFive = |x| x + 5
-doubleThenAdd = |x| addFive(doubleIt(x))
-result2 = doubleThenAdd(7)          # Expected: 19 (7*2 + 5)
-
-# [6] Recursive Functions
-# ---------------------
-# Factorial function using recursion
-factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
-fact5 = factorial(5)                # Expected: 120
-
-# Fibonacci function using recursion
-fibonacci = |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
-fib6 = fibonacci(6)                 # Expected: 8
-
-# [7] Functions with Block Bodies
-# -----------------------------
-# Function with multi-line block body
-calculateStats = |numbers| {
-  local sum = numbers->reduce(0, |acc, n| acc + n)
-  mean = sum / numbers->len
-  
-  # Return multiple values as a vector
-  [sum, mean]
-}
-
-stats = calculateStats([1, 2, 3, 4, 5])  # Expected: [15, 3.0]
-
-# [8] Partial Application
-# --------------------
-# Simulate partial application of arguments
-partial = |f, x| |y| f(x, y)
-addToFive = partial(add, 5)
-result3 = addToFive(10)             # Expected: 15
-
-# [9] Function Chaining with Arrow Operator
-# ---------------------------------------
-doubleAndSquare = |x| x -> doubleIt -> square
-result4 = doubleAndSquare(3)        # Expected: 36 ((3*2)²)
-
-# [10] Function with Variable Number of Terms
-# ----------------------------------------
-# Simulate handling multiple terms using a vector argument
-sumAll = |numbers| numbers->reduce(0, |sum, n| sum + n)
-result5 = [1, 2, 3, 4, 5]->sum   # Expected: 15
+# Run the examples
+runFunctionExamples()

@@ -1,5 +1,5 @@
 import unittest, math, complex
-import ../src/pipeline/interpreter/[interpreter]
+import ../src/pipeline/interpreter
 import ../src/pipeline/parser
 import ../src/pipeline/lexer
 import ../src/types/[value, vector, errors]
@@ -12,7 +12,7 @@ proc evalString(s: string): Value =
     if tokens.len == 0:
       continue
     let ast = parse(tokens)
-    result = interpreter.eval(ast).value
+    result = interpreter.eval(ast)
 
 suite "Interpreter tests":
   test "Type promotion edge cases":

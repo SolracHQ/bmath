@@ -2,6 +2,10 @@
 # ======================================
 # Tests for comparison operators and logical operations
 
+# Import standard library with assertion functions
+use "std" as std
+use std::{assert_eq}
+
 "Testing Comparison and Logical Operations..."
 
 # [1] Equality Operators

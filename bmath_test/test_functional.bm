@@ -2,6 +2,10 @@
 # ===========================
 # Tests for functional programming utilities and higher-order functions
 
+# Import standard library with functional and assertion functions
+use "std" as std
+use std::{assert_eq, map, filter, reduce, sum, seq, collect, any as any_true, all as all_true, nth, at, assert_error}
+
 "Testing Functional Programming..."
 
 # [1] Map Function Tests

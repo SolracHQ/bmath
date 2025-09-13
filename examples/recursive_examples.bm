@@ -2,61 +2,56 @@
 # =========================
 # This file demonstrates recursive functions in BMath language.
 
-# [1] Basic Recursive Functions
-# --------------------------
-# Factorial calculation using recursion
-factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
+use "std" as std
+use std::{print}
 
-fact0 = factorial(0)    # Expected: 1
-fact5 = factorial(5)    # Expected: 120
-fact10 = factorial(10)  # Expected: 3628800
+runRecursiveExamples = || {
+  print("=== Recursive Examples ===")
 
-# Fibonacci sequence using recursion
-fibonacci = |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
+  # Factorial
+  factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
+  fact0 = factorial(0)
+  fact5 = factorial(5)
+  fact10 = factorial(10)
+  print("Factorials:", fact0, fact5, fact10)
 
-fib0 = fibonacci(0)     # Expected: 0
-fib1 = fibonacci(1)     # Expected: 1
-fib7 = fibonacci(7)     # Expected: 13
+  # Fibonacci
+  fibonacci = |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
+  fib0 = fibonacci(0)
+  fib1 = fibonacci(1)
+  fib7 = fibonacci(7)
+  print("Fibonacci:", fib0, fib1, fib7)
 
-# [2] Recursive Functions with Helper Functions
-# -----------------------------------------
-# Calculate power using recursion
-power = |base, _exp| {
-  if(_exp == 0) 1 \
-  elif(_exp < 0) 1 / power(base, -_exp) \
-  elif(_exp % 2 == 0) {
-    half = power(base, _exp / 2)
-    half * half
-  } else base * power(base, _exp - 1)
+  # Recursive power
+  power = |base, _exp| {
+    if(_exp == 0) 1 \
+    elif(_exp < 0) 1 / power(base, -_exp) \
+    elif(_exp % 2 == 0) {
+      half = power(base, _exp / 2)
+      half * half
+    } else base * power(base, _exp - 1)
+  }
+  print("Powers:", power(2,10), power(3,4), power(2,-3))
+
+  # Mutual recursion
+  isEven = |n| {
+    if(n == 0) true
+    else isOdd(n - 1)
+  }
+  isOdd = |n| {
+    if(n == 0) false
+    else isEven(n - 1)
+  }
+  print("isEven(10):", isEven(10), "isOdd(7):", isOdd(7))
+
+  # Binomial
+  binomial = |n, k| {
+    if(k == 0 | k == n) 1
+    else binomial(n-1, k-1) + binomial(n-1, k)
+  }
+  print("Binomial 5 choose 2:", binomial(5,2))
+
+  print("=== Recursive examples completed ===")
 }
 
-pow2_10 = power(2, 10)  # Expected: 1024
-pow3_4 = power(3, 4)    # Expected: 81
-powNeg = power(2, -3)   # Expected: 0.125
-
-# [3] Mutually Recursive Functions
-# -----------------------------
-# Determine if a number is even or odd using mutual recursion
-isEven = |n| {
-  if(n == 0) true
-  else isOdd(n - 1)
-}
-
-isOdd = |n| {
-  if(n == 0) false
-  else isEven(n - 1)
-}
-
-even10 = isEven(10)  # Expected: true
-odd7 = isOdd(7)      # Expected: true
-
-# [4] Tree Recursion
-# ---------------
-# Calculate binomial coefficient using recursive formula
-binomial = |n, k| {
-  if(k == 0 | k == n) 1
-  else binomial(n-1, k-1) + binomial(n-1, k)
-}
-
-binom5_2 = binomial(5, 2)  # Expected: 10
-binom7_3 = binomial(7, 3)  # Expected: 35
+runRecursiveExamples()

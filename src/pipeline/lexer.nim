@@ -12,7 +12,7 @@
 
 import std/[strutils, tables, complex]
 
-import ../types/[position, token, bm_types, errors]
+import ../types/[position, token, bm_types, errors, core]
 
 type
   StackableKind* = enum
@@ -49,6 +49,9 @@ const KEYWORDS: Table[string, TokenKind] = {
   "true": tkTrue,
   "false": tkFalse,
   "is": tkIs,
+  "mod": tkModule,
+  "use": tkUse,
+  "as": tkAs,
 }.toTable
 
 const TYPES: Table[string, BMathType] = {
@@ -61,6 +64,7 @@ const TYPES: Table[string, BMathType] = {
   "Function": stFunction.newType,
   "String": stString.newType,
   "Type": stType.newType,
+  "Module": stModule.newType,
   "Any": AnyType,
   "Number": NumberType,
 }.toTable
@@ -349,7 +353,11 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of ']':
     kind = handleClosing(lexer, skSquare, '[', ']', tkRSquare)
   of ':':
-    kind = tkColon
+    if checkNext(lexer) == ':':
+      kind = tkDoubleColon
+      lexer.advance()
+    else:
+      kind = tkColon
   else:
     raise newUnexpectedCharacterError(
       "Unexpected character '" & $(lexer.source[lexer.current]) & "'",
@@ -415,11 +423,12 @@ proc next*(lexer: var Lexer): Token =
   # End of input
   return Token(kind: tkEoe, position: pos(lexer.line, lexer.col))
 
-proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
+proc tokenizeExpression*(lexer: var Lexer, includeComments: bool = false): seq[Token] =
   ## Tokenizes the entire input into a sequence of tokens.
   ##
   ## Params:
   ##   lexer: var Lexer - the current lexer instance.
+  ##   includeComments: bool - when true, include comment tokens in the result
   ## Returns: seq[Token] - a sequence of tokens representing the input expression.
   while true:
     let token = lexer.next()
@@ -441,4 +450,7 @@ proc tokenizeExpression*(lexer: var Lexer): seq[Token] =
             "Unmatched 'if' at " & $last.position, last.position
           )
       break
+    # If the token is a comment and the caller didn't request comments, skip it
+    if token.kind == tkComment and not includeComments:
+      continue
     result.add(token)

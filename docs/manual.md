@@ -9,6 +9,7 @@ Welcome to the BMath Language Manual! This guide introduces the BMath CLI langua
 1. [Introduction](#introduction)
 2. [Getting Started](#getting-started)
 3. [Language Basics](#language-basics)
+3.1 [Modules & Importing](#modules-and-importing)
 4. [Type System](#type-system)
 5. [Operators & Functions](#operators--functions)
 6. [Vectors & Sequences](#vectors--sequences)
@@ -70,13 +71,69 @@ print(z)
 - **Comments:** Use `#` for single-line comments
 - **Multi-line:** Use `\` for line continuation
 
+## Modules and importing
+
+BMath supports lightweight modules so you can group related definitions (constants, functions, types) and import them when needed. Modules are ordinary values and can be created inline or loaded from files.
+
+- Creating a module value inline:
+
+  ```bm
+  mathUtils = mod {
+    pi = 3.14159
+    square = |x| x * x
+  }
+  ```
+
+- Named-module syntax sugar
+
+  You can also declare a named module directly using `mod name { ... }`. This is syntactic sugar and desugars to an assignment of the module value to the identifier:
+
+  ```bm
+  mod mathUtils {
+    pi = 3.14159
+    square = |x| x * x
+  }
+  # is equivalent to
+  mathUtils = mod {
+    pi = 3.14159
+    square = |x| x * x
+  }
+  ```
+
+  The named form both creates the module value and binds it to the given identifier in the current scope.
+
+- The standard library is available as the `std` module. It exposes math helpers, sequence/vector utilities, assertions, and I/O helpers. Typical import patterns:
+
+  ```bm
+  use "std" as std            # load the std module and bind it as `std`
+  use std::{print, sin}       # import only `print` and `sin` and bind them into the current scope
+  use "std"::pi              # import only `pi` (binds `pi` into current scope)
+  use std::sin as s            # import `sin` under alias `s`
+  ```
+
+- The `use` expression accepts a string path (module file name) or a module value. When you `use` specific members (with `::` or `{...}`) those identifiers are automatically bound into the current scope for convenience.
+
+- The `::` operator is the module access (qualified name) operator. It can be used directly on a module value to access members without importing them into the current scope:
+
+  ```bm
+  use "std" as std
+  radius = 2
+  circumference = 2 * std::pi * radius   # access `pi` through the std module
+  sinVal = std::sin(std::pi / 2)
+  ```
+
+- Advice:
+  - Prefer `use "std" as std` when you want to keep symbols namespaced and avoid collisions.
+  - Use `use std::{foo, bar}` or `use module::member` when you need just a few helpers and want them available without qualification.
+  - `use` returns the module value or the requested member(s), so it can be used inside expressions.
+
 ## Type System
 
  BMath supports a rich type system, but types are optional in most places. You can write scripts without specifying types, and the language will infer them at runtime. This makes prototyping and quick calculations easy.
 
 ### Supported Types
 
-- `Int`, `Real`, `Complex`, `Bool`, `Vec`, `Seq`, `Function`, `Type`, `Any`
+- `Int`, `Real`, `Complex`, `Bool`, `Vec`, `Seq`, `Function`, `Type`, `Any`, `String`, `Module`
 
 ### Type Checking and Future Plans
 
@@ -124,14 +181,14 @@ print(z)
 
 ### Arithmetic Operators
 
-| Operator | Description                | Example           | Scalar Behavior         | Vector Behavior                |
+| Operator | Description                | Example           | Scalar Behavior        | Vector Behavior                |
 |----------|----------------------------|-------------------|------------------------|--------------------------------|
 | +        | Addition                   | 3 + 4             | Adds numbers           | Element-wise addition          |
 | -        | Subtraction/Negation       | 10 - 5, -x        | Subtracts/negates      | Element-wise subtraction       |
 | *        | Multiplication             | 2 * 3             | Multiplies numbers     | Scalar-Vec or element-wise     |
 | /        | Division                   | 8 / 2             | Always returns Real    | Scalar-Vec division            |
 | %        | Modulo                     | 17 % 5            | Remainder (Int/Real)   | Element-wise modulo            |
-| ^        | Exponentiation             | 2 ^ 3              | Raises to power        | Element-wise power             |
+| ^        | Exponentiation             | 2 ^ 3             | Raises to power        | Element-wise power             |
 
 #### Arithmetic Examples
 

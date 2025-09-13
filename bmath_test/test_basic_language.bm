@@ -2,6 +2,10 @@
 # ===========================
 # Tests for fundamental language features like variables, blocks, conditionals
 
+# Import standard library with assertion functions
+use "std" as std
+use std::{assert_eq}
+
 "Testing Basic Language Features..."
 
 # [1] Variable Assignment Tests

@@ -2,44 +2,6 @@
 
 import ../types/[value, number, errors]
 
-# ----- Square root procedure -----
-proc sqrt*(a: Value): Value {.inline, captureNumericError.} =
-  ## Square root of a value
-  ##
-  ## Parameters:
-  ## - a: value to take the square root of
-  ##
-  ## Returns:
-  ## - a new Value object with the result of the square root
-  ##
-  ## Raises:
-  ## - UnsupportedTypeError: if operand is not a number
-  ## - ArithmeticError: for numeric calculation errors
-  if a.kind == vkNumber:
-    return newValue(sqrt(a.number))
-  else:
-    raise
-      newUnsupportedTypeError("Cannot take square root of value of type: " & $a.kind)
-
-# ----- Absolute value procedure -----
-proc abs*(a: Value): Value {.inline, captureNumericError.} =
-  ## Absolute value of a value
-  ##
-  ## Parameters:
-  ## - a: value to take the absolute value of
-  ##
-  ## Returns:
-  ## - a new Value object with the result of the absolute value
-  ##
-  ## Raises:
-  ## - UnsupportedTypeError: if operand is not a number
-  ## - ArithmeticError: for numeric calculation errors
-  if a.kind == vkNumber:
-    return newValue(abs(a.number))
-  else:
-    raise
-      newUnsupportedTypeError("Cannot take absolute value of value of type: " & $a.kind)
-
 # ----- Floor procedure -----
 proc floor*(a: Value): Value {.inline, captureNumericError.} =
   ## Floor of a value

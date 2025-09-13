@@ -1,4 +1,4 @@
-## typed.nim
+## types.nim
 
 import ../types/[value, bm_types, number, vector, errors]
 import sequence
@@ -36,6 +36,8 @@ proc getType*(value: Value): BMathType =
     return newType(stString)
   of vkError:
     return newType(stError)
+  of vkModule:
+    return newType(stModule)
 
 proc extractType*(value: Value): Value =
   ## Extracts the type from a value.
@@ -63,6 +65,11 @@ proc casting*(target: BMathType, source: Value): Value =
   # Handle simple type conversions
   if target.kind == tkSimple:
     case target.simpleType
+    of stModule:
+      if source.kind == vkModule:
+        return source
+      else:
+        raise newInvalidArgumentError("Cannot convert to a module type")
     of stError:
       if source.kind == vkError:
         return source
