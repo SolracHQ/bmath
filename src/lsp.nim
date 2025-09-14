@@ -111,7 +111,7 @@ proc analyzeText(uri: string, text: string) =
       # collect tokens for the whole document
       for t in tokens:
         tokensAcc.add(t)
-      let ast = parse(tokens, olNone)  # Use no optimizations for better diagnostics
+      let ast = parse(tokens, olNone) # Use no optimizations for better diagnostics
       # Use the expression position (if present) to optionally attach info-level diagnostics
       if ast != nil:
         let p = ast.position

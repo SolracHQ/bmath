@@ -41,8 +41,8 @@ If your environment uses a different workflow (CI with nimble, docker, etc.), ad
 
 - `src/pipeline/lexer.nim` — tokenization. Changing it affects token shapes, positions, and error classes for malformed input.
 - `src/pipeline/parser.nim` — produces the AST. Changes influence how expressions are represented to the interpreter.
-- `src/pipeline/interpreter/interpreter.nim` — evaluation engine, uses `Environment` and `Value` types.
-- `src/pipeline/interpreter/environment.nim` — environment, native registration helpers and the `global` table.
+- `src/pipeline/interpreter.nim` — evaluation engine, uses `Environment` and `Value` types.
+- `src/types/environment.nim` — environment, native registration helpers and the `global` table.
 - `src/stdlib/` — stdlib functions grouped by domain (e.g. `arithmetic.nim`, `functional.nim`, `sequence.nim`).
 - `src/stdlib/utils.nim` — utility macros like `captureNumericError`.
 - `src/types/` — runtime types, error constructors and helper functions. `Value` and `Number` are the key runtime structures.

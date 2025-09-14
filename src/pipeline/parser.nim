@@ -15,7 +15,7 @@ import std/[tables, strformat]
 import ../types/[expression, token, number, bm_types, value, errors, core, position]
 import optimization
 
-type 
+type
   Parser = object
     tokens: seq[Token]
     current: int
@@ -27,14 +27,14 @@ type
 
   # Operator info for Pratt table
   OpInfo = object
-    precedence: int       # Left binding power
-    prefix: PrefixFunc    # How to parse as prefix (nud)
-    infix: InfixFunc      # How to parse as infix (led)
+    precedence: int # Left binding power
+    prefix: PrefixFunc # How to parse as prefix (nud)
+    infix: InfixFunc # How to parse as infix (led)
 
   # Simple type to hold module part name and alias
   ModPart = object
-    name: string      # The identifier name
-    alias: string     # The alias name (defaults to name)
+    name: string # The identifier name
+    alias: string # The alias name (defaults to name)
 
 # Global operator table
 var opTable: Table[TokenKind, OpInfo]
@@ -76,7 +76,9 @@ proc cleanUpNewlines(parser: var Parser) =
   while parser.match({tkNewline}):
     discard
 
-proc newParser*(tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull): Parser {.inline.} =
+proc newParser*(
+    tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull
+): Parser {.inline.} =
   Parser(tokens: tokens, current: 0, optimizer: newOptimizer(optimizationLevel))
 
 # Forward declarations
@@ -96,7 +98,11 @@ proc parseNumber(parser: var Parser, token: Token): Expression =
   newValueExpr(token.position, token.value)
 
 proc parseBool(parser: var Parser, token: Token): Expression =
-  let value = if token.kind == tkTrue: newValue(true) else: newValue(false)
+  let value =
+    if token.kind == tkTrue:
+      newValue(true)
+    else:
+      newValue(false)
   newValueExpr(token.position, value)
 
 proc parseString(parser: var Parser, token: Token): Expression =
@@ -111,70 +117,70 @@ proc parseIdent(parser: var Parser, token: Token): Expression =
 proc parseGroup(parser: var Parser, token: Token): Expression =
   ## Parses (expression)
   parser.cleanUpNewlines()
-  
+
   let expr = parser.parsePrattExpr()
-  
+
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
     raise newMissingTokenError("Expected ')'", token.position)
-  
+
   # Let the optimizer decide whether to remove grouping. If okRemoveGrouping is enabled
   # then parentheses are removed (for performance). Otherwise keep an explicit group node
   # which is useful for tooling (LSP, asSource, asSexp).
   let groupExpr = parser.optimizer.optimizeGrouping(expr, token.position)
-  
+
   return groupExpr
 
 proc parseVector(parser: var Parser, token: Token): Expression =
   ## Parses [expr, expr, ...]
   var values: seq[Expression] = @[]
-  
+
   while not parser.match({tkRSquare}): # tkRSquare is ']'
     parser.cleanUpNewlines()
     let expr = parser.parsePrattExpr()
-    
+
     values.add(expr)
     parser.cleanUpNewlines()
     if parser.match({tkRSquare}):
       break
     if not parser.match({tkComma}):
       raise newMissingTokenError("Expected ','", parser.previous().position)
-  
+
   let vectorExpr = newVectorExpr(token.position, values)
-  
+
   return vectorExpr
 
 proc parseBlock(parser: var Parser, token: Token): Expression =
   ## Parses {expr; expr; ...}
   parser.cleanUpNewlines()
   var expressions: seq[Expression] = @[]
-  
+
   # Handle empty blocks - they are not allowed
   if parser.match({tkRCurly}):
     raise newInvalidExpressionError("Empty blocks are not allowed", token.position)
-  
+
   while true:
     parser.cleanUpNewlines()
-    
+
     let expr = parser.parseExpression() # Use parseExpression like the original parser
-    
+
     expressions.add(expr)
-    
+
     if parser.match({tkRCurly}):
       break
-    
+
     parser.cleanUpNewlines()
     if parser.match({tkRCurly}):
       break
-      
+
   let blockExpr = newBlockExpr(token.position, expressions)
-  
+
   return blockExpr
 
 proc parseFunction(parser: var Parser, token: Token): Expression =
   ## Parses |param, param| body
   var params: seq[Parameter] = @[]
-  
+
   # Parse parameters until closing '|'
   while not parser.match({tkLine}):
     parser.cleanUpNewlines()
@@ -183,7 +189,8 @@ proc parseFunction(parser: var Parser, token: Token): Expression =
       var typ = AnyType
       if parser.match({tkColon}):
         if not parser.match({tkType}):
-          raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+          raise
+            newMissingTokenError("Expected type after ':'", parser.previous().position)
         typ = parser.previous().value.typ
       params.add(Parameter(name: name, typ: typ))
     elif parser.match({tkLine}):
@@ -201,29 +208,29 @@ proc parseFunction(parser: var Parser, token: Token): Expression =
 
   let body = parser.parsePrattExpr()
   let funcExpr = newFuncExpr(token.position, params, body, returnType)
-  
+
   return funcExpr
 
 proc parseModule(parser: var Parser, token: Token): Expression =
   ## Parses mod { ... } or mod identifier { ... }
   ## The latter is syntactic sugar for identifier = mod { ... }
   parser.cleanUpNewlines()
-  
+
   # Check if we have an optional identifier
   var identifierName: string = ""
   if parser.match({tkIdent}):
     identifierName = parser.previous().name
     parser.cleanUpNewlines()
-  
+
   # Expect a '{' after 'mod' (and optional identifier)
   if not parser.match({tkLCurly}):
     raise newMissingTokenError("Expected '{' after 'mod'", token.position)
   let lcurly = parser.previous()
-  
+
   # Reuse parseBlock logic by invoking it with the '{' token
   let blockExpr = parseBlock(parser, lcurly)
   let moduleExpr = newModuleExpr(token.position, blockExpr.blockExpr.expressions)
-  
+
   # If we have an identifier, wrap in assignment (syntactic sugar)
   if identifierName != "":
     return newAssignExpr(token.position, identifierName, moduleExpr, false, AnyType)
@@ -233,78 +240,90 @@ proc parseModule(parser: var Parser, token: Token): Expression =
 proc parseUse(parser: var Parser, token: Token): Expression =
   ## Parses use expressions with simplified approach from scratchpad
   parser.cleanUpNewlines()
-  
+
   # Expect opening parenthesis  
   if not parser.match({tkLpar}):
     raise newMissingTokenError("Expected '(' after 'use'", token.position)
-  
+
   parser.cleanUpNewlines()
-  
+
   # Parse module path (identifier or string)
   if not parser.match({tkIdent, tkString}):
     raise newMissingTokenError("Expected identifier or string", parser.peek().position)
-  
+
   var useResult: Expression
   if parser.previous().kind == tkIdent:
     useResult = newUseModuleExpr(token.position, parser.previous().name)
   else:
     useResult = newUseModuleExpr(token.position, parser.previous().value.content)
-  
+
   if parser.match({tkDoubleColon}):
     # We have children to parse
     let children = parser.getChildren()
-    
+
     if children.len == 0:
-      raise newMissingTokenError("Expected module members after '::'", parser.previous().position)
-    
+      raise newMissingTokenError(
+        "Expected module members after '::'", parser.previous().position
+      )
+
     var assignments: seq[Expression] = @[]
-    
+
     for c in children:
       if c.len == 1:
         # Simple access: module::member
         let moduleCall = newModuleAccessExpr(token.position, useResult, c[0].name)
-        assignments.add(newAssignExpr(token.position, c[0].alias, moduleCall, true, AnyType))
+        assignments.add(
+          newAssignExpr(token.position, c[0].alias, moduleCall, true, AnyType)
+        )
       else:
         # Nested access: module::sub1::sub2::member
         var moduleCall = useResult
         for i in 0 ..< c.len:
           moduleCall = newModuleAccessExpr(token.position, moduleCall, c[i].name)
         # Final assignment uses the last part's alias
-        assignments.add(newAssignExpr(token.position, c[^1].alias, moduleCall, true, AnyType))
-    
+        assignments.add(
+          newAssignExpr(token.position, c[^1].alias, moduleCall, true, AnyType)
+        )
+
     # Return single assignment or vector of assignments
     if assignments.len == 1:
       useResult = assignments[0]
     else:
       useResult = newVectorExpr(token.position, assignments)
-      
   elif parser.match({tkAs}):
     # Simple alias: use(module as alias)
     parser.cleanUpNewlines()
     if not parser.match({tkIdent}):
-      raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
-    useResult = newAssignExpr(token.position, parser.previous().name, useResult, true, AnyType)
-  
+      raise newMissingTokenError(
+        "Expected identifier after 'as'", parser.previous().position
+      )
+    useResult =
+      newAssignExpr(token.position, parser.previous().name, useResult, true, AnyType)
+
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
-    raise newMissingTokenError("Expected ')' to close use expression", parser.previous().position)
-  
+    raise newMissingTokenError(
+      "Expected ')' to close use expression", parser.previous().position
+    )
+
   return useResult
 
 proc getChildren(parser: var Parser): seq[seq[ModPart]] =
   ## Recursively parse module children with destructuring support
   result = @[]
-  
+
   if parser.match({tkIdent}):
     # Single identifier
     var part = @[ModPart(name: parser.previous().name, alias: parser.previous().name)]
-    
+
     if parser.match({tkAs}):
       parser.cleanUpNewlines()
       if not parser.match({tkIdent}):
-        raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+        raise newMissingTokenError(
+          "Expected identifier after 'as'", parser.previous().position
+        )
       part[0].alias = parser.previous().name
-    
+
     if parser.match({tkDoubleColon}):
       # Continue parsing children
       let childParts = parser.getChildren()
@@ -312,23 +331,26 @@ proc getChildren(parser: var Parser): seq[seq[ModPart]] =
         result.add(part & cp)
     else:
       result.add(part)
-      
   elif parser.match({tkLCurly}):
     # Destructuring: {item1, item2, ...}
     parser.cleanUpNewlines()
-    
+
     while true:
       if not parser.match({tkIdent}):
-        raise newMissingTokenError("Expected identifier in destructuring", parser.peek().position)
-      
+        raise newMissingTokenError(
+          "Expected identifier in destructuring", parser.peek().position
+        )
+
       var part = @[ModPart(name: parser.previous().name, alias: parser.previous().name)]
-      
+
       if parser.match({tkAs}):
         parser.cleanUpNewlines()
         if not parser.match({tkIdent}):
-          raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+          raise newMissingTokenError(
+            "Expected identifier after 'as'", parser.previous().position
+          )
         part[0].alias = parser.previous().name
-      
+
       if parser.match({tkDoubleColon}):
         # Nested destructuring
         let childParts = parser.getChildren()
@@ -336,21 +358,25 @@ proc getChildren(parser: var Parser): seq[seq[ModPart]] =
           result.add(part & cp)
       else:
         result.add(part)
-      
+
       parser.cleanUpNewlines()
       if parser.match({tkRCurly}):
         break
       if not parser.match({tkComma}):
-        raise newMissingTokenError("Expected ',' or '}' in destructuring", parser.previous().position)
+        raise newMissingTokenError(
+          "Expected ',' or '}' in destructuring", parser.previous().position
+        )
       parser.cleanUpNewlines()
   else:
-    raise newMissingTokenError("Expected identifier or '{' after '::'", parser.peek().position)
+    raise newMissingTokenError(
+      "Expected identifier or '{' after '::'", parser.peek().position
+    )
 
 proc parseIf(parser: var Parser, token: Token): Expression =
   ## Parses if(cond) then elif(cond) then else elseExpr
   parser.cleanUpNewlines()
   var branches: seq[Branch] = @[]
-  
+
   # Parse if condition
   if not parser.match({tkLpar}):
     raise newMissingTokenError("Expected '(' after 'if'", token.position)
@@ -358,7 +384,8 @@ proc parseIf(parser: var Parser, token: Token): Expression =
   let ifCond = parser.parsePrattExpr()
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
-    raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
+    raise
+      newMissingTokenError("Expected ')' after condition", parser.previous().position)
   parser.cleanUpNewlines()
   let ifThen = parser.parsePrattExpr()
   branches.add(newBranch(ifCond, ifThen))
@@ -367,12 +394,14 @@ proc parseIf(parser: var Parser, token: Token): Expression =
   # Parse elif branches
   while parser.match({tkElif}):
     if not parser.match({tkLpar}):
-      raise newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
+      raise
+        newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
     parser.cleanUpNewlines()
     let elifCond = parser.parsePrattExpr()
     parser.cleanUpNewlines()
     if not parser.match({tkRpar}):
-      raise newMissingTokenError("Expected ')' after condition", parser.previous().position)
+      raise
+        newMissingTokenError("Expected ')' after condition", parser.previous().position)
     parser.cleanUpNewlines()
     let elifThen = parser.parsePrattExpr()
     branches.add(newBranch(elifCond, elifThen))
@@ -380,17 +409,19 @@ proc parseIf(parser: var Parser, token: Token): Expression =
 
   # Parse mandatory else
   if not parser.match({tkElse}):
-    raise newMissingTokenError("Expected 'else' after if-elif conditions", parser.previous().position)
+    raise newMissingTokenError(
+      "Expected 'else' after if-elif conditions", parser.previous().position
+    )
   parser.cleanUpNewlines()
   let elseBranch = parser.parsePrattExpr()
 
   let ifResult = newIfExpr(token.position, branches, elseBranch)
-  
+
   # Try optimization first
   let optimized = parser.optimizer.optimizeConditional(branches, elseBranch)
   if optimized != nil:
     return optimized
-  
+
   return ifResult
 
 proc parseNeg(parser: var Parser, token: Token): Expression =
@@ -418,20 +449,20 @@ proc parseNot(parser: var Parser, token: Token): Expression =
 proc parseCall(parser: var Parser, left: Expression, token: Token): Expression =
   ## Parses left(arg, arg, ...)
   var args: seq[Expression] = @[]
-  
+
   while not parser.match({tkRpar}):
     parser.cleanUpNewlines()
     let arg = parser.parsePrattExpr()
-    
+
     args.add(arg)
     parser.cleanUpNewlines()
     if parser.match({tkRpar}):
       break
     if not parser.match({tkComma}):
       raise newMissingTokenError("Expected ','", parser.previous().position)
-  
+
   let callExpr = newFuncCallExpr(token.position, left, args)
-  
+
   return callExpr
 
 proc parseModuleAccess(parser: var Parser, left: Expression, token: Token): Expression =
@@ -445,13 +476,14 @@ proc parseModuleAccess(parser: var Parser, left: Expression, token: Token): Expr
 proc parseChain(parser: var Parser, left: Expression, token: Token): Expression =
   ## Parses left->right, where right can be a function or function call
   parser.cleanUpNewlines()
-  
+
   let right = parser.parsePrattExpr(opTable[tkChain].precedence)
-  
+
   if right.kind == ekFuncCall:
     # right is func(args) -> convert to func(left, args)
-    return newFuncCallExpr(token.position, right.functionCall.function, 
-                          @[left] & right.functionCall.params)
+    return newFuncCallExpr(
+      token.position, right.functionCall.function, @[left] & right.functionCall.params
+    )
   else:
     # right is just a function -> convert to right(left)
     return newFuncCallExpr(token.position, right, @[left])
@@ -460,47 +492,69 @@ proc parseBinaryOp(parser: var Parser, left: Expression, token: Token): Expressi
   ## Parses left OP right for binary operators
   let info = opTable[token.kind]
   # For left-associative: use precedence, for right-associative: precedence - 1
-  let rightPrec = if token.kind == tkPow: info.precedence - 1 else: info.precedence
-  
+  let rightPrec =
+    if token.kind == tkPow:
+      info.precedence - 1
+    else:
+      info.precedence
+
   parser.cleanUpNewlines()
-  
+
   let right = parser.parsePrattExpr(rightPrec)
-  
+
   # Try compile-time optimization first
-  let optimized = parser.optimizer.optimizeBinaryOp(token.kind, left, right, token.position)
+  let optimized =
+    parser.optimizer.optimizeBinaryOp(token.kind, left, right, token.position)
   if optimized != nil:
     return optimized
 
   # Create AST node
-  case token.kind:
-  of tkAdd: return newBinaryExpr(token.position, ekAdd, left, right)
-  of tkSub: return newBinaryExpr(token.position, ekSub, left, right)
-  of tkMul: return newBinaryExpr(token.position, ekMul, left, right)
-  of tkDiv: return newBinaryExpr(token.position, ekDiv, left, right)
-  of tkMod: return newBinaryExpr(token.position, ekMod, left, right)
-  of tkPow: return newBinaryExpr(token.position, ekPow, left, right)
-  of tkEq: return newBinaryExpr(token.position, ekEq, left, right)
-  of tkNe: return newBinaryExpr(token.position, ekNe, left, right)
-  of tkLt: return newBinaryExpr(token.position, ekLt, left, right)
-  of tkLe: return newBinaryExpr(token.position, ekLe, left, right)
-  of tkGt: return newBinaryExpr(token.position, ekGt, left, right)
-  of tkGe: return newBinaryExpr(token.position, ekGe, left, right)
-  of tkAnd: return newBinaryExpr(token.position, ekAnd, left, right)
-  of tkLine: return newBinaryExpr(token.position, ekOr, left, right) # OR
+  case token.kind
+  of tkAdd:
+    return newBinaryExpr(token.position, ekAdd, left, right)
+  of tkSub:
+    return newBinaryExpr(token.position, ekSub, left, right)
+  of tkMul:
+    return newBinaryExpr(token.position, ekMul, left, right)
+  of tkDiv:
+    return newBinaryExpr(token.position, ekDiv, left, right)
+  of tkMod:
+    return newBinaryExpr(token.position, ekMod, left, right)
+  of tkPow:
+    return newBinaryExpr(token.position, ekPow, left, right)
+  of tkEq:
+    return newBinaryExpr(token.position, ekEq, left, right)
+  of tkNe:
+    return newBinaryExpr(token.position, ekNe, left, right)
+  of tkLt:
+    return newBinaryExpr(token.position, ekLt, left, right)
+  of tkLe:
+    return newBinaryExpr(token.position, ekLe, left, right)
+  of tkGt:
+    return newBinaryExpr(token.position, ekGt, left, right)
+  of tkGe:
+    return newBinaryExpr(token.position, ekGe, left, right)
+  of tkAnd:
+    return newBinaryExpr(token.position, ekAnd, left, right)
+  of tkLine:
+    return newBinaryExpr(token.position, ekOr, left, right) # OR
   else:
-    raise newUnexpectedTokenError(&"Unexpected binary operator: {token.kind}", token.position)
+    raise newUnexpectedTokenError(
+      &"Unexpected binary operator: {token.kind}", token.position
+    )
 
 proc parseTypeCheck(parser: var Parser, left: Expression, token: Token): Expression =
   ## Parses left is Type
   let right = parser.parsePrattExpr(opTable[tkIs].precedence)
-  
+
   # Try optimization first
   let optimized = parser.optimizer.optimizeTypeCheck(right, token.position)
   if optimized != nil:
     return optimized
-  
+
   # Convert to type(left) == right
-  let getTypeCall = newFuncCallExpr(token.position, newIdentExpr(token.position, "type"), @[left])
+  let getTypeCall =
+    newFuncCallExpr(token.position, newIdentExpr(token.position, "type"), @[left])
   return newBinaryExpr(token.position, ekEq, getTypeCall, right)
 
 # =============================================================================
@@ -511,28 +565,28 @@ proc parsePrattExpr(parser: var Parser, minPrec: int = 0): Expression =
   ## Core Pratt parsing algorithm
   # Get the current token and advance
   let token = parser.advance()
-  
+
   # Look up prefix parser (nud)
   let prefixInfo = opTable.getOrDefault(token.kind)
   if prefixInfo.prefix == nil:
     raise newUnexpectedTokenError(&"Unexpected token: {token}", token.position)
-  
+
   # Parse the left side using the prefix parser
   var left = prefixInfo.prefix(parser, token)
-  
+
   # Parse infix operations while precedence allows
   while not parser.isAtEnd:
     let peekToken = parser.peek()
     let infixInfo = opTable.getOrDefault(peekToken.kind)
-    
+
     # Stop if no infix parser or precedence too low
     if infixInfo.infix == nil or infixInfo.precedence <= minPrec:
       break
-    
+
     # Consume the operator and parse the right side
     let opToken = parser.advance()
     left = infixInfo.infix(parser, left, opToken)
-  
+
   # Don't collect trailing comments here in the core Pratt parser
   # Let the higher-level parsing functions handle comment collection
   return left
@@ -546,40 +600,45 @@ proc parseAssignment(parser: var Parser, left: Expression, token: Token): Expres
   # Extract variable name from left side
   var name: string
   var typ: BMathType = AnyType
-  
-  case left.kind:
+
+  case left.kind
   of ekIdent:
     name = left.identifier.ident
   else:
     raise newInvalidExpressionError("Invalid assignment target", token.position)
-  
+
   # Parse the right side with right-associativity (precedence - 1)
   let value = parser.parsePrattExpr(opTable[tkAssign].precedence - 1)
   let assignExpr = newAssignExpr(token.position, name, value, false, typ)
-  
+
   return assignExpr
 
 proc parseLocalAssignment(parser: var Parser): Expression =
   ## Handles local assignments and regular expressions
   if parser.match({tkLocal}):
     if not parser.match({tkIdent}):
-      raise newMissingTokenError("Expected identifier after 'local'", parser.previous().position)
+      raise newMissingTokenError(
+        "Expected identifier after 'local'", parser.previous().position
+      )
     let name = parser.previous()
     var typ: BMathType = AnyType
     if parser.match({tkColon}):
       if parser.match({tkType}):
         typ = parser.previous().value.typ
       else:
-        raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+        raise
+          newMissingTokenError("Expected type after ':'", parser.previous().position)
     if not parser.match({tkAssign}):
-      raise newMissingTokenError(&"Expected '=' after local '{name.name}'", parser.previous().position)
+      raise newMissingTokenError(
+        &"Expected '=' after local '{name.name}'", parser.previous().position
+      )
     let value = parser.parsePrattExpr()
     let assignExpr = newAssignExpr(name.position, name.name, value, true, typ)
-    
+
     return assignExpr
-  
+
   let expr = parser.parsePrattExpr()
-  
+
   return expr
 
 # =============================================================================
@@ -601,7 +660,7 @@ proc registerInfix(kind: TokenKind, precedence: int, parser: InfixFunc) =
 
 proc initOperatorTable*() =
   ## Initialize the Pratt parser operator table
-  
+
   # Prefix operators (nud)
   registerPrefix(tkNumber, parseNumber)
   registerPrefix(tkTrue, parseBool)
@@ -610,50 +669,52 @@ proc initOperatorTable*() =
   registerPrefix(tkType, parseType)
   registerPrefix(tkIdent, parseIdent)
   registerPrefix(tkLpar, parseGroup)
-  registerPrefix(tkLSquare, parseVector)  # '[' starts vector
-  registerPrefix(tkLCurly, parseBlock)    # '{' starts block
-  registerPrefix(tkLine, parseFunction)   # '|' starts function
+  registerPrefix(tkLSquare, parseVector) # '[' starts vector
+  registerPrefix(tkLCurly, parseBlock) # '{' starts block
+  registerPrefix(tkLine, parseFunction) # '|' starts function
   registerPrefix(tkIf, parseIf)
-  registerPrefix(tkSub, parseNeg)         # Unary minus
-  registerPrefix(tkNot, parseNot)         # Unary not
-  registerPrefix(tkModule, parseModule)   # 'mod' starts module
-  registerPrefix(tkUse, parseUse)         # 'use' starts import
-  
+  registerPrefix(tkSub, parseNeg) # Unary minus
+  registerPrefix(tkNot, parseNot) # Unary not
+  registerPrefix(tkModule, parseModule) # 'mod' starts module
+  registerPrefix(tkUse, parseUse) # 'use' starts import
+
   # Infix operators (led) with precedence (higher = tighter binding)
-  registerInfix(tkLpar, 80, parseCall)      # function(args) - highest precedence
+  registerInfix(tkLpar, 80, parseCall) # function(args) - highest precedence
   registerInfix(tkDoubleColon, 78, parseModuleAccess) # module access '::'
-  registerInfix(tkChain, 75, parseChain)    # left->right
-  registerInfix(tkPow, 60, parseBinaryOp)   # ^ (right-associative)
-  registerInfix(tkMul, 50, parseBinaryOp)   # *
-  registerInfix(tkDiv, 50, parseBinaryOp)   # /
-  registerInfix(tkMod, 50, parseBinaryOp)   # %
-  registerInfix(tkAdd, 40, parseBinaryOp)   # +
-  registerInfix(tkSub, 40, parseBinaryOp)   # -
-  registerInfix(tkLt, 30, parseBinaryOp)    # <
-  registerInfix(tkLe, 30, parseBinaryOp)    # <=
-  registerInfix(tkGt, 30, parseBinaryOp)    # >
-  registerInfix(tkGe, 30, parseBinaryOp)    # >=
-  registerInfix(tkEq, 25, parseBinaryOp)    # ==
-  registerInfix(tkNe, 25, parseBinaryOp)    # !=
-  registerInfix(tkIs, 25, parseTypeCheck)   # is
-  registerInfix(tkAnd, 20, parseBinaryOp)   # &
-  registerInfix(tkLine, 15, parseBinaryOp)  # | (OR)
+  registerInfix(tkChain, 75, parseChain) # left->right
+  registerInfix(tkPow, 60, parseBinaryOp) # ^ (right-associative)
+  registerInfix(tkMul, 50, parseBinaryOp) # *
+  registerInfix(tkDiv, 50, parseBinaryOp) # /
+  registerInfix(tkMod, 50, parseBinaryOp) # %
+  registerInfix(tkAdd, 40, parseBinaryOp) # +
+  registerInfix(tkSub, 40, parseBinaryOp) # -
+  registerInfix(tkLt, 30, parseBinaryOp) # <
+  registerInfix(tkLe, 30, parseBinaryOp) # <=
+  registerInfix(tkGt, 30, parseBinaryOp) # >
+  registerInfix(tkGe, 30, parseBinaryOp) # >=
+  registerInfix(tkEq, 25, parseBinaryOp) # ==
+  registerInfix(tkNe, 25, parseBinaryOp) # !=
+  registerInfix(tkIs, 25, parseTypeCheck) # is
+  registerInfix(tkAnd, 20, parseBinaryOp) # &
+  registerInfix(tkLine, 15, parseBinaryOp) # | (OR)
   registerInfix(tkAssign, 5, parseAssignment) # = (right-associative, lowest precedence)
 
 # =============================================================================
 # PUBLIC API
 # =============================================================================
 
-proc parse*(tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull): Expression =
+proc parse*(
+    tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull
+): Expression =
   ## Main parsing function that processes tokens into an expression AST
   # Initialize operator table if needed
   if opTable.len == 0:
     initOperatorTable()
-  
+
   var parser = newParser(tokens, optimizationLevel)
-  
+
   parser.cleanUpNewlines()
-  
+
   # Check if we only have comments or are at end
   var parseResult: Expression
   if parser.isAtEnd:
@@ -661,10 +722,10 @@ proc parse*(tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull): 
     raise newInvalidExpressionError("No expression to parse", pos(1, 1))
   else:
     parseResult = parser.parseLocalAssignment()
-  
+
   # Check if there are any unexpected tokens left
   if not parser.isAtEnd:
     let token = parser.peek()
     raise newUnexpectedTokenError(&"Unexpected token: {token}", token.position)
-  
+
   return parseResult

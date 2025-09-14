@@ -27,10 +27,12 @@ type Interpreter* = ref object ## Abstract Syntax Tree evaluator
 
 var loadedModules*: Table[string, Value] = {
   # Unified standard library module
-  "std": stdlib.createStdModule(),
-}.toTable() 
+  "std": stdlib.createStdModule()
+}.toTable()
 
-proc newInterpreter*(scriptPath: string = "", disableGlobals: bool = false): Interpreter =
+proc newInterpreter*(
+    scriptPath: string = "", disableGlobals: bool = false
+): Interpreter =
   ## Initializes a new interpreter with an empty global environment.
   ##
   ## Parameters:
@@ -43,7 +45,7 @@ proc newInterpreter*(scriptPath: string = "", disableGlobals: bool = false): Int
   result.env = newEnv(disableGlobals = disableGlobals)
   result.importStack = @[]
   result.disableGlobals = disableGlobals
-  
+
   # Set current directory based on script path or current working directory
   if scriptPath != "":
     result.currentDir = scriptPath.parentDir.absolutePath
@@ -54,7 +56,9 @@ proc evalExpression(
   interpreter: Interpreter, expression: Expression, environment: Environment
 ): Value
 
-proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment = nil): Value =
+proc loadModule*(
+    path: string, interpreter: Interpreter = nil, env: Environment = nil
+): Value =
   ## Loads and evaluates a module from the given file path or local environment.
   ## Also handles module::member syntax for extracting specific members.
   ##
@@ -71,28 +75,29 @@ proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment 
   ##   IOError - If the file cannot be read.
   ##   ParseError - If the module content cannot be parsed.
   ##   CircularDependencyError - If a circular import is detected.
-  
+
   # Handle module::member syntax (including deeply nested access)
   if "::" in path:
     let parts = path.split("::")
     if parts.len < 2:
       raise newRuntimeError("Invalid module path: " & path)
-    
+
     # Load the base module first
     var currentValue = loadModule(parts[0], interpreter, env)
-    
+
     # Navigate through each member access
-    for i in 1..<parts.len:
+    for i in 1 ..< parts.len:
       if currentValue.kind != vkModule:
-        raise newTypeError("Cannot access member '" & parts[i] & "' on non-module value")
-      
+        raise
+          newTypeError("Cannot access member '" & parts[i] & "' on non-module value")
+
       try:
         currentValue = currentValue.environment[parts[i]]
       except UndefinedVariableError:
         raise newRuntimeError("Member '" & parts[i] & "' not found in module")
-    
+
     return currentValue
-  
+
   # First, check if it's a local module in the current environment
   if env != nil:
     try:
@@ -102,37 +107,41 @@ proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment 
     except UndefinedVariableError:
       # Not a local variable, continue with other resolution methods
       discard
-  
+
   # Check if it's a stdlib module
   if path in loadedModules:
     return loadedModules[path]
-    
+
   # Handle file-based modules
-  let currentDir = if interpreter != nil: interpreter.currentDir else: getCurrentDir()
+  let currentDir =
+    if interpreter != nil:
+      interpreter.currentDir
+    else:
+      getCurrentDir()
   var absPath: string
-  
+
   # Resolve relative paths
   if path.isAbsolute:
     absPath = path
   else:
     absPath = currentDir / path
-  
+
   # Add .bm extension if not present and no extension given
   if fileExists(absPath & ".bm"):
     absPath = absPath & ".bm"
   elif not fileExists(absPath):
     raise newRuntimeError("Module file not found: " & absPath)
-  
+
   # Check for circular dependency
   if interpreter != nil:
     if absPath in interpreter.importStack:
       let cycleStart = interpreter.importStack.find(absPath)
-      let cycle = interpreter.importStack[cycleStart..^1] & @[absPath]
+      let cycle = interpreter.importStack[cycleStart ..^ 1] & @[absPath]
       raise newRuntimeError("Circular import detected: " & cycle.join(" -> "))
-    
+
     # Add to import stack
     interpreter.importStack.add(absPath)
-  
+
   try:
     # Check cache first
     if absPath in loadedModules:
@@ -164,7 +173,6 @@ proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment 
     raise newRuntimeError("Could not read module file: " & absPath & " (" & e.msg & ")")
   finally:
     discard interpreter.importStack.pop()
-
 
 proc evalAssign(
     interpreter: Interpreter, expression: Expression, env: Environment
@@ -393,7 +401,6 @@ proc evalExpression(
     of ekUse:
       # Simple module loading - just load the module specified by path
       return loadModule(expression.useModule.path, interpreter, env)
-
   except BMathError as e:
     if e.stack.len == 0:
       e.stack.add(expression.position)

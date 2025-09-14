@@ -9,9 +9,9 @@
 ## 2. Read input (file or direct expression)
 ## 3. Execute through engine.run()
 ## 4. Output result
-import std/[terminal, sequtils]
+import std/[terminal]
 import cli, engine
-import types/[value, errors, expression, core]
+import types/[value, errors, expression]
 import pipeline/[optimization, parser, lexer]
 
 proc handleHelp() =
@@ -23,7 +23,9 @@ proc handleExpression(expr: string, optLevel: OptimizationLevel, disableGlobals:
     echo value
 
 proc handleFile(filePath: string, optLevel: OptimizationLevel, disableGlobals: bool) =
-  let engine = newEngine(optimizationLevel = optLevel, scriptPath = filePath, disableGlobals = disableGlobals)
+  let engine = newEngine(
+    optimizationLevel = optLevel, scriptPath = filePath, disableGlobals = disableGlobals
+  )
   let content = readFile(filePath)
   for result in engine.run(content):
     echo result
@@ -33,7 +35,7 @@ proc handleSexp(filePath: string, compact: bool, optLevel: OptimizationLevel) =
   try:
     let content = readFile(filePath)
     var lexer = newLexer(content)
-    
+
     # Parse and output S-expressions for all expressions in the file
     while not lexer.atEnd:
       let tokens = lexer.tokenizeExpression(includeComments = false)
@@ -42,8 +44,7 @@ proc handleSexp(filePath: string, compact: bool, optLevel: OptimizationLevel) =
         let sexp = ast.asSexp()
         echo sexp
         if not compact:
-          echo ""  # Add separator between expressions
-        
+          echo "" # Add separator between expressions
   except IOError as e:
     stderr.writeLine "[ERROR] IO Error: " & e.msg
     quit(1)
@@ -59,7 +60,9 @@ proc handleRepl(optLevel: OptimizationLevel, disableGlobals: bool) =
     handleExpression(stdin.readAll(), optLevel, disableGlobals)
     return
 
-  let engine = newEngine(replMode = true, optimizationLevel = optLevel, disableGlobals = disableGlobals)
+  let engine = newEngine(
+    replMode = true, optimizationLevel = optLevel, disableGlobals = disableGlobals
+  )
 
   # Interactive REPL mode
   var input: string
@@ -105,9 +108,6 @@ proc main() =
     handleFile(args.filePath, args.optimizationLevel, args.disableGlobals)
   of akRepl:
     handleRepl(args.optimizationLevel, args.disableGlobals)
-  of akFormat:
-    # do nothing for now
-    discard
   of akSexp:
     handleSexp(args.sexpFilePath, args.compact, args.optimizationLevel)
 

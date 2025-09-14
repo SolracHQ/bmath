@@ -25,7 +25,12 @@ type Engine* = ref object ## Stateful evaluation engine maintaining interpreter 
   optimizationLevel*: OptimizationLevel
   disableGlobals*: bool
 
-proc newEngine*(replMode: bool = false, optimizationLevel: OptimizationLevel = olFull, scriptPath: string = "", disableGlobals: bool = false): Engine =
+proc newEngine*(
+    replMode: bool = false,
+    optimizationLevel: OptimizationLevel = olFull,
+    scriptPath: string = "",
+    disableGlobals: bool = false,
+): Engine =
   ## Creates a new evaluation engine with fresh state
   new(result)
   result.interpreter = newInterpreter(scriptPath, disableGlobals)

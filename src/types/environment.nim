@@ -61,25 +61,30 @@ macro native(call: untyped): Value =
     )
 
 # Empty global environment for when globals are completely disabled
-let empty_global = Environment(
-  parent: nil,
-  values: initTable[string, Value](),
-)
+let empty_global = Environment(parent: nil, values: initTable[string, Value]())
 
 # Minimal global environment with only essential functions
 let minimal_global = Environment(
   parent: nil,
   values: toTable(
     {
-      "exit": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: exit, signatures: @[])),
-      "print": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: print, signatures: @[])),
-      "try_or": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: try_or, signatures: @[])),
-      "try_catch": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: try_catch, signatures: @[])),
-      "concat": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: concat, signatures: @[])),
+      "exit":
+        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: exit, signatures: @[])),
+      "print":
+        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: print, signatures: @[])),
+      "try_or":
+        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: try_or, signatures: @[])),
+      "try_catch": Value(
+        kind: vkNativeFunc, nativeFn: NativeFn(callable: try_catch, signatures: @[])
+      ),
+      "concat":
+        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: concat, signatures: @[])),
       "sqrt": native(sqrt(a)),
       "abs": native(abs(a)),
-      "vec": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: vec, signatures: @[])),
-      "seq": Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: seq, signatures: @[])),
+      "vec":
+        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: vec, signatures: @[])),
+      "seq":
+        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: seq, signatures: @[])),
     }
   ),
 )

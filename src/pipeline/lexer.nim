@@ -399,13 +399,15 @@ proc next*(lexer: var Lexer): Token =
       let start = lexer.current
       let startCol = lexer.col
       lexer.advance() # Skip the '#'
-      
+
       var commentText = ""
       while lexer.current < lexer.source.len and lexer.source[lexer.current] != '\n':
         commentText.add(lexer.source[lexer.current])
         lexer.advance()
-      
-      return Token(kind: tkComment, comment: commentText, position: pos(lexer.line, startCol))
+
+      return Token(
+        kind: tkComment, comment: commentText, position: pos(lexer.line, startCol)
+      )
     let start = lexer.current
     # Check for number: digit or a dot with a digit following (as in '.5')
     if lexer.source[lexer.current] in {'0' .. '9'} or (

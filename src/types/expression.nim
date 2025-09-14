@@ -7,9 +7,11 @@ import vector
 
 from core import
   Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
-  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
-export Expression, ExpressionKind, Parameter, Branch, Assign,
-  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
+  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule,
+  ModuleAccess
+export
+  Expression, ExpressionKind, Parameter, Branch, Assign, FunctionCall, Block, Parameter,
+  FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
 export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
@@ -78,13 +80,20 @@ proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.in
     Expression(kind: ekBlock, position: pos, blockExpr: Block(expressions: expressions))
 
 proc newModuleExpr*(pos: Position, content: seq[Expression]): Expression {.inline.} =
-  result = Expression(kind: ekModule, position: pos, moduleDef: ModuleDef(content: content))
+  result =
+    Expression(kind: ekModule, position: pos, moduleDef: ModuleDef(content: content))
 
 proc newUseModuleExpr*(pos: Position, path: string): Expression {.inline.} =
   result = Expression(kind: ekUse, position: pos, useModule: UseModule(path: path))
 
-proc newModuleAccessExpr*(pos: Position, target: Expression, member: string): Expression {.inline.} =
-  result = Expression(kind: ekModAccess, position: pos, moduleAccess: ModuleAccess(target: target, member: member))
+proc newModuleAccessExpr*(
+    pos: Position, target: Expression, member: string
+): Expression {.inline.} =
+  result = Expression(
+    kind: ekModAccess,
+    position: pos,
+    moduleAccess: ModuleAccess(target: target, member: member),
+  )
 
 proc newFuncExpr*(
     pos: Position,
@@ -203,7 +212,7 @@ proc asSexp*(expr: Expression): string =
   ## Returns a string representation of the expression as an S-expression
   if expr.isNil:
     return "nil"
-  
+
   case expr.kind
   of ekValue:
     case expr.value.kind
@@ -224,64 +233,84 @@ proc asSexp*(expr: Expression): string =
   of ekNot:
     return "(not " & expr.unaryOp.operand.asSexp() & ")"
   of ekAdd:
-    return "(+ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(+ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekSub:
-    return "(- " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(- " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekMul:
-    return "(* " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(* " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekDiv:
-    return "(/ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(/ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekMod:
-    return "(% " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(% " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekPow:
-    return "(^ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(^ " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekEq:
-    return "(== " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(== " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekNe:
-    return "(!= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(!= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekLt:
-    return "(< " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(< " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekLe:
-    return "(<= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(<= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekGt:
-    return "(> " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(> " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekGe:
-    return "(>= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(>= " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekAnd:
-    return "(& " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(& " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekOr:
-    return "(| " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
+    return
+      "(| " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekAssign:
     let localStr = if expr.assign.isLocal: "local " else: ""
     return "(= " & localStr & expr.assign.ident & " " & expr.assign.expr.asSexp() & ")"
   of ekFuncCall:
     var argsStr = ""
     for i, arg in expr.functionCall.params:
-      if i > 0: argsStr.add(" ")
+      if i > 0:
+        argsStr.add(" ")
       argsStr.add(arg.asSexp())
     return "(call " & expr.functionCall.function.asSexp() & " " & argsStr & ")"
   of ekFuncDef:
     var paramsStr = ""
     for i, param in expr.functionDef.params:
-      if i > 0: paramsStr.add(" ")
+      if i > 0:
+        paramsStr.add(" ")
       paramsStr.add(param.name)
     return "(lambda (" & paramsStr & ") " & expr.functionDef.body.asSexp() & ")"
   of ekVector:
     var elementsStr = ""
-    for i in 0..<expr.vector.size:
-      if i > 0: elementsStr.add(" ")
+    for i in 0 ..< expr.vector.size:
+      if i > 0:
+        elementsStr.add(" ")
       elementsStr.add(expr.vector[i].asSexp())
     return "(vector " & elementsStr & ")"
   of ekBlock:
     var exprsStr = ""
     for i, e in expr.blockExpr.expressions:
-      if i > 0: exprsStr.add(" ")
+      if i > 0:
+        exprsStr.add(" ")
       exprsStr.add(e.asSexp())
     return "(block " & exprsStr & ")"
   of ekIf:
     var branchesStr = ""
     for branch in expr.ifExpr.branches:
-      branchesStr.add("(if " & branch.condition.asSexp() & " " & branch.then.asSexp() & ") ")
+      branchesStr.add(
+        "(if " & branch.condition.asSexp() & " " & branch.then.asSexp() & ") "
+      )
     branchesStr.add("(else " & expr.ifExpr.elseBranch.asSexp() & ")")
     return "(cond " & branchesStr & ")"
   of ekGroup:
@@ -289,13 +318,16 @@ proc asSexp*(expr: Expression): string =
   of ekModule:
     var exprsStr = ""
     for e in expr.moduleDef.content:
-      if exprsStr.len > 0: exprsStr.add(" ")
+      if exprsStr.len > 0:
+        exprsStr.add(" ")
       exprsStr.add(e.asSexp())
     return "(module " & exprsStr & ")"
   of ekUse:
     return "(use \"" & expr.useModule.path & "\")"
   of ekModAccess:
-    return "(access " & expr.moduleAccess.target.asSexp() & " \"" & expr.moduleAccess.member & "\")"
+    return
+      "(access " & expr.moduleAccess.target.asSexp() & " \"" & expr.moduleAccess.member &
+      "\")"
 
 proc asSource*(expr: Expression, ident: int = 0): string =
   ## Returns a string representation of the expression in source code format

@@ -125,7 +125,7 @@ template applyScalarOp(op: untyped, a: Value, b: Vector[Value]): Vector[Value] =
     result[i] = op(a, b[i])
   result
 
-template applyVectorOp(op: untyped, a: Vector[Value], b: Vector[Value]): Vector[Value]=
+template applyVectorOp(op: untyped, a: Vector[Value], b: Vector[Value]): Vector[Value] =
   ## Applies a vector operation element-wise between two vectors
   # if a.size != b.size: # this should be checked by the caller
   var result = newVector[Value](size[Value](a))
