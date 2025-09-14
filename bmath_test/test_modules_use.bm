@@ -1,0 +1,288 @@
+# Test script for new module and use syntax
+# Tests: modules, nested modules, complex use expressions with destructuring and aliases
+
+# Import assertion functions and type function
+use(std::{assert_eq, assert_error, type})
+
+"=== Module and Use Syntax Test Suite ==="
+
+# Test 1: Basic module creation and use
+"=== Test 1: Basic Module Creation ==="
+
+# Create a simple module
+mathUtils = mod {
+    pi = 3.14159
+    square = |x| x * x
+    cube = |x| x * x * x
+    add = |a, b| a + b
+}
+
+# Test module access with assertions
+assert_eq(mathUtils::pi, 3.14159, "mathUtils::pi should be 3.14159", "✓ Module member access passed")
+assert_eq(mathUtils::square(5), 25, "mathUtils::square(5) should be 25", "✓ Module function call passed")
+assert_eq(mathUtils::add(3, 7), 10, "mathUtils::add(3, 7) should be 10", "✓ Module binary function passed")
+
+# Test 2: Using use() to import modules
+"=== Test 2: Basic use() Import ==="
+
+# Import entire module (should return module value)
+imported_math = use(mathUtils)
+assert_eq(type(imported_math), Module, "imported module should be Module type", "✓ Module import type passed")
+assert_eq(imported_math::pi, 3.14159, "imported_math::pi should be 3.14159", "✓ Imported module access passed")
+
+# Test 3: Import specific members
+"=== Test 3: Import Specific Members ==="
+
+# Import specific member - should auto-bind to variable name
+square_fn = use(mathUtils::square)
+assert_eq(type(square_fn), Function, "imported function should be Function type", "✓ Member import type passed")
+assert_eq(square_fn(7), 49, "square_fn(7) should be 49", "✓ Imported function call passed")
+
+# Test 4: Import with alias
+"=== Test 4: Import with Alias ==="
+
+# Import with alias
+my_pi = use(mathUtils::pi as PI_VALUE)
+assert_eq(type(my_pi), Real, "aliased value should be Real type", "✓ Aliased value type passed")
+assert_eq(PI_VALUE, 3.14159, "PI_VALUE should be 3.14159", "✓ Aliased value access passed")
+
+# Test 5: Nested modules
+"=== Test 5: Nested Modules ==="
+
+# Create nested module structure
+geometry = mod {
+    shapes = mod {
+        circle = mod {
+            area = |r| mathUtils::pi * r * r
+            circumference = |r| 2 * mathUtils::pi * r
+        }
+        
+        rectangle = mod {
+            area = |w, h| w * h
+            perimeter = |w, h| 2 * (w + h)
+        }
+    }
+    
+    constants = mod {
+        golden_ratio = 1.618
+        e = 2.718
+    }
+}
+
+# Test nested module access
+assert_eq(geometry::shapes::circle::area(3), 28.274309999999996, "circle area calculation should work", "✓ Nested module function passed")
+assert_eq(geometry::shapes::rectangle::area(4, 5), 20, "rectangle area should be 20", "✓ Nested module calculation passed")
+
+# Test 6: Import from nested modules
+"=== Test 6: Import from Nested Modules ==="
+
+# Import specific nested member
+circle_area = use(geometry::shapes::circle::area)
+assert_eq(type(circle_area), Function, "nested import should be Function type", "✓ Nested import type passed")
+assert_eq(circle_area(4), 50.26544, "circle_area(4) should be correct", "✓ Nested imported function passed")
+
+# Test 7: Simple destructuring
+"=== Test 7: Simple Destructuring ==="
+
+# Create module for destructuring tests
+utils = mod {
+    math = mod {
+        abs = |x| if(x < 0) -x else x
+        max = |a, b| if(a > b) a else b
+        min = |a, b| if(a < b) a else b
+    }
+}
+
+# Import multiple members using destructuring
+use(utils::math::{abs, max, min})
+
+assert_eq(abs(-5), 5, "destructured abs(-5) should be 5", "✓ Destructured abs function passed")
+assert_eq(max(3, 7), 7, "destructured max(3, 7) should be 7", "✓ Destructured max function passed")
+assert_eq(min(8, 2), 2, "destructured min(8, 2) should be 2", "✓ Destructured min function passed")
+
+# Test 8: Complex Destructuring Patterns
+"=== Test 8: Complex Destructuring Patterns ==="
+
+# Create comprehensive module structure for advanced destructuring
+comprehensive_lib = mod {
+    math = mod {
+        basic = mod {
+            add = |a, b| a + b
+            subtract = |a, b| a - b
+            multiply = |a, b| a * b
+        }
+        advanced = mod {
+            power = |base, exp| base ^ exp
+            factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
+        }
+        constants = mod {
+            pi = 3.14159
+            e = 2.71828
+            golden = 1.618
+        }
+    }
+    
+    string = mod {
+        utils = mod {
+            length = |s| 10  # Placeholder
+            reverse = |s| s  # Placeholder
+        }
+    }
+}
+
+# Test Case 8.1: Simple destructuring with multiple elements
+"8.1: Simple destructuring with multiple elements"
+
+use(comprehensive_lib::math::basic::{add, subtract, multiply})
+
+assert_eq(add(5, 3), 8, "destructured add should work correctly", "✓ Multi-destructured add passed")
+assert_eq(subtract(10, 4), 6, "destructured subtract should work correctly", "✓ Multi-destructured subtract passed")
+assert_eq(multiply(6, 7), 42, "destructured multiply should work correctly", "✓ Multi-destructured multiply passed")
+
+# Test Case 8.2: Mixed destructuring with nested access
+"8.2: Mixed destructuring with nested access"
+
+use(comprehensive_lib::math::{constants::pi, constants::e, advanced::power})
+
+assert_eq(pi, 3.14159, "nested destructured pi should be correct", "✓ Nested destructured pi passed")
+assert_eq(e, 2.71828, "nested destructured e should be correct", "✓ Nested destructured e passed")  
+assert_eq(power(2, 3), 8, "nested destructured power should work", "✓ Nested destructured power passed")
+
+# Test Case 8.3: Complex nested destructuring
+"8.3: Complex nested destructuring"
+
+use(comprehensive_lib::{math::constants::{golden}, string::utils::{length, reverse}})
+
+assert_eq(golden, 1.618, "complex nested golden should be correct", "✓ Complex nested golden passed")
+assert_eq(type(length), Function, "complex nested length should be function", "✓ Complex nested length type passed")
+assert_eq(type(reverse), Function, "complex nested reverse should be function", "✓ Complex nested reverse type passed")
+
+# Test Case 8.4: Destructuring with aliases  
+"8.4: Destructuring with aliases"
+
+# Test different alias patterns
+use(comprehensive_lib::math::advanced::{power as pow, factorial as fact})
+
+assert_eq(type(pow), Function, "aliased power should be Function type", "✓ Aliased power type passed")
+assert_eq(pow(3, 2), 9, "aliased power function should work", "✓ Aliased power function passed")
+assert_eq(type(fact), Function, "aliased factorial should be Function type", "✓ Aliased factorial type passed")
+assert_eq(fact(4), 24, "aliased factorial should work", "✓ Aliased factorial function passed")
+
+# Test Case 8.5: Mixed aliases and direct imports
+"8.5: Mixed aliases and direct imports"
+
+test_module = mod {
+    values = mod {
+        x = 100
+        y = 200
+        z = 300
+    }
+    funcs = mod {
+        double = |n| n * 2
+        triple = |n| n * 3
+    }
+}
+
+use(test_module::{values::{x, y as second, z}, funcs::{double as twice, triple}})
+
+assert_eq(x, 100, "direct import x should be 100", "✓ Mixed direct import passed")
+assert_eq(second, 200, "aliased y as second should be 200", "✓ Mixed alias import passed")
+assert_eq(z, 300, "direct import z should be 300", "✓ Mixed direct import z passed")
+assert_eq(twice(5), 10, "aliased double as twice should work", "✓ Mixed alias function passed")
+assert_eq(triple(4), 12, "direct import triple should work", "✓ Mixed direct function passed")
+
+# Test Case 8.6: Deep nesting with mixed patterns and aliases
+"8.6: Deep nesting with mixed patterns and aliases"
+
+deep_module = mod {
+    level1 = mod {
+        item1 = "value1" 
+        level2a = mod {
+            item2 = "value2"
+            level3 = mod {
+                item3 = "value3"
+                func1 = |x| x + 1
+            }
+        }
+        level2b = mod {
+            item4 = "value4"
+            func2 = |x| x * 2
+        }
+    }
+}
+
+use(deep_module::level1::{item1 as first, level2a::{item2, level3::{item3 as third, func1}}, level2b::{func2 as double}})
+
+assert_eq(first, "value1", "deep aliased item1 should be correct", "✓ Deep alias first passed")
+assert_eq(item2, "value2", "deep direct item2 should be correct", "✓ Deep direct item2 passed")  
+assert_eq(third, "value3", "deep aliased item3 should be correct", "✓ Deep alias third passed")
+assert_eq(func1(10), 11, "deep direct func1 should work", "✓ Deep direct func1 passed")
+assert_eq(double(6), 12, "deep aliased func2 should work", "✓ Deep alias func2 passed")
+
+# Test 9: Module composition and first-class values
+"=== Test 9: Module Composition ==="
+
+# Store module in variable
+my_module = mod {
+    value = 42
+    double = |x| x * 2
+}
+
+stored_module = my_module
+assert_eq(type(stored_module), Module, "stored module should be Module type", "✓ Module storage type passed")
+assert_eq(stored_module::value, 42, "stored module value should be 42", "✓ Module storage access passed")
+
+# Create modules that use other modules
+advanced_math = mod {
+    basic = mathUtils
+    square_and_add = |x, y| basic::add(basic::square(x), y)
+    cube_minus_square = |x| basic::cube(x) - basic::square(x)  
+}
+
+assert_eq(advanced_math::square_and_add(3, 4), 13, "module composition should work", "✓ Module composition passed")
+assert_eq(advanced_math::cube_minus_square(4), 48, "complex module composition should work", "✓ Complex module composition passed")
+
+# Test 10: Error cases
+"=== Test 10: Error Cases ==="
+
+# Test non-existent module member
+assert_error(|| use(mathUtils::nonexistent), "should error on non-existent member", "✓ Non-existent member error detected")
+
+# Test non-existent in destructuring
+assert_error(|| use(mathUtils::{nonexistent}), "should error on non-existent member in destructuring", "✓ Destructuring non-existent error detected")
+
+# Test destructuring non-module
+simple_value = 42
+assert_error(|| use(simple_value::{something}), "should error when destructuring non-module", "✓ Non-module destructuring error detected")
+
+# Test invalid nested path
+assert_error(|| use(mathUtils::invalid::path), "should error on invalid nested path", "✓ Invalid nested path error detected")
+
+# Test 11: Type verification for all import patterns
+"=== Test 11: Type Verification ==="
+
+# Verify correct types for different import patterns  
+direct_import = use(mathUtils::pi)
+assert_eq(type(direct_import), Real, "direct import should have correct type", "✓ Direct import type verification passed")
+
+aliased_import = use(mathUtils::square as sq_func)
+assert_eq(type(sq_func), Function, "aliased import should have correct type", "✓ Aliased import type verification passed")
+
+# Verify destructured imports maintain correct types
+temp_module = mod { 
+    num = 123
+    text = "hello"
+    fn = |x| x 
+}
+use(temp_module::{num, text as str, fn})
+
+assert_eq(type(num), Int, "destructured integer should keep type", "✓ Destructured integer type passed")
+assert_eq(type(str), String, "destructured aliased string should keep type", "✓ Destructured alias string type passed")
+assert_eq(type(fn), Function, "destructured function should keep type", "✓ Destructured function type passed")
+
+# Test final values are correct
+assert_eq(num, 123, "destructured integer should have correct value", "✓ Destructured integer value passed")
+assert_eq(str, "hello", "destructured aliased string should have correct value", "✓ Destructured alias string value passed") 
+assert_eq(fn(5), 5, "destructured function should work correctly", "✓ Destructured function behavior passed")
+
+"✓ All module and use syntax tests completed successfully!"

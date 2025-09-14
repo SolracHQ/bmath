@@ -3,8 +3,7 @@
 # This file demonstrates function definition and usage.
 
 # Import standard library
-use "std" as std
-use std::{print, map, filter, reduce, sum}
+use(std::{print, map, filter, reduce, sum})
 
 runFunctionExamples = || {
   print("=== Function Examples ===")

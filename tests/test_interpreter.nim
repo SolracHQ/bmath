@@ -26,8 +26,8 @@ suite "Interpreter tests":
     check evalString("2^3^2").number.integer == 512 # 2^(3^2) = 2^9 = 512
 
   test "Function call evaluation":
-    check evalString("pow(2, 3+1)").number.integer == 16
-    check evalString("floor(3.9 + ceil(2.1))").number.integer == 6
+    check evalString("use(std::pow)(2, 3+1)").number.integer == 16
+    check evalString("use(std::floor)(3.9 + use(std::ceil)(2.1))").number.integer == 6
 
   test "Division and modulo edge cases":
     ## Division by zero should raise an error.
@@ -151,7 +151,7 @@ suite "Interpreter tests":
   test "Block expression in arithmetic operations":
     ## Test that blocks can be used as expressions.
     ## Evaluates { sin(3.14) } + cos(3.14) as an expression.
-    let resultVal = evalString("{ sin(3.14) } + cos(3.14)").number.real
+    let resultVal = evalString("{ use(std::sin)(3.14) } + use(std::cos)(3.14)").number.real
     let expected = sin(3.14) + cos(3.14)
     check abs(resultVal - expected) < 1e-6
 
@@ -179,7 +179,7 @@ suite "Interpreter tests":
   test "Exception handling for function calls":
     ## Calling a function with wrong number of arguments
     expect InvalidArgumentError:
-      discard evalString("pow(2)")
+      discard evalString("use(std::pow)(2)")
 
     ## Calling a non-existent function
     expect UndefinedVariableError:
@@ -196,11 +196,11 @@ suite "Interpreter tests":
 
     ## Access out of bounds
     expect InvalidArgumentError:
-      discard evalString("nth([1, 2, 3], 5)")
+      discard evalString("use(std::nth)([1, 2, 3], 5)")
 
     ## Empty vector access
     expect InvalidArgumentError:
-      discard evalString("first([])")
+      discard evalString("use(std::first)([])")
 
   test "Exception handling for scope and variable issues":
     ## Local variable shadowing test
@@ -222,23 +222,23 @@ suite "Interpreter tests":
 
   test "Trigonometric function edge cases":
     ## Test special vector
-    let sinZero = evalString("sin(0)").number.real
+    let sinZero = evalString("use(std::sin)(0)").number.real
     check abs(sinZero) < 1e-10
 
-    let cosZero = evalString("cos(0)").number.real
+    let cosZero = evalString("use(std::cos)(0)").number.real
     check abs(cosZero - 1.0) < 1e-10
 
-    let sinPiHalf = evalString("sin(pi/2)").number.real
+    let sinPiHalf = evalString("use(std::sin)(use(std::pi)/2)").number.real
     check abs(sinPiHalf - 1.0) < 1e-10
 
-    let cosPiHalf = evalString("cos(pi/2)").number.real
+    let cosPiHalf = evalString("use(std::cos)(use(std::pi)/2)").number.real
     check abs(cosPiHalf) < 1e-10
 
-    let logOneBase2 = evalString("log(1, 2)").number.real
+    let logOneBase2 = evalString("use(std::log)(1, 2)").number.real
     check abs(logOneBase2) < 1e-10
 
     ## Test exp(0) = 1
-    let expZero = evalString("exp(0)").number.real
+    let expZero = evalString("use(std::exp)(0)").number.real
     check abs(expZero - 1.0) < 1e-10
 
   test "Function defined and called within a block":
@@ -311,7 +311,7 @@ suite "Interpreter tests":
   test "Arrow operator with vector operations":
     ## Tests arrow operator with vector transformations
     let res = evalString("""
-      [1, 2, 3, 4]->map(|x| x * 2)->filter(|x| x > 4)
+      [1, 2, 3, 4]->use(std::map)(|x| x * 2)->use(std::filter)(|x| x > 4)
     """)
     check res.vector.size == 2
     check res.vector[0].number.integer == 6
@@ -328,7 +328,7 @@ suite "Interpreter tests":
     
     let res2 = evalString("""
       process = |x| if(x > 5) x * 2 else x
-      [3, 6, 9]->map(process)  # [3, 12, 18]
+      [3, 6, 9]->use(std::map)(process)  # [3, 12, 18]
     """)
     check res2.vector.size == 3
     check res2.vector[0].number.integer == 3
@@ -352,9 +352,9 @@ suite "Interpreter tests":
           squared = doubled * doubled
           if(squared > 100) squared else doubled
         }
-        [3, 7, 11]->map(transformer)
+        [3, 7, 11]->use(std::map)(transformer)
       }
-      result->nth(2)  # For 11: doubled=22, squared=484, returns 484
+      result->use(std::nth)(2)  # For 11: doubled=22, squared=484, returns 484
     """)
     check res.number.integer == 484
 
@@ -362,13 +362,13 @@ suite "Interpreter tests":
     ## Tests creating sequences and accessing elements
     let res = evalString("""
       finiteSeq = seq(5, |i| i * 2)
-      finiteSeq->nth(3)  # Should be 6
+      finiteSeq->use(std::nth)(3)  # Should be 6
     """)
     check res.number.integer == 6
     
     let vecRes = evalString("""
       vectorSeq = seq([1, 2, 3, 4, 5])
-      vectorSeq->nth(2)  # Should be 3
+      vectorSeq->use(std::nth)(2)  # Should be 3
     """)
     check vecRes.number.integer == 3
 
@@ -376,27 +376,27 @@ suite "Interpreter tests":
     ## Tests sequence mapping and filtering
     let mapRes = evalString("""
       numbers = seq(5, |i| i + 1)  # [1, 2, 3, 4, 5]
-      doubled = numbers->map(|x| x * 2)->collect
-      doubled->nth(3)  # Should be 8
+      doubled = numbers->use(std::map)(|x| x * 2)->use(std::collect)
+      doubled->use(std::nth)(3)  # Should be 8
     """)
     check mapRes.number.integer == 8
     
     let filterRes = evalString("""
       numbers = seq(8, |i| i)  # [0, 1, 2, 3, 4, 5, 6, 7]
-      evens = numbers->filter(|x| x % 2 == 0)->collect
-      evens->len
+      evens = numbers->use(std::filter)(|x| x % 2 == 0)->use(std::collect)
+      evens->use(std::len)
     """)
     check filterRes.number.integer == 4
 
   test "Sequence reductions":
     ## Tests sequence reduction operations
     let sumRes = evalString("""
-      seq(5, |i| i + 1)->sum  # 1+2+3+4+5 = 15
+      seq(5, |i| i + 1)->use(std::sum)  # 1+2+3+4+5 = 15
     """)
     check sumRes.number.integer == 15
     
     let productRes = evalString("""
-      seq(5, |i| i + 1)->reduce(1, |acc, x| acc * x)  # 5! = 120
+      seq(5, |i| i + 1)->use(std::reduce)(1, |acc, x| acc * x)  # 5! = 120
     """)
     check productRes.number.integer == 120
 
@@ -404,18 +404,18 @@ suite "Interpreter tests":
     ## Tests chaining multiple sequence operations
     let complexRes = evalString("""
       processedSeq = seq(|i| i) ->\  # Infinite sequence of natural numbers
-                    map(|x| x * x) ->\  # Square the numbers
-                    filter(|x| x % 2 == 0) ->\  # Keep only even squares
-                    map(|x| x / 2) ->\  # Divide by 2
-                    take(5) ->\  # Take first 5 elements
-                    collect    # Convert to vector
-      processedSeq->nth(4)  # Should be 32
+                    use(std::map)(|x| x * x) ->\  # Square the numbers
+                    use(std::filter)(|x| x % 2 == 0) ->\  # Keep only even squares
+                    use(std::map)(|x| x / 2) ->\  # Divide by 2
+                    use(std::take)(5) ->\  # Take first 5 elements
+                    use(std::collect)    # Convert to vector
+      processedSeq->use(std::nth)(4)  # Should be 32
     """)
     check complexRes.number.real == 32
     
     let zipRes = evalString("""
-      zipped = seq(3, |i| i)->zip(seq(3, |i| i * 10))->collect
-      zipped->nth(1)->nth(1)  # Should be 10
+      zipped = seq(3, |i| i)->use(std::zip)(seq(3, |i| i * 10))->use(std::collect)
+      zipped->use(std::nth)(1)->use(std::nth)(1)  # Should be 10
     """)
     check zipRes.number.integer == 10
 
@@ -424,17 +424,17 @@ suite "Interpreter tests":
     let runningAvgRes = evalString("""
       runningAvg = |numbers| {
         _sum = 0
-        seq(len(numbers), |i| {
-          _sum = _sum + nth(numbers, i)
+        seq(use(std::len)(numbers), |i| {
+          _sum = _sum + use(std::nth)(numbers, i)
           _sum / (i + 1)
-        })->collect
+        })->use(std::collect)
       }
       avgResult = runningAvg([2, 4, 6, 8, 10])
-      avgResult->nth(4)  # Should be 6.0
+      avgResult->use(std::nth)(4)  # Should be 6.0
     """)
     check runningAvgRes.number.real == 6.0
 
   test "Sequence error handling":
     ## Tests error cases for sequences
     expect InvalidArgumentError:
-      discard evalString("seq(5, |i| i)->nth(10)")  # Out of bounds access
+      discard evalString("seq(5, |i| i)->use(std::nth)(10)")  # Out of bounds access

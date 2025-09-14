@@ -84,26 +84,26 @@ mod mathUtils {
 }
 ```
 
-The `use` instruction loads and returns a module value. The language provides convenient automatic binding for module member imports to improve developer experience while maintaining the expression-oriented design.
+The `use` instruction loads and returns a module value. `use` now takes a parenthesized target expression (for example `use("math"::sin)` or `use(math::sin)`) which unambiguously describes what to import. The language provides convenient automatic binding for module member imports to improve developer experience while maintaining the expression-oriented design.
 
 ### Basic `use` forms
 
-- `use "path/to/module"` — loads and returns a module from a file path
-- `use moduleValue` — returns the module value (useful for re-exporting)
-- `use module::member` — loads module, returns the specific member, and automatically binds it as `member = use module::member`
-- `use module::{id1, id2}` — returns `[id1 = module::id1, id2 = module::id2]` as a vector of assignments, automatically binding each identifier
+- `use("path/to/module")` — loads and returns a module from a file path
+- `use(moduleValue)` — returns the module value (useful for re-exporting)
+- `use(module::member)` — loads module, returns the specific member, and automatically binds it as `member = use(module::member)`
+- `use(module::{id1, id2})` — returns `[id1 = module::id1, id2 = module::id2]` as a vector of assignments, automatically binding each identifier
 
 ### `use` with `as` (explicit aliasing)
 
-- `use module as identifier` — equivalent to `identifier = use module`
-- `use module::member as identifier` — equivalent to `identifier = use module::member`
-- `use module::{id1 as a, id2 as b}` — equivalent to `[a = module::id1, b = module::id2]`
+- `use(module) as identifier` — equivalent to `identifier = use(module)`
+- `use(module::member) as identifier` — equivalent to `identifier = use(module::member)`
+- `use(module::{id1 as a, id2 as b})` — equivalent to `[a = module::id1, b = module::id2]`
 
-The automatic binding behavior means that `use std::PI` will create a binding `PI = use std::PI`, making the PI constant available in the current scope without requiring explicit assignment. Similarly, `use std::{PI, sin}` creates bindings for both `PI` and `sin`.
+The automatic binding behavior means that `use(std::PI)` will create a binding `PI = use(std::PI)`, making the PI constant available in the current scope without requiring explicit assignment. Similarly, `use(std::{PI, sin})` creates bindings for both `PI` and `sin`.
 
 When explicit aliasing is used with the `as` keyword, it overrides the automatic binding behavior. The `as` syntax provides convenient renaming while maintaining the expression-oriented design. Since assignments are expressions that return the assigned value, both automatic and explicit binding forms return vectors of the assigned values while creating the desired bindings as side effects.
 
-When given a string path, the interpreter will try to load a file; the `.bm` extension may be omitted and inferred when appropriate. If a file uses a custom extension, the extension must be provided. If multiple matching files exist (for example `file.custom` and `file.custom.bm`) the interpreter decides which file to load — this is a runtime resolution detail and is not specified at the design level.
+When given a string path inside the `use(...)` target, the interpreter will try to load a file; the `.bm` extension may be omitted and inferred when appropriate. If a file uses a custom extension, the extension must be provided. If multiple matching files exist (for example `file.custom` and `file.custom.bm`) the interpreter decides which file to load — this is a runtime resolution detail and is not specified at the design level.
 
 Design note: both `mod` and `use` evaluate to module-related values so they can be used inside expressions and chained in pipelines when appropriate. For `use` expressions, automatic binding provides convenient access to imported members while maintaining expression-oriented semantics.
 
@@ -112,8 +112,8 @@ Module member access (`::`):
 The `::` operator is used to access members exported by a module value. It is a postfix/access operation that pairs with module values (or expressions that evaluate to module-like values). Examples:
 
 - `m::x` — access member `x` from module value `m`.
-- `use "math"::sin` — load the `math` module, access its `sin` member, and automatically bind it as `sin = use "math"::sin`
-- `vals = use modName::{a, b}` — automatically bind both `a` and `b` from `modName`, equivalent to `[a = use modName::a, b = use modName::b]`
+- `use("math"::sin)` — load the `math` module, access its `sin` member, and automatically bind it as `sin = use("math"::sin)`
+- `vals = use(modName::{a, b})` — automatically bind both `a` and `b` from `modName`, equivalent to `[a = use(modName::a), b = use(modName::b)]`
 
 Design note: `::` returns the referred member value and creates automatic bindings for `use` expressions. For direct module access (without `use`), no automatic binding occurs—binding is explicit via assignment.
 

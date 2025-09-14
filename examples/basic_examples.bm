@@ -3,8 +3,7 @@
 # This file demonstrates the basic syntax and features of the BMath language.
 
 # Import standard library
-use "std" as std
-use std::{print}
+use(std::{print})
 
 runBasicExamples = || {
   print("=== Basic Language Features ===")

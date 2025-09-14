@@ -2,8 +2,7 @@
 # ================================
 # This file demonstrates different numeric types and their operations.
 
-use "std" as std
-use std::{print, sqrt, abs, floor, ceil, round}
+use(std::{print, sqrt, abs, floor, ceil, round})
 
 runNumericExamples = || {
   print("=== Numeric Examples ===")

@@ -193,3 +193,29 @@ suite "Parser tests with S-expressions":
     
     # Complex chained operations
     check parseAndSexp("data->filter(|x| x > 0)->map(|x| x * 2)->sum") == "(call sum (call map (call filter data (lambda (x) (> x 0))) (lambda (x) (* x 2))))"
+
+  test "module and use parsing - modules, named mod, use and aliases":
+    # Anonymous module literal
+    check parseAndSexp("mod { pi = 3.14 }") == "(module (= pi 3.14))"
+
+    # Named module (assignment sugar)
+    check parseAndSexp(" mod mathUtils { pi = 3.14 }") == "(= mathUtils (module (= pi 3.14)))"
+
+    # use(...) importing a module value
+    check parseAndSexp("use(mathUtils)") == "(use \"mathUtils\")"
+
+    # use(module::member) should become an assignment of a module access
+    check parseAndSexp("use(mathUtils::pi)") == "(= local pi (access (use \"mathUtils\") \"pi\"))"
+
+    # use with alias: use(module as ALIAS)
+    check parseAndSexp("use(mathUtils as mu)") == "(= local mu (use \"mathUtils\"))"
+
+    # Destructuring: use(module::{a, b as c}) -> should produce assignments for a and c
+    check parseAndSexp("use(utils::math::{abs, max as maximum})") == "(vector (= local abs (access (access (use \"utils\") \"math\") \"abs\")) (= local maximum (access (access (use \"utils\") \"math\") \"max\")))"
+
+    # Nested access destructuring: use(module::sub::{x})
+    check parseAndSexp("use(mathUtils::constants::{pi, e as exp})") ==
+      """(vector (= local pi (access (access (use "mathUtils") "constants") "pi")) (= local exp (access (access (use "mathUtils") "constants") "e")))"""
+
+    # Multiple assignments returned as vector by parser for multiple destructured members
+    check parseAndSexp("use(test_module::{values::{x, y as second, z}, funcs::{double, triple}})") == """(vector (= local x (access (access (use "test_module") "values") "x")) (= local second (access (access (use "test_module") "values") "y")) (= local z (access (access (use "test_module") "values") "z")) (= local double (access (access (use "test_module") "funcs") "double")) (= local triple (access (access (use "test_module") "funcs") "triple")))"""

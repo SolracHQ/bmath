@@ -2,9 +2,9 @@
 # ===========================
 # Tests for functional programming utilities and higher-order functions
 
-# Import standard library with functional and assertion functions
-use "std" as std
-use std::{assert_eq, map, filter, reduce, sum, seq, collect, any as any_true, all as all_true, nth, at, assert_error}
+# Import standard library with functional and assertion Functions
+
+use(std::{assert_eq, map, filter, reduce, sum, seq, collect, any as any_true, all as all_true, nth, at, assert_error})
 
 "Testing Functional Programming..."
 
@@ -158,7 +158,7 @@ square = |x| x * x
 composed = |x| double(addOne(x))
 assert_eq(composed(5), 12, "Manual function composition")
 
-# Use map to apply composed function
+# use(map to apply composed function)
 testData = [1, 2, 3, 4]
 composedResult = testData->map(|x| square(double(x)))
 assert_eq(composedResult, [4, 16, 36, 64], "Map with composition")

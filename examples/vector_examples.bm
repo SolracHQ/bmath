@@ -3,8 +3,8 @@
 # This file demonstrates various vector operations in BMath language.
 
 # Import standard library
-use "std" as std
-use std::{print, vec, len, first, last, nth, dot, merge, slice, map, filter. reduce}
+
+use(std::{print, vec, len, first, last, nth, dot, merge, slice, map, filter, reduce, sum, any as any_true, all as all_true})
 
 runVectorExamples = || {
   print("=== Vector Operations Examples ===")

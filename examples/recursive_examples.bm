@@ -2,8 +2,7 @@
 # =========================
 # This file demonstrates recursive functions in BMath language.
 
-use "std" as std
-use std::{print}
+use(std::{print})
 
 runRecursiveExamples = || {
   print("=== Recursive Examples ===")

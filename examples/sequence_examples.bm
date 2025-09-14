@@ -2,8 +2,7 @@
 # ==========================
 # This file demonstrates lazy sequence operations in BMath language.
 
-use "std" as std
-use std::{print, seq, map, filter, collect, take, zip, reduce, sum, nth}
+use(std::{print, seq, map, filter, collect, take, zip, reduce, sum, nth})
 
 runSequenceExamples = || {
   print("=== Sequence Examples ===")

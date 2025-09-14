@@ -2,8 +2,7 @@
 # ====================
 # Quick test to show assertions working
 
-use "std" as std
-use std::{print, assert, assert_eq, assert_neq, assert_lt, assert_gt}
+use(std::{print, assert, assert_eq, assert_neq, assert_lt, assert_gt})
 
 runSimpleAssertionDemo = || {
   print("=== Simple Assertion Demo ===")

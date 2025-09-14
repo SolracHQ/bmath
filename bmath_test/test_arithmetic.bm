@@ -3,7 +3,7 @@
 # Tests for arithmetic operations and mathematical functions
 
 # Import standard library with assertion functions
-use std::{assert_eq, assert_gt, assert_lt, assert_error, pi, e, abs, sqrt, pow, floor, ceil, round}
+use(std::{assert_eq, assert_gt, assert_lt, assert_error, pi, e, abs, sqrt, pow, floor, ceil, round})
 
 "Testing Arithmetic Operations..."
 

@@ -2,8 +2,7 @@
 # ====================================
 # This file showcases basic and advanced arithmetic operations.
 
-use "std" as std
-use std::{print, sqrt, pow, abs, floor, ceil, round}
+use(std::{print, sqrt, pow, abs, floor, ceil, round})
 
 runArithmeticExamples = || {
   print("=== Arithmetic Examples ===")

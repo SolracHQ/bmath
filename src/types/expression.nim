@@ -8,6 +8,8 @@ import vector
 from core import
   Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
   FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
+export Expression, ExpressionKind, Parameter, Branch, Assign,
+  FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
 export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
@@ -78,8 +80,8 @@ proc newBlockExpr*(pos: Position, expressions: seq[Expression]): Expression {.in
 proc newModuleExpr*(pos: Position, content: seq[Expression]): Expression {.inline.} =
   result = Expression(kind: ekModule, position: pos, moduleDef: ModuleDef(content: content))
 
-proc newUseModuleExpr*(pos: Position, paths: seq[string]): Expression {.inline.} =
-  result = Expression(kind: ekUse, position: pos, useModule: UseModule(paths: paths))
+proc newUseModuleExpr*(pos: Position, path: string): Expression {.inline.} =
+  result = Expression(kind: ekUse, position: pos, useModule: UseModule(path: path))
 
 proc newModuleAccessExpr*(pos: Position, target: Expression, member: string): Expression {.inline.} =
   result = Expression(kind: ekModAccess, position: pos, moduleAccess: ModuleAccess(target: target, member: member))
@@ -177,10 +179,7 @@ proc stringify(node: Expression, indent: int): string =
     for expr in node.moduleDef.content:
       result.add(expr.stringify(indent + 2))
   of ekUse:
-    result.add indentation & "use module: "
-    for path in node.useModule.paths:
-      result.add("'" & path & "' ")
-    result.add("\n")
+    result.add indentation & "use module: '" & node.useModule.path & "'\n"
   of ekModAccess:
     result.add indentation & "module access: " & node.moduleAccess.member & "\n"
     result.add(indentation & "  target:\n")
@@ -294,11 +293,7 @@ proc asSexp*(expr: Expression): string =
       exprsStr.add(e.asSexp())
     return "(module " & exprsStr & ")"
   of ekUse:
-    var pathsStr = ""
-    for path in expr.useModule.paths:
-      if pathsStr.len > 0: pathsStr.add(" ")
-      pathsStr.add("\"" & path & "\"")
-    return "(use " & pathsStr & ")"
+    return "(use \"" & expr.useModule.path & "\")"
   of ekModAccess:
     return "(access " & expr.moduleAccess.target.asSexp() & " \"" & expr.moduleAccess.member & "\")"
 
@@ -385,6 +380,6 @@ proc asSource*(expr: Expression, ident: int = 0): string =
       expr.moduleDef.content.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") &
       "\n" & indentation & "}"
   of ekUse:
-    return "use " & expr.useModule.paths.mapIt("\"" & it & "\"").join(", ")
+    return "use(" & expr.useModule.path & ")"
   of ekModAccess:
     return asSource(expr.moduleAccess.target) & "::" & expr.moduleAccess.member

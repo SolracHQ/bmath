@@ -13,10 +13,10 @@
 - [x] Chosen module declaration syntax: `mod name { ... }`
 - [x] Chosen member access syntax: `module::member`
 - [x] Basic `use` import forms implemented:
-  - [x] `use "module" as name` / `use module as name` — bind module value into scope
-  - [x] `use module::{a, b as alias}` — selective imports and automatic binding
-  - [ ] `use module::*` (wildcard import) — still TODO
-  - [x] Relative/filename imports supported: `use "../path/to/module"` (`.bm` inferred when appropriate)
+  - [x] `use("module") as name` / `use(module) as name` — bind module value into scope
+  - [x] `use(module::{a, b as alias})` — selective imports and automatic binding
+  - [ ] `use(module::* )` (wildcard import) — still TODO
+  - [x] Relative/filename imports supported: `use("../path/to/module")` (`.bm` inferred when appropriate)
 - [x] File-as-module semantics: basic behavior implemented
 
 ### Module Visibility & Purity Notes (Related Github Issue #16)

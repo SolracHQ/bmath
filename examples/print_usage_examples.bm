@@ -2,8 +2,7 @@
 # ===================
 # This file demonstrates when and how to use print() effectively in BMath.
 
-use "std" as std
-use std::{print, assert, assert_eq, assert_neq, sqrt}
+use(std::{print, assert, assert_eq, assert_neq, sqrt})
 
 runPrintExamples = || {
   print("=== Print Usage Examples ===")

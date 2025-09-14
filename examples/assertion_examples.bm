@@ -2,8 +2,7 @@
 # ====================================
 # This file demonstrates the assertion functions for testing and validation.
 
-use "std" as std
-use std::{print, assert, assert_eq, assert_neq, assert_lt, assert_gt, assert_error, sin, cos, pi, sqrt, len, dot, first, last}
+use(std::{print, assert, assert_eq, assert_neq, assert_lt, assert_gt, assert_error, sin, cos, pi, sqrt, len, dot, first, last})
 
 runAssertionExamples = || {
   print("=== Assertion Examples ===")

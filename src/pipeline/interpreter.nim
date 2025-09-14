@@ -13,7 +13,7 @@
 ## environment that tracks variable bindings and their values.
 
 import std/[sequtils, tables, os, strutils]
-import ../types/[value, expression, vector, errors, environment]
+import ../types/[value, expression, vector, errors, environment, core]
 import ../stdlib/stdlib
 import ../stdlib/types as typesStdlib
 import lexer
@@ -72,19 +72,26 @@ proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment 
   ##   ParseError - If the module content cannot be parsed.
   ##   CircularDependencyError - If a circular import is detected.
   
-  # Handle module::member syntax
+  # Handle module::member syntax (including deeply nested access)
   if "::" in path:
-    let parts = path.split("::", 1)
-    let modulePath = parts[0]
-    let memberSpec = parts[1]
+    let parts = path.split("::")
+    if parts.len < 2:
+      raise newRuntimeError("Invalid module path: " & path)
     
-    # Load the module first
-    let module = loadModule(modulePath, interpreter, env)
-    if module.kind != vkModule:
-      raise newTypeError("Base of module access is not a module")
+    # Load the base module first
+    var currentValue = loadModule(parts[0], interpreter, env)
     
-    # Single member access (parser should handle {a,b,c} syntax)
-    return module.environment[memberSpec]
+    # Navigate through each member access
+    for i in 1..<parts.len:
+      if currentValue.kind != vkModule:
+        raise newTypeError("Cannot access member '" & parts[i] & "' on non-module value")
+      
+      try:
+        currentValue = currentValue.environment[parts[i]]
+      except UndefinedVariableError:
+        raise newRuntimeError("Member '" & parts[i] & "' not found in module")
+    
+    return currentValue
   
   # First, check if it's a local module in the current environment
   if env != nil:
@@ -145,7 +152,7 @@ proc loadModule*(path: string, interpreter: Interpreter = nil, env: Environment 
       let tokens = lx.tokenizeExpression()
       if tokens.len == 0:
         continue
-      let ast = parse(tokens)
+      let ast = parser.parse(tokens)
       discard interpreter.evalExpression(ast, moduleEnv)
 
     let moduleValue = Value(kind: vkModule, environment: moduleEnv)
@@ -384,13 +391,8 @@ proc evalExpression(
       let memberName = expression.moduleAccess.member
       return base.environment[memberName]
     of ekUse:
-      if expression.useModule.paths.len == 1:
-        return loadModule(expression.useModule.paths[0], interpreter, env)
-      else:
-        var vec = newVector[Value](expression.useModule.paths.len)
-        for i, path in expression.useModule.paths.pairs:
-          vec[i] = loadModule(path, interpreter, env)
-        return Value(kind: vkVector, vector: vec)
+      # Simple module loading - just load the module specified by path
+      return loadModule(expression.useModule.path, interpreter, env)
 
   except BMathError as e:
     if e.stack.len == 0:

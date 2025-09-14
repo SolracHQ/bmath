@@ -362,7 +362,7 @@ type
     content*: seq[Expression] ## Expressions contained in the module
 
   UseModule* = object
-    paths*: seq[string] ## Module import paths
+    path*: string ## Simple module path - only the root module to load
 
   ModuleAccess* = object
     target*: Expression ## Expression evaluating to a module or vector
@@ -404,24 +404,3 @@ type
       useModule*: UseModule
     of ekModAccess:
       moduleAccess*: ModuleAccess
-
-# Required due nim GC
-proc `=destroy`*[T](v: VectorObj[T]) =
-  ## Frees the memory allocated for the vector when it goes out of scope.
-  ##
-  ## Params:
-  ##   v: VectorObj[T] - the vector object being destroyed.
-  if v.p != nil:
-    dealloc(v.p)
-
-proc `=trace`*[T](v: var VectorObj[T], env: pointer) =
-  ## Traces the vector's elements for garbage collection.
-  ##
-  ## Params:
-  ##   v: var VectorObj[T] - the vector being traced.
-  ##   env: pointer - environment pointer for the GC.
-  if v.p != nil:
-    for i in 0 ..< v.len:
-      `=trace`(v.p[i], env)
-
-proc `=wasMoved`*[T](v: var VectorObj[T]) {.error.}

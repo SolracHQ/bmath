@@ -31,6 +31,11 @@ type
     prefix: PrefixFunc    # How to parse as prefix (nud)
     infix: InfixFunc      # How to parse as infix (led)
 
+  # Simple type to hold module part name and alias
+  ModPart = object
+    name: string      # The identifier name
+    alias: string     # The alias name (defaults to name)
+
 # Global operator table
 var opTable: Table[TokenKind, OpInfo]
 
@@ -77,6 +82,7 @@ proc newParser*(tokens: seq[Token], optimizationLevel: OptimizationLevel = olFul
 # Forward declarations
 proc parsePrattExpr(parser: var Parser, minPrec: int = 0): Expression
 proc parseLocalAssignment(parser: var Parser): Expression
+proc getChildren(parser: var Parser): seq[seq[ModPart]]
 
 proc parseExpression(parser: var Parser): Expression {.inline.} =
   ## Entry point for expression parsing, delegates to parseLocalAssignment
@@ -225,111 +231,120 @@ proc parseModule(parser: var Parser, token: Token): Expression =
     return moduleExpr
 
 proc parseUse(parser: var Parser, token: Token): Expression =
-  ## Parses use expressions. Supports:
-  ##   use "path" [as identifier]
-  ##   use modName [as identifier]
-  ##   use modName::member [as identifier]
-  ##   use modName::{a [as b], c [as d]}
+  ## Parses use expressions with simplified approach from scratchpad
   parser.cleanUpNewlines()
-  var paths: seq[string] = @[]
-
-  if parser.match({tkString}):
-    # use "path/to/mod" [as identifier]
-    let sVal = parser.previous().value
-    let useExpr = newUseModuleExpr(token.position, @[sVal.content])
-    
-    parser.cleanUpNewlines()
-    if parser.match({tkAs}):
-      parser.cleanUpNewlines()
-      if not parser.match({tkIdent}):
-        raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
-      let aliasName = parser.previous().name
-      return newAssignExpr(token.position, aliasName, useExpr, false, AnyType)
-    else:
-      return useExpr
-
-  if not parser.match({tkIdent}):
-    raise newMissingTokenError("Expected module name or string after 'use'", token.position)
-
-  let first = parser.previous().name
-
-  # If next is '::' we may have either a chain of idents or a '{' list
-  if parser.match({tkDoubleColon}):
-    # handle use mod::{a [as b], c [as d]}
-    if parser.match({tkLCurly}):
-      var assignments: seq[Expression] = @[]
-      
-      while not parser.match({tkRCurly}):
-        parser.cleanUpNewlines()
-        if not parser.match({tkIdent}):
-          raise newMissingTokenError("Expected identifier in module member list", parser.previous().position)
-        let memberName = parser.previous().name
-        let memberPath = first & "::" & memberName
-        
-        parser.cleanUpNewlines()
-        
-        # Check for 'as alias'
-        if parser.match({tkAs}):
-          parser.cleanUpNewlines()
-          if not parser.match({tkIdent}):
-            raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
-          let aliasName = parser.previous().name
-          let useExpr = newUseModuleExpr(token.position, @[memberPath])
-          assignments.add(newAssignExpr(token.position, aliasName, useExpr, false, AnyType))
-        else:
-          # No alias, automatically bind with same name: memberName = module::memberName
-          let useExpr = newUseModuleExpr(token.position, @[memberPath])
-          assignments.add(newAssignExpr(token.position, memberName, useExpr, false, AnyType))
-        
-        parser.cleanUpNewlines()
-        if parser.match({tkRCurly}):
-          break
-        if not parser.match({tkComma}):
-          raise newMissingTokenError("Expected ','", parser.previous().position)
-      
-      # Now we always have assignments (either explicit with 'as' or automatic)
-      return newVectorExpr(token.position, assignments)
-
-    # otherwise collect chained idents into a single path: use mod::member [as alias]
-    var parts: seq[string] = @[first]
-    while true:
-      if not parser.match({tkIdent}):
-        raise newMissingTokenError("Expected identifier after '::'", parser.previous().position)
-      parts.add(parser.previous().name)
-      if not parser.match({tkDoubleColon}):
-        break
-    
-    # build joined path manually
-    var full = parts[0]
-    for i in 1 ..< parts.len:
-      full = full & "::" & parts[i]
-    
-    let useExpr = newUseModuleExpr(token.position, @[full])
-    
-    parser.cleanUpNewlines()
-    if parser.match({tkAs}):
-      parser.cleanUpNewlines()
-      if not parser.match({tkIdent}):
-        raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
-      let aliasName = parser.previous().name
-      return newAssignExpr(token.position, aliasName, useExpr, false, AnyType)
-    else:
-      # Auto-bind with the last part of the path (e.g., std::PI -> PI = use std::PI)
-      let lastPart = parts[parts.len - 1]
-      return newAssignExpr(token.position, lastPart, useExpr, false, AnyType)
-
-  # simple use modName [as alias]
-  let useExpr = newUseModuleExpr(token.position, @[first])
+  
+  # Expect opening parenthesis  
+  if not parser.match({tkLpar}):
+    raise newMissingTokenError("Expected '(' after 'use'", token.position)
   
   parser.cleanUpNewlines()
-  if parser.match({tkAs}):
+  
+  # Parse module path (identifier or string)
+  if not parser.match({tkIdent, tkString}):
+    raise newMissingTokenError("Expected identifier or string", parser.peek().position)
+  
+  var useResult: Expression
+  if parser.previous().kind == tkIdent:
+    useResult = newUseModuleExpr(token.position, parser.previous().name)
+  else:
+    useResult = newUseModuleExpr(token.position, parser.previous().value.content)
+  
+  if parser.match({tkDoubleColon}):
+    # We have children to parse
+    let children = parser.getChildren()
+    
+    if children.len == 0:
+      raise newMissingTokenError("Expected module members after '::'", parser.previous().position)
+    
+    var assignments: seq[Expression] = @[]
+    
+    for c in children:
+      if c.len == 1:
+        # Simple access: module::member
+        let moduleCall = newModuleAccessExpr(token.position, useResult, c[0].name)
+        assignments.add(newAssignExpr(token.position, c[0].alias, moduleCall, true, AnyType))
+      else:
+        # Nested access: module::sub1::sub2::member
+        var moduleCall = useResult
+        for i in 0 ..< c.len:
+          moduleCall = newModuleAccessExpr(token.position, moduleCall, c[i].name)
+        # Final assignment uses the last part's alias
+        assignments.add(newAssignExpr(token.position, c[^1].alias, moduleCall, true, AnyType))
+    
+    # Return single assignment or vector of assignments
+    if assignments.len == 1:
+      useResult = assignments[0]
+    else:
+      useResult = newVectorExpr(token.position, assignments)
+      
+  elif parser.match({tkAs}):
+    # Simple alias: use(module as alias)
     parser.cleanUpNewlines()
     if not parser.match({tkIdent}):
       raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
-    let aliasName = parser.previous().name
-    return newAssignExpr(token.position, aliasName, useExpr, false, AnyType)
+    useResult = newAssignExpr(token.position, parser.previous().name, useResult, true, AnyType)
+  
+  parser.cleanUpNewlines()
+  if not parser.match({tkRpar}):
+    raise newMissingTokenError("Expected ')' to close use expression", parser.previous().position)
+  
+  return useResult
+
+proc getChildren(parser: var Parser): seq[seq[ModPart]] =
+  ## Recursively parse module children with destructuring support
+  result = @[]
+  
+  if parser.match({tkIdent}):
+    # Single identifier
+    var part = @[ModPart(name: parser.previous().name, alias: parser.previous().name)]
+    
+    if parser.match({tkAs}):
+      parser.cleanUpNewlines()
+      if not parser.match({tkIdent}):
+        raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+      part[0].alias = parser.previous().name
+    
+    if parser.match({tkDoubleColon}):
+      # Continue parsing children
+      let childParts = parser.getChildren()
+      for cp in childParts:
+        result.add(part & cp)
+    else:
+      result.add(part)
+      
+  elif parser.match({tkLCurly}):
+    # Destructuring: {item1, item2, ...}
+    parser.cleanUpNewlines()
+    
+    while true:
+      if not parser.match({tkIdent}):
+        raise newMissingTokenError("Expected identifier in destructuring", parser.peek().position)
+      
+      var part = @[ModPart(name: parser.previous().name, alias: parser.previous().name)]
+      
+      if parser.match({tkAs}):
+        parser.cleanUpNewlines()
+        if not parser.match({tkIdent}):
+          raise newMissingTokenError("Expected identifier after 'as'", parser.previous().position)
+        part[0].alias = parser.previous().name
+      
+      if parser.match({tkDoubleColon}):
+        # Nested destructuring
+        let childParts = parser.getChildren()
+        for cp in childParts:
+          result.add(part & cp)
+      else:
+        result.add(part)
+      
+      parser.cleanUpNewlines()
+      if parser.match({tkRCurly}):
+        break
+      if not parser.match({tkComma}):
+        raise newMissingTokenError("Expected ',' or '}' in destructuring", parser.previous().position)
+      parser.cleanUpNewlines()
   else:
-    return useExpr
+    raise newMissingTokenError("Expected identifier or '{' after '::'", parser.peek().position)
 
 proc parseIf(parser: var Parser, token: Token): Expression =
   ## Parses if(cond) then elif(cond) then else elseExpr

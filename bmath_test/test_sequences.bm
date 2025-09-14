@@ -3,12 +3,11 @@
 # Tests for lazy sequences and sequence operations
 
 # Import standard library with sequence and assertion functions
-use "std" as std
-use std::{
+use(std::{
   assert_eq, seq, type, collect, has_next, next, 
   skip, map, filter, sum, reduce, take, any as any_true, 
   all as all_true, zip, nth, assert_error
-}
+})
 
 "Testing Sequence Operations..."
 

@@ -1,70 +1,63 @@
 # Run all examples by importing their modules and invoking known run functions.
 # Each invocation is wrapped in try_or fallbacks so missing function names won't abort.
 
-use std::{concat, try_catch}
+use(std::{concat, try_catch})
 
 "=== Running all examples (module-based) ==="
 
 # Advanced math
 "-- advanced_math_examples --"
-use "advanced_math_examples"::runAdvancedMathExamples
+try_catch(|| use("advanced_math_examples"::runAdvancedMathExamples), |e| concat("cannot run \"advanced_math_examples\" due to ", e))
 
 # Arithmetic
 "-- arithmetic_examples --"
-try_catch(|| use "arithmetic_examples"::runArithmeticExamples(), |e| concat("cannot run \"arithmetic_examples\" due to ", e))
+try_catch(|| use("arithmetic_examples"::runArithmeticExamples), |e| concat("cannot run \"arithmetic_examples\" due to ", e))
 
 # Assertion examples
 "-- assertion_examples --"
 try_catch(
-	|| use "assertion_examples"::runAssertionExamples(),
-	|e| try_catch(|| use "assertion_examples"::runSimpleAssertionDemo(), |e2| concat("cannot run \"assertion_examples\" due to ", e2))
+	|| use("assertion_examples"::runAssertionExamples),
+	|e| try_catch(|| use("assertion_examples"::runSimpleAssertionDemo), |e2| concat("cannot run \"assertion_examples\" due to ", e2))
 )
 
 # Basic examples
 "-- basic_examples --"
-try_catch(|| use "basic_examples"::runBasicExamples(), |e| concat("cannot run \"basic_examples\" due to ", e))
+try_catch(|| use("basic_examples"::runBasicExamples), |e| concat("cannot run \"basic_examples\" due to ", e))
 
 # Comparison and logical
 "-- comparison_logical_examples --"
-try_catch(|| use "comparison_logical_examples"::runComparisonLogicalExamples(), |e| concat("cannot run \"comparison_logical_examples\" due to ", e))
+try_catch(|| use("comparison_logical_examples"::runComparisonLogicalExamples), |e| concat("cannot run \"comparison_logical_examples\" due to ", e))
 
 # Function examples
 "-- function_examples --"
-try_catch(|| use "function_examples"::runFunctionExamples(), |e| concat("cannot run \"function_examples\" due to ", e))
+try_catch(|| use("function_examples"::runFunctionExamples), |e| concat("cannot run \"function_examples\" due to ", e))
 
 # Numeric examples
 "-- numeric_examples --"
-try_catch(|| use "numeric_examples"::runNumericExamples(), |e| concat("cannot run \"numeric_examples\" due to ", e))
+try_catch(|| use("numeric_examples"::runNumericExamples), |e| concat("cannot run \"numeric_examples\" due to ", e))
 
 # Print usage examples
 "-- print_usage_examples --"
-try_catch(|| use "print_usage_examples"::runPrintExamples(), |e| concat("cannot run \"print_usage_examples\" due to ", e))
+try_catch(|| use("print_usage_examples"::runPrintExamples), |e| concat("cannot run \"print_usage_examples\" due to ", e))
 
 # Recursive examples
 "-- recursive_examples --"
-try_catch(|| use "recursive_examples"::runRecursiveExamples(), |e| concat("cannot run \"recursive_examples\" due to ", e))
+try_catch(|| use("recursive_examples"::runRecursiveExamples), |e| concat("cannot run \"recursive_examples\" due to ", e))
 
 # Sequence examples
 "-- sequence_examples --"
-try_catch(|| use "sequence_examples"::runSequenceExamples(), |e| concat("cannot run \"sequence_examples\" due to ", e))
+try_catch(|| use("sequence_examples"::runSequenceExamples), |e| concat("cannot run \"sequence_examples\" due to ", e))
 
 # Simple assertion demo
 "-- simple_assertion_demo --"
-try_catch(|| use "simple_assertion_demo"::runSimpleAssertionDemo(), |e| concat("cannot run \"simple_assertion_demo\" due to ", e))
+try_catch(|| use("simple_assertion_demo"::runSimpleAssertionDemo), |e| concat("cannot run \"simple_assertion_demo\" due to ", e))
 
 # Trigonometric examples
 "-- trigonometric_examples --"
-try_catch(|| use "trigonometric_examples"::runTrigonometricExamples(), |e| concat("cannot run \"trigonometric_examples\" due to ", e))
-
-# Unit testing examples (may expose a test runner)
-"-- unit_testing_examples --"
-try_catch(
-	|| use "unit_testing_examples"::runTestSuite(),
-	|e| try_catch(|| use "unit_testing_examples"::runUnitTestingExamples(), |e2| concat("cannot run \"unit_testing_examples\" due to ", e2))
-)
+try_catch(|| use("trigonometric_examples"::runTrigonometricExamples), |e| concat("cannot run \"trigonometric_examples\" due to ", e))
 
 # Vector examples
 "-- vector_examples --"
-try_catch(|| use "vector_examples"::runVectorExamples(), |e| concat("cannot run \"vector_examples\" due to ", e))
+try_catch(|| use("vector_examples"::runVectorExamples), |e| concat("cannot run \"vector_examples\" due to ", e))
 
 "=== Finished running examples ==="

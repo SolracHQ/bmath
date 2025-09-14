@@ -67,10 +67,14 @@ vector_literal   ::= '[' (expression (',' expression)*)? ']'
 
 module_literal   ::= 'mod' IDENTIFIER? block
 
-use_expression   ::= 'use' STRING ('as' IDENTIFIER)?
-                   | 'use' IDENTIFIER ('as' IDENTIFIER)?
-                   | 'use' qualified_name ('as' IDENTIFIER)?
-                   | 'use' IDENTIFIER '::' '{' import_list '}'
+use_expression   ::= 'use' '(' use_target ')' ('as' IDENTIFIER)?
+
+use_target       ::= STRING
+                   | qualified_name
+                   | STRING '::' IDENTIFIER
+                   | qualified_name '::' IDENTIFIER
+                   | STRING '::' '{' import_list '}'
+                   | qualified_name '::' '{' import_list '}'
 
 qualified_name   ::= IDENTIFIER ('::' IDENTIFIER)*
 
@@ -134,4 +138,4 @@ Lexical notes:
 
 Design note: module (`mod`) and `use` semantics, and higher-level indexing/assignment behavior for the bracket operator are design-level concerns and are documented in `docs/design/constructs.md` (they are not part of the formal grammar here).
 
-Semantic note: `use` expressions with qualified names (e.g., `use module::member`) and destructured imports (e.g., `use module::{a, b}`) automatically create variable bindings for the imported identifiers. This automatic binding behavior improves developer experience while maintaining expression-oriented design—the expressions still return values that can be used in larger expressions.
+Semantic note: `use` expressions now always use a parenthesized target; for example `use("module"::member)` or `use(module::{a, b})`. `use` with qualified names and destructured imports automatically create variable bindings for the imported identifiers. This automatic binding behavior improves developer experience while maintaining expression-oriented design—the expressions still return values that can be used in larger expressions.

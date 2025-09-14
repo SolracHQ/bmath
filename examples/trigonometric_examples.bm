@@ -2,8 +2,8 @@
 # =============================
 # This file demonstrates trigonometric functions in BMath language.
 
-use "std" as std
-use std::{print, sin, cos, tan, cot, sec, csc, pi, sqrt}
+use(std as std)
+use(std::{print, sin, cos, tan, cot, sec, csc, pi, sqrt, map})
 
 runTrigonometricExamples = || {
   print("=== Trigonometric Examples ===")

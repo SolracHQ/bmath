@@ -3,8 +3,7 @@
 # This file demonstrates advanced mathematical functions in BMath language.
 
 # Import standard library
-use "std" as std
-use std::{print, exp, log, sin, cos, sqrt, abs, floor, ceil, round, sum, len, map, reduce}
+use(std::{print, exp, log, sin, cos, sqrt, abs, floor, ceil, round, sum, len, map, reduce})
 
 runAdvancedMathExamples = || {
   print("=== Advanced Mathematical Functions ===")

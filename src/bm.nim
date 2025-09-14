@@ -10,7 +10,7 @@
 ## 3. Execute through engine.run()
 ## 4. Output result
 import std/[terminal, sequtils]
-import cli, engine, formatter
+import cli, engine
 import types/[value, errors, expression, core]
 import pipeline/[optimization, parser, lexer]
 
@@ -28,40 +28,6 @@ proc handleFile(filePath: string, optLevel: OptimizationLevel, disableGlobals: b
   for result in engine.run(content):
     echo result
 
-proc handleFormat(filePath, outputPath: string, optLevel: OptimizationLevel) =
-  ## Handles file formatting with pretty-printing
-  try:
-    let content = readFile(filePath)
-    var lexer = newLexer(content)
-    var expressions: seq[Expression] = @[]
-    var allTokens: seq[Token] = @[]
-    
-    # Parse all expressions in the file and collect tokens
-    while not lexer.atEnd:
-      let tokens = lexer.tokenizeExpression(includeComments = true)
-      allTokens.add(tokens)
-      let filterd = tokens.filterIt(it.kind != tkComment)
-      if filterd.len > 0:
-        # Parse using tokens with comments removed by parser entrypoint
-        let ast = parse(filterd, optLevel)
-        expressions.add(ast)
-    
-    let config = newFormatterConfig()
-    let formatted = format(expressions, allTokens, ofPretty, config)
-    
-    if outputPath.len > 0:
-      writeFile(outputPath, formatted)
-      echo "Formatted file written to: ", outputPath
-    else:
-      echo formatted
-      
-  except IOError as e:
-    stderr.writeLine "[ERROR] IO Error: " & e.msg
-    quit(1)
-  except BMathError as e:
-    stderr.writeLine "[ERROR] Parse Error: " & e.msg
-    quit(1)
-
 proc handleSexp(filePath: string, compact: bool, optLevel: OptimizationLevel) =
   ## Handles S-expression output for debugging
   try:
@@ -73,7 +39,7 @@ proc handleSexp(filePath: string, compact: bool, optLevel: OptimizationLevel) =
       let tokens = lexer.tokenizeExpression(includeComments = false)
       if tokens.len > 0:
         let ast = parse(tokens, optLevel)
-        let sexp = formatSexp(ast, compact)
+        let sexp = ast.asSexp()
         echo sexp
         if not compact:
           echo ""  # Add separator between expressions
@@ -140,7 +106,8 @@ proc main() =
   of akRepl:
     handleRepl(args.optimizationLevel, args.disableGlobals)
   of akFormat:
-    handleFormat(args.formatFilePath, args.outputPath, args.optimizationLevel)
+    # do nothing for now
+    discard
   of akSexp:
     handleSexp(args.sexpFilePath, args.compact, args.optimizationLevel)
 
