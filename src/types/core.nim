@@ -234,58 +234,58 @@ type
       discard
 
   ExpressionKind* = enum
-    ## Abstract Syntax Tree (AST) node categories (now called Expressions).
-    ## 
-    ## Each variant corresponds to a different language construct with
-    ## associated child nodes or values.
+    ## Abstract Syntax Tree (AST) node categories.
+    ## The order follows operator/construct precedence from highest (primaries)
+    ## to lowest (control flow / assignment) to make the language grammar
+    ## precedence easier to reason about when reading the source.
 
-    # Literals
-    ekValue ## Value literal (number or string or boolean or type)
-    ekGroup ## Grouping expression to preserve parentheses
-    ekVector ## Vector literal
+    # Primary expressions (highest precedence)
+    ekValue     ## Value literal (number, string, boolean, type)
+    ekGroup     ## Grouping expression to preserve parentheses
+    ekVector    ## Vector literal
+    ekIdent     ## Identifier reference
+    ekFuncDef   ## Function (lambda) literal
+    ekModule    ## Module definition expression
+    ekUse       ## Module import expression
+    ekBlock     ## Block expression (sequence of statements)
+
+    # Postfix / call-like expressions
+    ekFuncCall  ## Function invocation (high precedence, postfix)
+    ekModAccess ## Module member access expression (postfix)
 
     # Unary operations
-    ekNeg ## Unary negation operation (-operand)
+    ekNeg       ## Unary negation operation (-operand)
+    ekNot       ## Logical NOT operation (!operand)
 
-    # Binary operations
-    ekAdd ## Addition operation (left + right)
-    ekSub ## Subtraction operation (left - right)
-    ekMul ## Multiplication operation (left * right)
-    ekDiv ## Division operation (left / right)
-    ekPow ## Exponentiation operation (left ^ right)
-    ekMod ## Modulus operation (left % right)
+    # Exponentiation (right-associative)
+    ekPow       ## Exponentiation operation (left ^ right)
 
-    # Comparison operations
-    ekEq ## Equality comparison (left == right)
-    ekNe ## Inequality comparison (left != right)
-    ekLt ## Less-than comparison (left < right)
-    ekLe ## Less-than-or-equal comparison (left <= right)
-    ekGt ## Greater-than comparison (left > right)
-    ekGe ## Greater-than-or-equal comparison (left >= right)
+    # Multiplicative level
+    ekMul       ## Multiplication operation (left * right)
+    ekDiv       ## Division operation (left / right)
+    ekMod       ## Modulus operation (left % right)
 
-    # Logical operations
-    ekAnd ## Logical AND operation (left & right)
-    ekOr ## Logical OR operation (left | right)
-    ekNot ## Logical NOT operation (!operand)
+    # Additive level
+    ekAdd       ## Addition operation (left + right)
+    ekSub       ## Subtraction operation (left - right)
 
-    # Identifiers and assignments
-    ekIdent ## Identifier reference
-    ekAssign ## Variable assignment (ident = expr)
+    # Relational comparisons
+    ekLt        ## Less-than comparison (left < right)
+    ekLe        ## Less-than-or-equal comparison (left <= right)
+    ekGt        ## Greater-than comparison (left > right)
+    ekGe        ## Greater-than-or-equal comparison (left >= right)
 
-    # Function constructs
-    ekFuncDef ## Function definition
-    ekFuncCall ## Function invocation
+    # Equality
+    ekEq        ## Equality comparison (left == right)
+    ekNe        ## Inequality comparison (left != right)
 
-    # Block expression
-    ekBlock ## Block expression (sequence of statements)
+    # Logical operators
+    ekAnd       ## Logical AND operation (left & right)
+    ekOr        ## Logical OR operation (left | right)
 
-    # Module expression
-    ekModule ## Module definition expression
-    ekUse ## Module import expression
-    ekModAccess ## Module member access expression
-
-    # Control flow
-    ekIf ## If-else conditional expression
+    # Assignment and control (lowest precedence)
+    ekAssign    ## Variable assignment (ident = expr)
+    ekIf        ## If-else conditional expression
 
   Parameter* = object
     ## Represents a function parameter.
