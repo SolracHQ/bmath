@@ -29,16 +29,15 @@ type Interpreter* = ref object
 type EvalContext* = object
   interpreter*: Interpreter
   env*: Environment
-  
+
 proc newEvalContext(interpreter: Interpreter, env: Environment = nil): EvalContext =
-  EvalContext(
-    interpreter: interpreter,
-    env: if env != nil: env else: interpreter.env
-  )
+  EvalContext(interpreter: interpreter, env: if env != nil: env else: interpreter.env)
 
 # Forward declaration
 proc evaluate(ctx: EvalContext, expr: Expression): Value
-proc callFunction(interpreter: Interpreter, funValue: Value, args: openArray[Value], env: Environment): Value
+proc callFunction(
+  interpreter: Interpreter, funValue: Value, args: openArray[Value], env: Environment
+): Value
 
 # --- Literal Values ---
 proc evalValue(ctx: EvalContext, expr: Expression): Value {.inline.} =
@@ -86,7 +85,25 @@ defineBinaryOp(Or, `or`)
 # --- Assignment ---
 proc evalAssign(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let val = ctx.evaluate(expr.assign.expr)
-  ctx.env[expr.assign.ident, expr.assign.isLocal] = val
+  case expr.assign.lvalue.kind
+  of ekIdent:
+    ctx.env[expr.assign.lvalue.identifier.ident, expr.assign.isLocal] = val
+  of ekVecIndex:
+    let vectorValue = ctx.evaluate(expr.assign.lvalue.vectorIndex.vector)
+    if vectorValue.kind != vkVector:
+      raise newTypeError("Left-hand side of assignment is not a vector")
+    let indexValue = ctx.evaluate(expr.assign.lvalue.vectorIndex.index)
+    if indexValue.kind != vkNumber and indexValue.number.kind != nkInteger:
+      raise newTypeError("Vector index must be an integer")
+    let index = indexValue.number.integer
+    vectorValue.vector[index] = val
+  of ekModAccess:
+    let base = ctx.evaluate(expr.assign.lvalue.moduleAccess.target)
+    if base.kind != vkModule:
+      raise newTypeError("Left-hand side of assignment is not a module")
+    base.environment[expr.assign.lvalue.moduleAccess.member, expr.assign.isLocal] = val
+  else:
+    raise newTypeError("Invalid left-hand side in assignment")
   val
 
 # --- Control Flow ---
@@ -96,7 +113,7 @@ proc evalIf(ctx: EvalContext, expr: Expression): Value {.inline.} =
     if condition.kind != vkBool:
       raise (ref TypeError)(
         msg: "Expected boolean condition, got " & $condition.kind,
-        stack: @[branch.condition.position]
+        stack: @[branch.condition.position],
       )
     if condition.boolean:
       return ctx.evaluate(branch.then)
@@ -114,7 +131,9 @@ proc evalBlock(ctx: EvalContext, expr: Expression): Value {.inline.} =
 proc evalFunctionDef(ctx: EvalContext, expr: Expression): Value {.inline.} =
   newValue(expr.functionDef.body, ctx.env, expr.functionDef.params)
 
-proc callNativeFunction(ctx: EvalContext, nativeFn: NativeFn, args: openArray[Value]): Value =
+proc callNativeFunction(
+    ctx: EvalContext, nativeFn: NativeFn, args: openArray[Value]
+): Value =
   let invoker = proc(function: Value, args: openArray[Value]): Value =
     ctx.interpreter.callFunction(function, args, ctx.env)
   nativeFn.callable(args, invoker)
@@ -124,17 +143,19 @@ proc callUserFunction(ctx: EvalContext, fun: Function, args: openArray[Value]): 
     raise newInvalidArgumentError(
       "Function expects " & $(fun.params.len) & " arguments, got " & $(args.len)
     )
-  
+
   let funcEnv = newEnv(parent = fun.env)
   for i, param in fun.params.pairs:
     funcEnv[param.name, true] = args[i]
-  
+
   let funcCtx = newEvalContext(ctx.interpreter, funcEnv)
   funcCtx.evaluate(fun.body)
 
-proc callFunction(interpreter: Interpreter, funValue: Value, args: openArray[Value], env: Environment): Value =
+proc callFunction(
+    interpreter: Interpreter, funValue: Value, args: openArray[Value], env: Environment
+): Value =
   let ctx = newEvalContext(interpreter, env)
-  case funValue.kind:
+  case funValue.kind
   of vkNativeFunc:
     ctx.callNativeFunction(funValue.nativeFn, args)
   of vkFunction:
@@ -144,23 +165,23 @@ proc callFunction(interpreter: Interpreter, funValue: Value, args: openArray[Val
 
 proc evalFunctionCall(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let callee = ctx.evaluate(expr.functionCall.function)
-  
+
   # Handle type constructors
   if callee.kind == vkType:
     if expr.functionCall.params.len != 1:
       raise newInvalidArgumentError("Type constructor expects one argument")
-    return typesStdlib.casting(
-      callee.typ, ctx.evaluate(expr.functionCall.params[0])
-    )
-  
+    return typesStdlib.casting(callee.typ, ctx.evaluate(expr.functionCall.params[0]))
+
   # Handle function calls
   if callee.kind notin {vkFunction, vkNativeFunc}:
     raise newTypeError("Value is not a function")
-  
+
   let args = expr.functionCall.params.mapIt(ctx.evaluate(it))
   ctx.interpreter.callFunction(callee, args, ctx.env)
 
-proc loadModule*(interpreter: Interpreter, path: string, env: Environment = nil): Value =
+proc loadModule*(
+    interpreter: Interpreter, path: string, env: Environment = nil
+): Value =
   # Handle module::member syntax
   if "::" in path:
     let parts = path.split("::")
@@ -170,13 +191,14 @@ proc loadModule*(interpreter: Interpreter, path: string, env: Environment = nil)
     var currentValue = interpreter.loadModule(parts[0], env)
     for i in 1 ..< parts.len:
       if currentValue.kind != vkModule:
-        raise newTypeError("Cannot access member '" & parts[i] & "' on non-module value")
-      
+        raise
+          newTypeError("Cannot access member '" & parts[i] & "' on non-module value")
+
       try:
         currentValue = currentValue.environment[parts[i]]
       except UndefinedVariableError:
         raise newRuntimeError("Member '" & parts[i] & "' not found in module")
-    
+
     return currentValue
 
   # Check local modules
@@ -234,7 +256,6 @@ proc loadModule*(interpreter: Interpreter, path: string, env: Environment = nil)
     let moduleValue = Value(kind: vkModule, environment: moduleEnv)
     interpreter.loadedModules[absPath] = moduleValue
     return moduleValue
-    
   except IOError as e:
     raise newRuntimeError("Could not read module file: " & absPath & " (" & e.msg & ")")
   finally:
@@ -243,18 +264,30 @@ proc loadModule*(interpreter: Interpreter, path: string, env: Environment = nil)
 proc evalModule(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let modEnv = newEnv(parent = ctx.env)
   let modCtx = newEvalContext(ctx.interpreter, modEnv)
-  
+
   for e in expr.moduleDef.content:
     discard modCtx.evaluate(e)
-  
+
   Value(kind: vkModule, environment: modEnv)
 
 proc evalModuleAccess(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let base = ctx.evaluate(expr.moduleAccess.target)
   if base.kind != vkModule:
     raise newTypeError("Base of module access is not a module")
-  
+
   base.environment[expr.moduleAccess.member]
+
+proc evalVectorIndex(ctx: EvalContext, expr: Expression): Value {.inline.} =
+  let vectorValue = ctx.evaluate(expr.vectorIndex.vector)
+  if vectorValue.kind != vkVector:
+    raise newTypeError("Value is not a vector")
+  let indexValue = ctx.evaluate(expr.vectorIndex.index)
+  if indexValue.kind != vkNumber and indexValue.number.kind != nkInteger:
+    raise newTypeError("Vector index must be an integer")
+  let index = indexValue.number.integer
+  if index < 0 or index >= vectorValue.vector.size:
+    raise newInvalidArgumentError("Vector index out of bounds")
+  vectorValue.vector[index]
 
 proc evalUse(ctx: EvalContext, expr: Expression): Value {.inline.} =
   ctx.interpreter.loadModule(expr.useModule.path, ctx.env)
@@ -275,6 +308,7 @@ const EVALUATORS: array[ExpressionKind, ExpressionEvaluator] = [
   # Postfix / call-like
   ekFuncCall: evalFunctionCall,
   ekModAccess: evalModuleAccess,
+  ekVecIndex: evalVectorIndex, # Added evaluator for vector indexing
 
   # Unary
   ekNeg: evalNeg,
@@ -308,7 +342,7 @@ const EVALUATORS: array[ExpressionKind, ExpressionEvaluator] = [
 
   # Assignment / Control
   ekAssign: evalAssign,
-  ekIf: evalIf
+  ekIf: evalIf,
 ]
 
 proc evaluate(ctx: EvalContext, expr: Expression): Value =
@@ -323,7 +357,9 @@ proc evaluate(ctx: EvalContext, expr: Expression): Value =
 # PUBLIC API
 # ============================================================================
 
-proc newInterpreter*(scriptPath: string = "", disableGlobals: bool = false): Interpreter =
+proc newInterpreter*(
+    scriptPath: string = "", disableGlobals: bool = false
+): Interpreter =
   result = Interpreter()
   result.env = newEnv(disableGlobals = disableGlobals)
   result.importStack = @[]
@@ -335,6 +371,8 @@ proc newInterpreter*(scriptPath: string = "", disableGlobals: bool = false): Int
   else:
     result.currentDir = getCurrentDir()
 
-proc eval*(interpreter: Interpreter, expression: Expression, environment: Environment = nil): Value =
+proc eval*(
+    interpreter: Interpreter, expression: Expression, environment: Environment = nil
+): Value =
   let ctx = newEvalContext(interpreter, environment)
   ctx.evaluate(expression)

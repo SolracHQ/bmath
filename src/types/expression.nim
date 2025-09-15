@@ -8,10 +8,10 @@ import vector
 from core import
   Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
   FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule,
-  ModuleAccess
+  ModuleAccess, VectorIndex
 export
   Expression, ExpressionKind, Parameter, Branch, Assign, FunctionCall, Block, Parameter,
-  FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess
+  FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess, VectorIndex
 export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
@@ -58,12 +58,12 @@ proc newIdentExpr*(pos: Position, ident: string): Expression {.inline.} =
     Expression(kind: ekIdent, position: pos, identifier: Identifier(ident: ident))
 
 proc newAssignExpr*(
-    pos: Position, ident: string, expr: Expression, isLocal: bool, typ: BMathType
+    pos: Position, lvalue: Expression, expr: Expression, isLocal: bool, typ: BMathType
 ): Expression {.inline.} =
   result = Expression(
     kind: ekAssign,
     position: pos,
-    assign: Assign(ident: ident, expr: expr, isLocal: isLocal, typ: typ),
+    assign: Assign(lvalue: lvalue, expr: expr, isLocal: isLocal, typ: typ),
   )
 
 proc newFuncCallExpr*(
@@ -93,6 +93,15 @@ proc newModuleAccessExpr*(
     kind: ekModAccess,
     position: pos,
     moduleAccess: ModuleAccess(target: target, member: member),
+  )
+
+proc newVectorIndexExpr*(
+    pos: Position, vector: Expression, index: Expression
+): Expression {.inline.} =
+  result = Expression(
+    kind: ekVecIndex,
+    position: pos,
+    vectorIndex: VectorIndex(vector: vector, index: index),
   )
 
 proc newFuncExpr*(
@@ -149,9 +158,12 @@ proc stringify(node: Expression, indent: int): string =
   of eKIdent:
     result.add indentation & "ident: " & node.identifier.ident & "\n"
   of eKAssign:
-    result.add indentation & "assign: " & node.assign.ident & "\n"
-    result.add("\n" & indentation & "  isLocal: " & $node.assign.isLocal & "\n")
-    result.add(node.assign.expr.stringify(indent + 2))
+    result.add indentation & (if node.assign.isLocal: "local " else: "") & "assign:\n"
+    result.add(indentation & "  lvalue:\n")
+    result.add(node.assign.lvalue.stringify(indent + 4))
+    result.add("\n" & indentation & "  expr:\n")
+    result.add(node.assign.expr.stringify(indent + 4))
+    result.add("\n" & indentation & "  type: " & $node.assign.typ & "\n")
   of eKBlock:
     result.add indentation & "block:\n"
     for expr in node.blockExpr.expressions:
@@ -193,6 +205,12 @@ proc stringify(node: Expression, indent: int): string =
     result.add indentation & "module access: " & node.moduleAccess.member & "\n"
     result.add(indentation & "  target:\n")
     result.add(node.moduleAccess.target.stringify(indent + 4))
+  of ekVecIndex:
+    result.add indentation & "vector index:\n"
+    result.add(indentation & "  vector:\n")
+    result.add(node.vectorIndex.vector.stringify(indent + 4))
+    result.add("\n" & indentation & "  index:\n")
+    result.add(node.vectorIndex.index.stringify(indent + 4))
 
 proc `$`*(node: Expression): string =
   ## Returns multi-line string representation of AST structure
@@ -276,7 +294,9 @@ proc asSexp*(expr: Expression): string =
       "(| " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekAssign:
     let localStr = if expr.assign.isLocal: "local " else: ""
-    return "(= " & localStr & expr.assign.ident & " " & expr.assign.expr.asSexp() & ")"
+    return
+      "(" & localStr & "set " & expr.assign.lvalue.asSexp() & " " &
+      expr.assign.expr.asSexp() & " : " & $expr.assign.typ & ")"
   of ekFuncCall:
     var argsStr = ""
     for i, arg in expr.functionCall.params:
@@ -328,90 +348,11 @@ proc asSexp*(expr: Expression): string =
     return
       "(access " & expr.moduleAccess.target.asSexp() & " \"" & expr.moduleAccess.member &
       "\")"
+  of ekVecIndex:
+    return
+      "(index " & expr.vectorIndex.vector.asSexp() & " " &
+      expr.vectorIndex.index.asSexp() & ")"
 
-proc asSource*(expr: Expression, ident: int = 0): string =
-  ## Returns a string representation of the expression in source code format
-  case expr.kind
-  of ekValue:
-    return $expr.value
-  of ekAdd:
-    return asSource(expr.binaryOp.left) & " + " & asSource(expr.binaryOp.right)
-  of ekSub:
-    return asSource(expr.binaryOp.left) & " - " & asSource(expr.binaryOp.right)
-  of ekMul:
-    return asSource(expr.binaryOp.left) & " * " & asSource(expr.binaryOp.right)
-  of ekDiv:
-    return asSource(expr.binaryOp.left) & " / " & asSource(expr.binaryOp.right)
-  of ekPow:
-    return asSource(expr.binaryOp.left) & " ^ " & asSource(expr.binaryOp.right)
-  of ekMod:
-    return asSource(expr.binaryOp.left) & " % " & asSource(expr.binaryOp.right)
-  of ekEq:
-    return asSource(expr.binaryOp.left) & " == " & asSource(expr.binaryOp.right)
-  of ekNe:
-    return asSource(expr.binaryOp.left) & " != " & asSource(expr.binaryOp.right)
-  of ekLt:
-    return asSource(expr.binaryOp.left) & " < " & asSource(expr.binaryOp.right)
-  of ekLe:
-    return asSource(expr.binaryOp.left) & " <= " & asSource(expr.binaryOp.right)
-  of ekGt:
-    return asSource(expr.binaryOp.left) & " > " & asSource(expr.binaryOp.right)
-  of ekGe:
-    return asSource(expr.binaryOp.left) & " >= " & asSource(expr.binaryOp.right)
-  of ekAnd:
-    return asSource(expr.binaryOp.left) & " & " & asSource(expr.binaryOp.right)
-  of ekOr:
-    return asSource(expr.binaryOp.left) & " | " & asSource(expr.binaryOp.right)
-  of ekNot:
-    return "!" & asSource(expr.unaryOp.operand)
-  of ekNeg:
-    return "-" & asSource(expr.unaryOp.operand)
-  of ekIdent:
-    return expr.identifier.ident
-  of ekAssign:
-    return expr.assign.ident & " = " & asSource(expr.assign.expr)
-  of ekFuncCall:
-    return
-      asSource(expr.functionCall.function) & "(" &
-      expr.functionCall.params.mapIt(asSource(it)).join(", ") & ")"
-  of ekBlock:
-    let indentation = " ".repeat(ident * 2)
-    if expr.blockExpr.expressions.len == 1:
-      return "{" & asSource(expr.blockExpr.expressions[0]) & "}"
-    else:
-      let innerIndent = " ".repeat((ident + 1) * 2)
-      return
-        "{" & "\n" &
-        expr.blockExpr.expressions.mapIt(innerIndent & asSource(it, ident + 1)).join(
-          "\n"
-        ) & "\n" & indentation & "}"
-  of ekFuncDef:
-    return
-      "|" & expr.functionDef.params.join(", ") & "| " & asSource(expr.functionDef.body)
-  of ekVector:
-    return "[" & expr.vector.toSeq().mapIt(asSource(it)).join(", ") & "]"
-  of ekIf:
-    var src = ""
-    if expr.ifExpr.branches.len > 0:
-      src.add(
-        "if (" & asSource(expr.ifExpr.branches[0].condition) & ") " &
-          asSource(expr.ifExpr.branches[0].then)
-      )
-      for branch in expr.ifExpr.branches[1 .. ^1]:
-        src.add(" elif (" & asSource(branch.condition) & ") " & asSource(branch.then))
-    if expr.ifExpr.elseBranch != nil:
-      src.add(" else " & asSource(expr.ifExpr.elseBranch))
-    return src
-  of ekGroup:
-    return "(" & asSource(expr.groupExpr) & ")"
-  of ekModule:
-    let indentation = " ".repeat(ident * 2)
-    let innerIndent = " ".repeat((ident + 1) * 2)
-    return
-      "{" & "\n" &
-      expr.moduleDef.content.mapIt(innerIndent & asSource(it, ident + 1)).join("\n") &
-      "\n" & indentation & "}"
-  of ekUse:
-    return "use(" & expr.useModule.path & ")"
-  of ekModAccess:
-    return asSource(expr.moduleAccess.target) & "::" & expr.moduleAccess.member
+# S-Expressions are better for debug than asSource so 
+# I will remove asSource for the moment since it is hard to maintain when changing the AST
+# but if some contributor wants to maintain it, feel free to re-add it :D

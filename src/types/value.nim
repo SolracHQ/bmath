@@ -85,7 +85,8 @@ proc `$`*(value: Value): string =
   of vkNativeFunc:
     "<native func>"
   of vkFunction:
-    "|" & value.function.params.join(", ") & "| " & value.function.body.asSource
+    "|" & value.function.params.join(", ") & "| -> " &
+      $value.function.signature.returnType
   of vkVector:
     "[" & value.vector.toSeq.mapIt($it).join(", ") & "]"
   of vkSeq:

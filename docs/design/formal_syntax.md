@@ -119,9 +119,9 @@ LINE_CONTINUATION ::= '\\' NEWLINE
 
 Complete precedence table reflecting actual parser implementation:
 
-1. **Array indexing**: `[]` *(precedence 85)*
-2. **Closure capture**: `!` *(precedence 82)*
+1. **Vector indexing**: `[]` *(precedence 80)*
 3. **Function calls**: `func()` *(precedence 80)*
+2. **Closure capture**: `!` *(precedence 79)*
 4. **Module access**: `::` *(precedence 78)*
 5. **Chain operator**: `->` *(precedence 75)*
 6. **Unary operators**: `-`, `!` *(precedence 70)*

@@ -2,6 +2,17 @@ import std/complex # Required by Number
 import std/sets # For HashSet in Type
 import std/tables
 
+template ANY(): untyped =
+  BMathType(
+    kind: tkSum,
+    types: toHashSet(
+      [
+        stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
+        stType,
+      ]
+    ),
+  )
+
 type
   Position* = object ## Source code location information
     line*: int ## 1-based line number in source
@@ -240,67 +251,60 @@ type
     ## precedence easier to reason about when reading the source.
 
     # Primary expressions (highest precedence)
-    ekValue     ## Value literal (number, string, boolean, type)
-    ekGroup     ## Grouping expression to preserve parentheses
-    ekVector    ## Vector literal
-    ekIdent     ## Identifier reference
-    ekFuncDef   ## Function (lambda) literal
-    ekModule    ## Module definition expression
-    ekUse       ## Module import expression
-    ekBlock     ## Block expression (sequence of statements)
+    ekValue ## Value literal (number, string, boolean, type)
+    ekGroup ## Grouping expression to preserve parentheses
+    ekVector ## Vector literal
+    ekIdent ## Identifier reference
+    ekFuncDef ## Function (lambda) literal
+    ekModule ## Module definition expression
+    ekUse ## Module import expression
+    ekBlock ## Block expression (sequence of statements)
 
     # Postfix / call-like expressions
-    ekFuncCall  ## Function invocation (high precedence, postfix)
+    ekFuncCall ## Function invocation (high precedence, postfix)
     ekModAccess ## Module member access expression (postfix)
+    ekVecIndex ## Vector indexing expression (postfix)
 
     # Unary operations
-    ekNeg       ## Unary negation operation (-operand)
-    ekNot       ## Logical NOT operation (!operand)
+    ekNeg ## Unary negation operation (-operand)
+    ekNot ## Logical NOT operation (!operand)
 
     # Exponentiation (right-associative)
-    ekPow       ## Exponentiation operation (left ^ right)
+    ekPow ## Exponentiation operation (left ^ right)
 
     # Multiplicative level
-    ekMul       ## Multiplication operation (left * right)
-    ekDiv       ## Division operation (left / right)
-    ekMod       ## Modulus operation (left % right)
+    ekMul ## Multiplication operation (left * right)
+    ekDiv ## Division operation (left / right)
+    ekMod ## Modulus operation (left % right)
 
     # Additive level
-    ekAdd       ## Addition operation (left + right)
-    ekSub       ## Subtraction operation (left - right)
+    ekAdd ## Addition operation (left + right)
+    ekSub ## Subtraction operation (left - right)
 
     # Relational comparisons
-    ekLt        ## Less-than comparison (left < right)
-    ekLe        ## Less-than-or-equal comparison (left <= right)
-    ekGt        ## Greater-than comparison (left > right)
-    ekGe        ## Greater-than-or-equal comparison (left >= right)
+    ekLt ## Less-than comparison (left < right)
+    ekLe ## Less-than-or-equal comparison (left <= right)
+    ekGt ## Greater-than comparison (left > right)
+    ekGe ## Greater-than-or-equal comparison (left >= right)
 
     # Equality
-    ekEq        ## Equality comparison (left == right)
-    ekNe        ## Inequality comparison (left != right)
+    ekEq ## Equality comparison (left == right)
+    ekNe ## Inequality comparison (left != right)
 
     # Logical operators
-    ekAnd       ## Logical AND operation (left & right)
-    ekOr        ## Logical OR operation (left | right)
+    ekAnd ## Logical AND operation (left & right)
+    ekOr ## Logical OR operation (left | right)
 
     # Assignment and control (lowest precedence)
-    ekAssign    ## Variable assignment (ident = expr)
-    ekIf        ## If-else conditional expression
+    ekAssign ## Variable assignment (ident = expr)
+    ekIf ## If-else conditional expression
 
   Parameter* = object
     ## Represents a function parameter.
     ##
     ## Contains the parameter name and its type.
     name*: string
-    typ*: BMathType = BMathType(
-      kind: tkSum,
-      types: toHashSet(
-        [
-          stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
-          stType,
-        ]
-      ),
-    )
+    typ*: BMathType = ANY()
 
   # New specialized types for each expression variant
   UnaryOp* = object
@@ -314,18 +318,10 @@ type
     ident*: string ## Identifier name
 
   Assign* = object
-    ident*: string ## Target identifier for assignment
+    lvalue*: Expression ## Left-hand side expression
     expr*: Expression ## Assigned expression
     isLocal*: bool ## Flag indicating if the assignment is to a local variable
-    typ*: BMathType = BMathType(
-      kind: tkSum,
-      types: toHashSet(
-        [
-          stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
-          stType,
-        ]
-      ),
-    )
+    typ*: BMathType = ANY()
 
   FunctionCall* = object
     function*: Expression ## Expression that evaluates to a function
@@ -337,15 +333,7 @@ type
   FunctionDef* = object
     body*: Expression ## Function body expression
     params*: seq[Parameter] ## Function parameter names
-    returnType*: BMathType = BMathType(
-      kind: tkSum,
-      types: toHashSet(
-        [
-          stInteger, stReal, stComplex, stBoolean, stVector, stSequence, stFunction,
-          stType,
-        ]
-      ),
-    )
+    returnType*: BMathType = ANY()
 
   Branch* = object
     ## Represents a condition in an if-elif expression.
@@ -367,6 +355,10 @@ type
   ModuleAccess* = object
     target*: Expression ## Expression evaluating to a module or vector
     member*: string ## Member name being accessed
+
+  VectorIndex* = object
+    vector*: Expression ## Expression evaluating to a vector
+    index*: Expression ## Expression evaluating to the index
 
   Expression* = ref object
     ## Abstract Syntax Tree (AST) node (renamed to Expression).
@@ -404,3 +396,5 @@ type
       useModule*: UseModule
     of ekModAccess:
       moduleAccess*: ModuleAccess
+    of ekVecIndex:
+      vectorIndex*: VectorIndex

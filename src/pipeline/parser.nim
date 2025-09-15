@@ -218,8 +218,11 @@ proc parseModule(parser: var Parser, token: Token): Expression =
 
   # Check if we have an optional identifier
   var identifierName: string = ""
+  var identifierPos: Position
   if parser.match({tkIdent}):
-    identifierName = parser.previous().name
+    let identToken = parser.previous()
+    identifierName = identToken.name
+    identifierPos = identToken.position
     parser.cleanUpNewlines()
 
   # Expect a '{' after 'mod' (and optional identifier)
@@ -233,7 +236,8 @@ proc parseModule(parser: var Parser, token: Token): Expression =
 
   # If we have an identifier, wrap in assignment (syntactic sugar)
   if identifierName != "":
-    return newAssignExpr(token.position, identifierName, moduleExpr, false, AnyType)
+    let identExpr = newIdentExpr(identifierPos, identifierName)
+    return newAssignExpr(token.position, identExpr, moduleExpr, true, AnyType)
   else:
     return moduleExpr
 
@@ -272,8 +276,9 @@ proc parseUse(parser: var Parser, token: Token): Expression =
       if c.len == 1:
         # Simple access: module::member
         let moduleCall = newModuleAccessExpr(token.position, useResult, c[0].name)
+        let aliasExpr = newIdentExpr(token.position, c[0].alias)
         assignments.add(
-          newAssignExpr(token.position, c[0].alias, moduleCall, true, AnyType)
+          newAssignExpr(token.position, aliasExpr, moduleCall, true, AnyType)
         )
       else:
         # Nested access: module::sub1::sub2::member
@@ -281,8 +286,9 @@ proc parseUse(parser: var Parser, token: Token): Expression =
         for i in 0 ..< c.len:
           moduleCall = newModuleAccessExpr(token.position, moduleCall, c[i].name)
         # Final assignment uses the last part's alias
+        let aliasExpr = newIdentExpr(token.position, c[^1].alias)
         assignments.add(
-          newAssignExpr(token.position, c[^1].alias, moduleCall, true, AnyType)
+          newAssignExpr(token.position, aliasExpr, moduleCall, true, AnyType)
         )
 
     # Return single assignment or vector of assignments
@@ -297,8 +303,9 @@ proc parseUse(parser: var Parser, token: Token): Expression =
       raise newMissingTokenError(
         "Expected identifier after 'as'", parser.previous().position
       )
-    useResult =
-      newAssignExpr(token.position, parser.previous().name, useResult, true, AnyType)
+    let aliasToken = parser.previous()
+    let aliasExpr = newIdentExpr(aliasToken.position, aliasToken.name)
+    useResult = newAssignExpr(token.position, aliasExpr, useResult, true, AnyType)
 
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
@@ -473,6 +480,15 @@ proc parseModuleAccess(parser: var Parser, left: Expression, token: Token): Expr
   let member = parser.previous().name
   return newModuleAccessExpr(token.position, left, member)
 
+proc parseVectorIndex(parser: var Parser, left: Expression, token: Token): Expression =
+  ## Parses vector indexing: left[index]
+  parser.cleanUpNewlines()
+  let index = parser.parsePrattExpr()
+  parser.cleanUpNewlines()
+  if not parser.match({tkRSquare}):
+    raise newMissingTokenError("Expected ']'", token.position)
+  return newVectorIndexExpr(token.position, left, index)
+
 proc parseChain(parser: var Parser, left: Expression, token: Token): Expression =
   ## Parses left->right, where right can be a function or function call
   parser.cleanUpNewlines()
@@ -595,32 +611,35 @@ proc parsePrattExpr(parser: var Parser, minPrec: int = 0): Expression =
 # ASSIGNMENT PARSING (still uses some RD logic due to complexity)
 # =============================================================================
 
+proc isValidLValue(expr: Expression): bool =
+  ## Checks if an expression is a valid lvalue for assignment
+  case expr.kind
+  of ekIdent, ekModAccess, ekVecIndex: true
+  else: false
+
 proc parseAssignment(parser: var Parser, left: Expression, token: Token): Expression =
   ## Handles assignment expressions as infix operations (right-associative)
-  # Extract variable name from left side
-  var name: string
-  var typ: BMathType = AnyType
-
-  case left.kind
-  of ekIdent:
-    name = left.identifier.ident
-  else:
+  # Validate lvalue
+  if not isValidLValue(left):
     raise newInvalidExpressionError("Invalid assignment target", token.position)
 
   # Parse the right side with right-associativity (precedence - 1)
   let value = parser.parsePrattExpr(opTable[tkAssign].precedence - 1)
-  let assignExpr = newAssignExpr(token.position, name, value, false, typ)
+  let assignExpr = newAssignExpr(token.position, left, value, false, AnyType)
 
   return assignExpr
 
 proc parseLocalAssignment(parser: var Parser): Expression =
   ## Handles local assignments and regular expressions
   if parser.match({tkLocal}):
+    # For local assignments, we only allow identifiers as lvalues
     if not parser.match({tkIdent}):
       raise newMissingTokenError(
         "Expected identifier after 'local'", parser.previous().position
       )
-    let name = parser.previous()
+    let identToken = parser.previous()
+    let identExpr = newIdentExpr(identToken.position, identToken.name)
+
     var typ: BMathType = AnyType
     if parser.match({tkColon}):
       if parser.match({tkType}):
@@ -630,10 +649,10 @@ proc parseLocalAssignment(parser: var Parser): Expression =
           newMissingTokenError("Expected type after ':'", parser.previous().position)
     if not parser.match({tkAssign}):
       raise newMissingTokenError(
-        &"Expected '=' after local '{name.name}'", parser.previous().position
+        &"Expected '=' after local '{identToken.name}'", parser.previous().position
       )
     let value = parser.parsePrattExpr()
-    let assignExpr = newAssignExpr(name.position, name.name, value, true, typ)
+    let assignExpr = newAssignExpr(identToken.position, identExpr, value, true, typ)
 
     return assignExpr
 
@@ -680,6 +699,8 @@ proc initOperatorTable*() =
 
   # Infix operators (led) with precedence (higher = tighter binding)
   registerInfix(tkLpar, 80, parseCall) # function(args) - highest precedence
+  registerInfix(tkLSquare, 80, parseVectorIndex)
+    # vector[index] - same precedence as function calls
   registerInfix(tkDoubleColon, 78, parseModuleAccess) # module access '::'
   registerInfix(tkChain, 75, parseChain) # left->right
   registerInfix(tkPow, 60, parseBinaryOp) # ^ (right-associative)
