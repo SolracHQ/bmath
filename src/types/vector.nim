@@ -4,108 +4,115 @@
 ## - Allocates memory on the heap for efficient storage
 ## - Maintains fixed size once allocated
 ## - Provides convenient access operations and iteration
+##
+## This module only exist because Nim seq has copy-on-write semantics
 
-from core import Vector
+from core import Vector, Value
+import errors
 export Vector
 
-proc newVector*[T](len: int): Vector[T] =
+proc newVector*(len: int): Vector =
   ## Creates a new vector with the specified length.
   ##
   ## Params:
   ##   len: int - the length of the vector to create.
-  ## Returns: Vector[T] - a newly allocated vector of the specified length.
-  result = new(Vector[T])
+  ## Returns: Vector - a newly allocated vector of the specified length.
+  result = new(Vector)
   result.len = len
   if len <= 0:
     result.p = nil
   else:
-    result.p = cast[ptr UncheckedArray[T]](create(T, len))
+    result.p = cast[ptr UncheckedArray[Value]](create(Value, len))
 
-proc size*[T](v: Vector[T]): int {.inline.} =
+proc size*(v: Vector): int {.inline.} =
   ## Returns the size/length of the vector.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to query.
+  ##   v: Vector - the vector to query.
   ## Returns: int - the number of elements in the vector.
   result = v.len
 
-proc `[]`*[T](v: Vector[T], i: int): T {.inline.} =
+proc `[]`*(v: Vector, i: int): Value {.inline.} =
   ## Retrieves the element at the specified index.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to access.
+  ##   v: Vector - the vector to access.
   ##   i: int - the index of the element to retrieve.
   ## Returns: T - the element at the specified index.
   ## Raises:
   ##   IndexDefect - in debug mode, if index is out of bounds.
-  when defined(debug):
-    # this is incredibly dangerous, but since index is checked at runtime by the bmath interpreter
-    # we can leave it unchecked unless we are in debug mode
-    if i < 0 or i >= v.len:
-      raise newException(IndexDefect, "Index out of bounds")
+  var i = i
+  if i >= v.len:
+    raise newInvalidArgumentError("Index out of bounds")
+  if i < 0 and i + v.len < 0 and i + v.len >= v.len:
+    raise newInvalidArgumentError("Index out of bounds ")
+  if i < 0:
+    i = v.len + i
   result = v.p[i]
 
-proc `[]=`*[T](v: Vector[T], i: int, value: T) {.inline.} =
+proc `[]=`*(v: Vector, i: int, value: Value) {.inline.} =
   ## Sets the element at the specified index.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to modify.
+  ##   v: Vector - the vector to modify.
   ##   i: int - the index at which to set the value.
   ##   value: T - the value to set.
   ## Raises:
   ##   IndexDefect - if index is out of bounds.
-  when defined(debug):
-    # this is incredibly dangerous, but since index is checked at runtime by the bmath interpreter
-    # we can leave it unchecked unless we are in debug mode
-    if i < 0 or i >= v.len:
-      raise newException(IndexDefect, "Index out of bounds")
+  var i = i
+  if i >= v.len:
+    raise newInvalidArgumentError("Index out of bounds")
+  if i < 0 and i + v.len < 0 and i + v.len >= v.len:
+    raise newInvalidArgumentError("Index out of bounds ")
+  if i < 0:
+    i = v.len + i
   v.p[i] = value
 
-iterator items*[T](v: Vector[T]): T {.inline.} =
+iterator items*(v: Vector): Value {.inline.} =
   ## Provides an iterator over the elements of the vector.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to iterate over.
+  ##   v: Vector - the vector to iterate over.
   ## Yields: T - each element in the vector.
   for i in 0 ..< v.len:
     yield v.p[i]
 
-iterator pairs*[T](v: Vector[T]): (int, T) {.inline.} =
+iterator pairs*(v: Vector): (int, Value) {.inline.} =
   ## Provides an iterator over the index-element pairs of the vector.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to iterate over.
+  ##   v: Vector - the vector to iterate over.
   ## Yields: (int, T) - each index and its corresponding element in the vector.
   for i in 0 ..< v.len:
     yield (i, v.p[i])
 
-proc map*[T, U](v: Vector[T], f: proc(t: T): U): Vector[U] {.inline.} =
-  ## Applies a function to each element of the vector and returns a new vector.
+proc map*(v: Vector, f: proc(x: Value): Value): Vector {.inline.} =
+  ## Applies a function to each element of the vector and returns a new vector with the results.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to map.
-  ##   f: proc (T): U - the function to apply to each element.
-  ## Returns: Vector[U] - a new vector containing the results of applying f to each element.
-  result = newVector[U](v.len)
+  ##   v: Vector - the input vector.
+  ##   f: proc(x: Value): Value - the function to apply to each element.
+  ## Returns: Vector - a new vector containing the results of applying the function.
+  result = newVector(v.len)
   for i in 0 ..< v.len:
     result.p[i] = f(v.p[i])
 
-proc toSeq*[T](v: Vector[T]): seq[T] =
+proc toSeq*(v: Vector): seq[Value] =
   ## Converts the vector to a sequence.
   ##
   ## Params:
-  ##   v: Vector[T] - the vector to convert.
-  ## Returns: seq[T] - a sequence containing all elements of the vector.
+  ##   v: Vector - the vector to convert.
+  ## Returns: seq - a sequence containing all elements of the vector.
   result = @[]
   for i in 0 ..< v.len:
     result.add(v.p[i])
 
-proc fromSeq*[T](s: seq[T]): Vector[T] =
+proc fromSeq*(s: seq): Vector =
   ## Creates a vector from a sequence.
   ##
   ## Params:
-  ##   s: seq[T] - the sequence to convert.
-  ## Returns: Vector[T] - a new vector containing all elements of the sequence.
-  result = newVector[T](s.len)
+  ##   s: seq - the sequence to convert.
+  ## Returns: Vector - a new vector containing all elements of the sequence.
+  result = newVector(s.len)
   for i in 0 ..< s.len:
     result.p[i] = s[i]

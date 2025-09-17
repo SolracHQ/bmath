@@ -31,7 +31,7 @@ proc map*(values: openArray[Value], invoker: FnInvoker): Value =
   of vkVector:
     # Apply the function to each element of the vector
     result = Value(kind: vkVector)
-    result.vector = newVector[Value](value.vector.size)
+    result.vector = newVector(value.vector.size)
     for i in 0 ..< value.vector.size:
       result.vector[i] = invoker(values[1], [value.vector[i]])
   of vkSeq:
@@ -86,7 +86,7 @@ proc filter*(values: openArray[Value], invoker: FnInvoker): Value =
 
     # Then create a vector of the right size
     result = Value(kind: vkVector)
-    result.vector = newVector[Value](filteredElements.len)
+    result.vector = newVector(filteredElements.len)
 
     # Copy filtered elements to the result vector
     for i in 0 ..< filteredElements.len:

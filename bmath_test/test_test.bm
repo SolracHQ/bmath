@@ -1,0 +1,7 @@
+use(std::cos)
+
+isometric := |a: Real, b: Real| => Real {
+    cos(a) + cos(b)
+}
+
+isometric(1.0, 2.0)

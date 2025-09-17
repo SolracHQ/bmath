@@ -12,29 +12,63 @@ import errors
 
 from core import
   Value, ValueKind, NativeFn, Function, Environment, LabeledValue, Parameter, FnInvoker,
-  Sequence, Generator, Transformer, TransformerKind, Signature
+  Sequence, Generator, Transformer, TransformerKind, Signature, ValueMetadata
 export
   Value, ValueKind, NativeFn, Function, Environment, LabeledValue, FnInvoker, Sequence,
-  Generator, Transformer, TransformerKind
+  Generator, Transformer, TransformerKind, ValueMetadata
 
 template newValue*(n: typed): Value =
-  ## Create a new Value object from a number
+  ## Create a new Value object from a literal value (immutable by default)
   when n is SomeInteger:
-    Value(kind: vkNumber, number: newNumber(n))
+    Value(
+      kind: vkNumber, metadata: ValueMetadata(isMutable: false), number: newNumber(n)
+    )
   elif n is SomeFloat:
-    Value(kind: vkNumber, number: newNumber(n))
+    Value(
+      kind: vkNumber, metadata: ValueMetadata(isMutable: false), number: newNumber(n)
+    )
   elif n is Complex[float]:
-    Value(kind: vkNumber, number: newNumber(n))
+    Value(
+      kind: vkNumber, metadata: ValueMetadata(isMutable: false), number: newNumber(n)
+    )
   elif n is Number:
-    Value(kind: vkNumber, number: n)
+    Value(kind: vkNumber, metadata: ValueMetadata(isMutable: false), number: n)
   elif n is bool:
-    Value(kind: vkBool, boolean: n.bool)
-  elif n is seq[Value]:
-    Value(kind: vkVector, vector: n)
+    Value(kind: vkBool, metadata: ValueMetadata(isMutable: false), boolean: n.bool)
+  elif n is seq:
+    Value(kind: vkVector, metadata: ValueMetadata(isMutable: false), vector: n)
   elif n is BMathType:
-    Value(kind: vkType, typ: n)
+    Value(kind: vkType, metadata: ValueMetadata(isMutable: false), typ: n)
   elif n is string:
-    Value(kind: vkString, content: n)
+    Value(kind: vkString, metadata: ValueMetadata(isMutable: false), content: n)
+  else:
+    const message = "Unsupported type '" & $T & "' for Value"
+    {.error: message.}
+
+template newMutableValue*(n: typed): Value =
+  ## Create a new Value object with mutable metadata
+  when n is SomeInteger:
+    Value(
+      kind: vkNumber, metadata: ValueMetadata(isMutable: true), number: newNumber(n)
+    )
+  elif n is SomeFloat:
+    Value(
+      kind: vkNumber, metadata: ValueMetadata(isMutable: true), number: newNumber(n)
+    )
+  elif n is Complex[float]:
+    Value(
+      kind: vkNumber, metadata: ValueMetadata(isMutable: true), number: newNumber(n)
+    )
+  elif n is Number:
+    Value(kind: vkNumber, metadata: ValueMetadata(isMutable: true), number: n)
+  elif n is bool:
+    Value(kind: vkBool, metadata: ValueMetadata(isMutable: true), boolean: n.bool)
+  elif n is seq:
+    Value(kind: vkVector, metadata: ValueMetadata(isMutable: true), vector: n)
+  elif n is BMathType:
+    Value(kind: vkType, metadata: ValueMetadata(isMutable: true), typ: n)
+  elif n is string:
+    Value(kind: vkString, metadata: ValueMetadata(isMutable: true), content: n)
   else:
     const message = "Unsupported type '" & $T & "' for Value"
     {.error: message.}
@@ -44,7 +78,19 @@ proc newValue*(
 ): Value {.inline.} =
   ## Creates a new Value object wrapping a user-defined function.
   var functionObj = Function(body: body, env: env, params: params)
-  result = Value(kind: vkFunction, function: functionObj)
+  result = Value(
+    kind: vkFunction, metadata: ValueMetadata(isMutable: false), function: functionObj
+  )
+
+proc withMutability*(value: Value, isMutable: bool): Value {.inline.} =
+  ## Creates a copy of a value with specified mutability
+  result = value
+  result.metadata.isMutable = isMutable
+
+proc copyValue*(value: Value): Value {.inline.} =
+  ## Creates an immutable copy of a value (for std functions that always copy)
+  result = value
+  result.metadata.isMutable = false
 
 template rawAccess*(value: Value, kind: static[ValueKind]) =
   when kind == vkNumber:
@@ -104,39 +150,27 @@ proc `$`*(value: Value): string =
   of vkModule:
     "<module>"
 
-proc `$`*(val: LabeledValue): string =
-  if val.label != "":
-    result = val.label & " = "
-  result &= $val.value
-
-proc `$`*(env: Environment): string =
-  ## Returns string representation of environment values
-  if env.parent != nil:
-    result = "Environment(parent: " & $env.parent & ", values: " & $env.values & ")"
-  else:
-    result = "Environment(values: " & $env.values & ")"
-
 # --- Value Operations ---
 
 ## Helper procs to apply Value->Value operators element-wise
-template applyScalarOp(op: untyped, a: Value, b: Vector[Value]): Vector[Value] =
+template applyScalarOp(op: untyped, a: Value, b: Vector): Vector =
   ## Applies a scalar operation between a Value and each element of a vector
-  var result = newVector[Value](b.size)
+  var result = newVector(b.size)
   for i in 0 ..< b.size:
     result[i] = op(a, b[i])
   result
 
-template applyVectorOp(op: untyped, a: Vector[Value], b: Vector[Value]): Vector[Value] =
+template applyVectorOp(op: untyped, a: Vector, b: Vector): Vector =
   ## Applies a vector operation element-wise between two vectors
   # if a.size != b.size: # this should be checked by the caller
-  var result = newVector[Value](size[Value](a))
+  var result = newVector(size(a))
   for i in 0 ..< a.size:
     result[i] = op(a[i], b[i])
   result
 
-template applyScalarOpRight(op: untyped, a: Vector[Value], b: Value): Vector[Value] =
+template applyScalarOpRight(op: untyped, a: Vector, b: Value): Vector =
   ## Applies an operation between each element of a vector and a scalar on the right
-  var result = newVector[Value](a.size)
+  var result = newVector(a.size)
   for i in 0 ..< a.size:
     result[i] = op(a[i], b)
   result
@@ -190,14 +224,14 @@ proc `+`*(a, b: Value): Value {.inline, captureNumericError, raises: [RuntimeErr
   ## - VectorLengthMismatchError: when adding two vectors of different sizes
   ## - ArithmeticError variants (wrapped via `captureNumericError`) for numeric issues
   if a.kind == vkNumber and b.kind == vkNumber:
-    return newValue(a.number + b.number)
+    return newValue(a.number + b.number) # newValue creates immutable by default
   elif a.kind == vkVector and b.kind == vkVector:
-    # Element-wise vector addition
+    # Element-wise vector addition - always creates immutable copy
     let va = a.vector
     let vb = b.vector
     if va.size != vb.size:
       raise newVectorLengthMismatchError(va.size, vb.size)
-    result = Value(kind: vkVector)
+    result = Value(kind: vkVector, metadata: ValueMetadata(isMutable: false))
     result.vector = applyVectorOp(`+`, va, vb)
   else:
     raise newInvalidOperationError("addition", $a.kind, $b.kind)
@@ -221,12 +255,12 @@ proc `-`*(a, b: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber and b.kind == vkNumber:
     return newValue(a.number - b.number)
   elif a.kind == vkVector and b.kind == vkVector:
-    # Element-wise vector subtraction
+    # Element-wise vector subtraction - always creates immutable copy
     let va = a.vector
     let vb = b.vector
     if va.size != vb.size:
       raise newVectorLengthMismatchError(va.size, vb.size)
-    result = Value(kind: vkVector)
+    result = Value(kind: vkVector, metadata: ValueMetadata(isMutable: false))
     result.vector = applyVectorOp(`-`, va, vb)
   else:
     raise newInvalidOperationError("subtraction", $a.kind, $b.kind)
@@ -262,11 +296,19 @@ proc `*`*(a, b: Value): Value {.inline, captureNumericError.} =
   elif a.kind == vkNumber and b.kind == vkVector:
     # Multiply scalar by vector: element-wise
     let vb = b.vector
-    result = Value(kind: vkVector, vector: applyScalarOp(`*`, a, vb))
+    result = Value(
+      kind: vkVector,
+      metadata: ValueMetadata(isMutable: false),
+      vector: applyScalarOp(`*`, a, vb),
+    )
   elif a.kind == vkVector and b.kind == vkNumber:
     # Multiply vector by scalar: element-wise
     let va = a.vector
-    result = Value(kind: vkVector, vector: applyScalarOp(`*`, b, va))
+    result = Value(
+      kind: vkVector,
+      metadata: ValueMetadata(isMutable: false),
+      vector: applyScalarOp(`*`, b, va),
+    )
   else:
     raise newInvalidOperationError("multiplication", $a.kind, $b.kind)
 
@@ -294,7 +336,11 @@ proc `/`*(a, b: Value): Value {.inline, captureNumericError.} =
       raise newZeroDivisionError()
     # Element-wise division of vector by scalar
     let va = a.vector
-    result = Value(kind: vkVector, vector: applyScalarOpRight(`/`, va, b))
+    result = Value(
+      kind: vkVector,
+      metadata: ValueMetadata(isMutable: false),
+      vector: applyScalarOpRight(`/`, va, b),
+    )
   else:
     raise newInvalidOperationError("division", $a.kind, $b.kind)
 
@@ -322,7 +368,11 @@ proc `%`*(a, b: Value): Value {.inline, captureNumericError.} =
       raise newZeroDivisionError()
     # Element-wise modulus of vector by scalar
     let va = a.vector
-    result = Value(kind: vkVector, vector: applyScalarOpRight(`%`, va, b))
+    result = Value(
+      kind: vkVector,
+      metadata: ValueMetadata(isMutable: false),
+      vector: applyScalarOpRight(`%`, va, b),
+    )
 
 proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
   ## Exponentiation for Values.
@@ -342,7 +392,11 @@ proc `^`*(a, b: Value): Value {.inline, captureNumericError.} =
     return newValue(a.number ^ b.number)
   elif a.kind == vkVector and b.kind == vkNumber:
     let va = a.vector
-    result = Value(kind: vkVector, vector: applyScalarOpRight(`^`, va, b))
+    result = Value(
+      kind: vkVector,
+      metadata: ValueMetadata(isMutable: false),
+      vector: applyScalarOpRight(`^`, va, b),
+    )
   else:
     raise newInvalidOperationError("exponentiation", "vector", $b.kind)
 
@@ -373,7 +427,11 @@ proc `-`*(a: Value): Value {.inline, captureNumericError.} =
   elif a.kind == vkVector:
     # Element-wise negation of vector
     let va = a.vector
-    result = Value(kind: vkVector, vector: applyScalarOp(`-`, newValue(0), va))
+    result = Value(
+      kind: vkVector,
+      metadata: ValueMetadata(isMutable: false),
+      vector: applyScalarOp(`-`, newValue(0), va),
+    )
   else:
     raise newInvalidOperationError("negation", $a.kind, "")
 
@@ -585,7 +643,7 @@ when defined(showSize):
     echo "   ├─ vkNativeFunc variant"
     echo "   │  ├─ NativeFn whole: ", sizeof(NativeFn), " bytes"
     echo "   │  ├─  - callable (proc type): ",
-      sizeof(proc(args: openArray[Value], invoker: FnInvoker): Value), " bytes"
+      sizeof(proc(args: openArray, invoker: FnInvoker): Value), " bytes"
     echo "   │  └─  - signatures (seq[Signature]): ",
       sizeof(seq[Signature]), " bytes"
     echo "   ├─ vkFunction variant"
@@ -600,7 +658,7 @@ when defined(showSize):
     echo "   │       - Signature.returnType (BMathType): ",
       sizeof(BMathType), " bytes"
     echo "   ├─ vkVector variant"
-    echo "   │  └─ Vector ref size: ", sizeof(Vector[Value]), " bytes"
+    echo "   │  └─ Vector ref size: ", sizeof(Vector), " bytes"
     echo "   ├─ vkSeq variant"
     echo "   │  ├─ Sequence ref size: ", sizeof(ref Sequence), " bytes"
     echo "   │  ├─  - Generator: ", sizeof(Generator), " bytes"

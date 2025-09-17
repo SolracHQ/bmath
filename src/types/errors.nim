@@ -34,6 +34,8 @@ type
   EnvironmentError* = object of RuntimeError
   UndefinedVariableError* = object of EnvironmentError
   ReservedNameError* = object of EnvironmentError
+  RedefinitionError* = object of EnvironmentError
+  ImmutableAssignmentError* = object of EnvironmentError
   SequenceExhaustedError* = object of InvalidArgumentError
 
 # --- Module Errors ---
@@ -98,6 +100,16 @@ template newReservedNameError*(name: string): ref ReservedNameError =
     msg:
       "Cannot overwrite the reserved name '" & name &
       "', for local shadowing use local keyword"
+  )
+
+template newRedefinitionError*(name: string): ref RedefinitionError =
+  (ref RedefinitionError)(
+    msg: "Variable '" & name & "' is already defined in current scope"
+  )
+
+template newImmutableAssignmentError*(name: string): ref ImmutableAssignmentError =
+  (ref ImmutableAssignmentError)(
+    msg: "Cannot assign to immutable variable '" & name & "'"
   )
 
 template newSequenceExhaustedError*(

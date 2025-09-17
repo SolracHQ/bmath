@@ -1,4 +1,4 @@
-import std/[strutils, sequtils]
+import std/[strutils]
 
 import position
 import number
@@ -8,10 +8,11 @@ import vector
 from core import
   Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
   FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule,
-  ModuleAccess, VectorIndex
+  ModuleAccess, VectorIndex, ImmutableDecl, MutableDecl
 export
   Expression, ExpressionKind, Parameter, Branch, Assign, FunctionCall, Block, Parameter,
-  FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess, VectorIndex
+  FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess, VectorIndex,
+  ImmutableDecl, MutableDecl
 export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
@@ -41,8 +42,7 @@ proc newValueExpr*(pos: Position, value: Value): Expression {.inline.} =
   result = Expression(kind: ekValue, position: pos, value: value)
 
 proc newVectorExpr*(pos: Position, values: seq[Expression]): Expression {.inline.} =
-  result =
-    Expression(kind: ekVector, position: pos, vector: fromSeq[Expression](values))
+  result = Expression(kind: ekVector, position: pos, vector: values)
 
 proc newNegExpr*(pos: Position, operand: Expression): Expression {.inline.} =
   result = Expression(kind: ekNeg, position: pos, unaryOp: UnaryOp(operand: operand))
@@ -58,12 +58,28 @@ proc newIdentExpr*(pos: Position, ident: string): Expression {.inline.} =
     Expression(kind: ekIdent, position: pos, identifier: Identifier(ident: ident))
 
 proc newAssignExpr*(
-    pos: Position, lvalue: Expression, expr: Expression, isLocal: bool, typ: BMathType
+    pos: Position, lvalue: Expression, expr: Expression
 ): Expression {.inline.} =
   result = Expression(
-    kind: ekAssign,
+    kind: ekAssign, position: pos, assign: Assign(lvalue: lvalue, expr: expr)
+  )
+
+proc newImmutableDeclExpr*(
+    pos: Position, lvalue: Expression, expr: Expression, typ: BMathType = AnyType
+): Expression {.inline.} =
+  result = Expression(
+    kind: ekImmutableDecl,
     position: pos,
-    assign: Assign(lvalue: lvalue, expr: expr, isLocal: isLocal, typ: typ),
+    immutableDecl: ImmutableDecl(lvalue: lvalue, expr: expr, typ: typ),
+  )
+
+proc newMutableDeclExpr*(
+    pos: Position, lvalue: Expression, expr: Expression, typ: BMathType = AnyType
+): Expression {.inline.} =
+  result = Expression(
+    kind: ekMutableDecl,
+    position: pos,
+    mutableDecl: MutableDecl(lvalue: lvalue, expr: expr, typ: typ),
   )
 
 proc newFuncCallExpr*(
@@ -157,13 +173,28 @@ proc stringify(node: Expression, indent: int): string =
     result.add(node.unaryOp.operand.stringify(indent + 2))
   of eKIdent:
     result.add indentation & "ident: " & node.identifier.ident & "\n"
+  of ekThis:
+    result.add indentation & "this\n"
   of eKAssign:
-    result.add indentation & (if node.assign.isLocal: "local " else: "") & "assign:\n"
+    result.add indentation & "assign:\n"
     result.add(indentation & "  lvalue:\n")
     result.add(node.assign.lvalue.stringify(indent + 4))
     result.add("\n" & indentation & "  expr:\n")
     result.add(node.assign.expr.stringify(indent + 4))
-    result.add("\n" & indentation & "  type: " & $node.assign.typ & "\n")
+  of ekImmutableDecl:
+    result.add indentation & "immutable declaration:\n"
+    result.add(indentation & "  lvalue:\n")
+    result.add(node.immutableDecl.lvalue.stringify(indent + 4))
+    result.add("\n" & indentation & "  expr:\n")
+    result.add(node.immutableDecl.expr.stringify(indent + 4))
+    result.add("\n" & indentation & "  type: " & $node.immutableDecl.typ & "\n")
+  of ekMutableDecl:
+    result.add indentation & "mutable declaration:\n"
+    result.add(indentation & "  lvalue:\n")
+    result.add(node.mutableDecl.lvalue.stringify(indent + 4))
+    result.add("\n" & indentation & "  expr:\n")
+    result.add(node.mutableDecl.expr.stringify(indent + 4))
+    result.add("\n" & indentation & "  type: " & $node.mutableDecl.typ & "\n")
   of eKBlock:
     result.add indentation & "block:\n"
     for expr in node.blockExpr.expressions:
@@ -246,6 +277,8 @@ proc asSexp*(expr: Expression): string =
       return $expr.value
   of ekIdent:
     return expr.identifier.ident
+  of ekThis:
+    return "this"
   of ekNeg:
     return "(neg " & expr.unaryOp.operand.asSexp() & ")"
   of ekNot:
@@ -293,10 +326,16 @@ proc asSexp*(expr: Expression): string =
     return
       "(| " & expr.binaryOp.left.asSexp() & " " & expr.binaryOp.right.asSexp() & ")"
   of ekAssign:
-    let localStr = if expr.assign.isLocal: "local " else: ""
     return
-      "(" & localStr & "set " & expr.assign.lvalue.asSexp() & " " &
-      expr.assign.expr.asSexp() & " : " & $expr.assign.typ & ")"
+      "(" & "set " & expr.assign.lvalue.asSexp() & " " & expr.assign.expr.asSexp() & ")"
+  of ekImmutableDecl:
+    return
+      "(immutable-decl " & expr.immutableDecl.lvalue.asSexp() & " " &
+      expr.immutableDecl.expr.asSexp() & " : " & $expr.immutableDecl.typ & ")"
+  of ekMutableDecl:
+    return
+      "(mutable-decl " & expr.mutableDecl.lvalue.asSexp() & " " &
+      expr.mutableDecl.expr.asSexp() & " : " & $expr.mutableDecl.typ & ")"
   of ekFuncCall:
     var argsStr = ""
     for i, arg in expr.functionCall.params:
@@ -309,11 +348,11 @@ proc asSexp*(expr: Expression): string =
     for i, param in expr.functionDef.params:
       if i > 0:
         paramsStr.add(" ")
-      paramsStr.add(param.name)
+      paramsStr.add(param.name & ": " & $param.typ)
     return "(lambda (" & paramsStr & ") " & expr.functionDef.body.asSexp() & ")"
   of ekVector:
     var elementsStr = ""
-    for i in 0 ..< expr.vector.size:
+    for i in 0 ..< expr.vector.len:
       if i > 0:
         elementsStr.add(" ")
       elementsStr.add(expr.vector[i].asSexp())

@@ -9,17 +9,17 @@ use(std::{assert_eq})
 
 # [1] Variable Assignment Tests
 "1. Variable Assignment Tests"
-x = 42
+x := 42
 assert_eq(x, 42, "Simple variable assignment", "✓ Simple variable assignment")
 
-y = 3.14
+y := 3.14
 assert_eq(y, 3.14, "Float variable assignment", "✓ Float variable assignment")
 
-z = true
+z := true
 assert_eq(z, true, "Boolean variable assignment", "✓ Boolean variable assignment")
 
 # Chained assignment
-a = b = c = 5
+a := b := c := 5
 assert_eq(a, 5, "Chained assignment - variable a", "✓ Chained assignment a")
 assert_eq(b, 5, "Chained assignment - variable b", "✓ Chained assignment b")
 assert_eq(c, 5, "Chained assignment - variable c", "✓ Chained assignment c")
@@ -28,17 +28,17 @@ assert_eq(c, 5, "Chained assignment - variable c", "✓ Chained assignment c")
 
 # [2] Block Expression Tests
 "2. Block Expression Tests"
-blockResult = {
-  localA = 10
-  localB = 20
+blockResult := {
+  localA := 10
+  localB := 20
   localA + localB
 }
 assert_eq(blockResult, 30, "Block expression returns last value", "✓ Block returns last value")
 
-nestedBlock = {
-  outer = 5
-  inner = {
-    nested = 3
+nestedBlock := {
+  outer := 5
+  inner := {
+    nested := 3
     outer + nested
   }
   inner * 2
@@ -49,15 +49,15 @@ assert_eq(nestedBlock, 16, "Nested block expression", "✓ Nested block expressi
 
 # [3] If Expression Tests
 "3. If Expression Tests"
-conditionalResult = if(true) "yes" else "no"
+conditionalResult := if(true) "yes" else "no"
 assert_eq(conditionalResult, "yes", "If expression with true condition", "✓ If true condition")
 
-conditionalResult2 = if(false) "yes" else "no"
+conditionalResult2 := if(false) "yes" else "no"
 assert_eq(conditionalResult2, "no", "If expression with false condition", "✓ If false condition")
 
 # Multi-branch if
-grade = 85
-result = if(grade >= 90) "A" \
+grade := 85
+result := if(grade >= 90) "A" \
          elif(grade >= 80) "B" \
          elif(grade >= 70) "C" \
          else "F"
@@ -67,9 +67,9 @@ assert_eq(result, "B", "Multi-branch if expression", "✓ Multi-branch if")
 
 # [4] Local Variable Tests
 "4. Local Variable Tests"
-globalVar = 100
-localTest = {
-  local globalVar = 50
+globalVar := 100
+localTest := {
+  globalVar := 50
   globalVar * 2
 }
 assert_eq(localTest, 100, "Local variable shadows global", "✓ Local shadows global")
@@ -79,7 +79,7 @@ assert_eq(globalVar, 100, "Global variable unchanged after local scope", "✓ Gl
 
 # [5] Expression Continuations
 "5. Expression Continuation Tests"
-longExpression = 1 + 2 + 3 + \
+longExpression := 1 + 2 + 3 + \
                  4 + 5 + 6 + \
                  7 + 8 + 9
 assert_eq(longExpression, 45, "Multi-line expression with backslash", "✓ Multi-line expression")

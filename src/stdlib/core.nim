@@ -157,7 +157,7 @@ proc print*(args: openArray[Value], invoker: FnInvoker): Value =
     result = args[0]
   else:
     result = Value(kind: vkVector)
-    result.vector = newVector[Value](args.len)
+    result.vector = newVector(args.len)
     for i in 0 ..< args.len:
       result.vector[i] = args[i]
 
@@ -235,7 +235,7 @@ proc vec*(args: openArray[Value], invoker: FnInvoker): Value =
 
   # Initialize the result as a vector
   result = Value(kind: vkVector)
-  result.vector = newVector[Value](size.number.integer)
+  result.vector = newVector(size.number.integer)
 
   if args[1].kind == vkFunction or args[1].kind == vkNativeFunc:
     # If the second argument is a function, apply it to each index

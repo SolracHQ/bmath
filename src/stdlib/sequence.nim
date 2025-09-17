@@ -168,7 +168,7 @@ proc collect*(s: Value): Value =
 
   # Create a vector of the right size and populate it
   result = Value(kind: vkVector)
-  result.vector = newVector[Value](elements.len)
+  result.vector = newVector(elements.len)
 
   # Fill the vector with collected elements
   for i in 0 ..< elements.len:
@@ -219,7 +219,7 @@ proc zip*(seq1: Value, seq2: Value): Value =
 
       # Pair them in a vector
       result = Value(kind: vkVector)
-      result.vector = newVector[Value](2)
+      result.vector = newVector(2)
       result.vector[0] = val1
       result.vector[1] = val2,
   )

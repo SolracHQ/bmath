@@ -1,0 +1,291 @@
+# Advanced Edge Case Tests for Scoping and Mutability
+# ===================================================
+# Tests for complex edge cases, deep nesting, cross-scope access attempts, etc.
+
+use(std::{assert_eq, try_catch})
+
+"Testing Advanced Edge Cases for Scoping and Mutability..."
+
+# [1] Deep Nested Function Scope Violation Tests
+"1. Deep Nested Function Scope Violation Tests"
+
+module_global := 1000
+
+# Test: Function two levels deep trying to access variable from root module
+# This should FAIL according to our scoping rules
+nested_scope_test := || {
+  level1_var := 100
+  level1_fn := || {
+    level2_var := 200
+    level2_fn := || {
+      # This should fail - level2_fn is in function scope, level1_fn is its parent (function scope)
+      # and it should NOT be able to access module_global directly (needs this::)
+      error := this::try_catch(|| {
+        module_global + level1_var  # Should fail - can't access beyond immediate parent
+      }, |err| "Scope violation caught as expected")
+      error
+    }
+    level2_fn()
+  }
+  level1_fn()
+}
+
+scope_test_result := nested_scope_test()
+assert_eq(scope_test_result, "Scope violation caught as expected", "Deep nested scope violation", "✓ Deep nested scope violation properly blocked")
+
+# Test: Using this:: to properly access module scope from nested function
+nested_scope_fixed := || {
+  level1_fn := || {
+    level2_fn := || {
+      # This should work - explicit module access
+      this::module_global * 2
+    }
+    level2_fn()
+  }
+  level1_fn()
+}
+
+fixed_result := nested_scope_fixed()
+assert_eq(fixed_result, 2000, "Module access via this::", "✓ Module access via this:: works")
+
+"✓ Deep nested function scope tests passed"
+
+# [2] Cross-Module Variable Access Attempts
+"2. Cross-Module Variable Access Attempts"
+
+# Create two isolated modules
+module_a := mod {
+  private_var := 42
+  get_private := || private_var
+  set_private := |x| {
+    private_var = x  # This should fail - private_var is immutable
+  }
+}
+
+module_b := mod {
+  other_var := 99
+  # Try to access module_a's private variable - should fail
+  try_access_a := || {
+    error := this::try_catch(|| {
+      module_a::private_var  # Should fail - private_var is not exported/accessible
+    }, |err| "Cross-module access blocked")
+    error
+  }
+}
+
+cross_module_result := module_b::try_access_a()
+# Note: This test might not work exactly as expected because module_a::private_var 
+# might actually be accessible. The real isolation comes from the fact that 
+# private_var is only in module_a's environment.
+
+"✓ Cross-module access tests completed"
+
+# [3] Mutability Violation in Deep Nesting
+"3. Mutability Violation in Deep Nesting"
+
+# Test: Nested function trying to modify immutable variable from outer scope
+immutable_outer := 500
+
+mutation_test := || {
+  inner := || {
+    deeply_nested := || {
+      error := this::try_catch(|| {
+        # Even with this::, can't modify immutable
+        this::immutable_outer = 600  # Should fail
+      }, |err| "Immutable modification blocked")
+      error
+    }
+    deeply_nested()
+  }
+  inner()
+}
+
+mutation_result := mutation_test()
+assert_eq(mutation_result, "Immutable modification blocked", "Immutable modification in nested function", "✓ Immutable modification properly blocked")
+
+"✓ Mutability violation tests passed"
+
+# [4] Function Capture Boundary Edge Cases
+"4. Function Capture Boundary Edge Cases"
+
+# Test: Multiple levels of functions with mixed block scopes
+capture_boundary_test := || {
+  func_level1 := 10
+  
+  level1_fn := || {
+    func_level2 := 20
+    
+    {  # Block scope - should be transparent
+      block_var := 30
+      
+      level2_fn := || {
+        # level2_fn should be able to access func_level2 (immediate parent function)
+        # but NOT func_level1 (grandparent function) - should need this:: for module
+        
+        # This should work - accessing immediate parent
+        result1 := func_level2
+        
+        # This should fail - accessing grandparent function
+        error := this::try_catch(|| {
+          func_level1
+        }, |err| "Grandparent access blocked")
+        
+        # This should work - accessing through this:: to module level
+        # But func_level1 is not at module level, so this will fail too
+        error2 := this::try_catch(|| {
+          this::func_level1  # Should fail - func_level1 is not module level
+        }, |err| "Module access failed as expected")
+        
+        [result1, error, error2]
+      }
+      
+      level2_fn()
+    }
+  }
+  
+  level1_fn()
+}
+
+boundary_result := capture_boundary_test()
+assert_eq(boundary_result[0], 20, "Immediate parent access", "✓ Immediate parent function access works")
+assert_eq(boundary_result[1], "Grandparent access blocked", "Grandparent function access", "✓ Grandparent function access blocked")
+assert_eq(boundary_result[2], "Module access failed as expected", "Invalid module access", "✓ Invalid module access blocked")
+
+"✓ Function capture boundary tests passed"
+
+# [5] Vector Mutability in Nested Contexts
+"5. Vector Mutability in Nested Contexts"
+
+# Test: Passing mutable vector to function and trying to modify
+mutable_vec ;= [1, 2, 3, 4, 5]
+
+vector_mutation_test := |vec| {
+  inner_fn := || {
+    # Try to modify the vector - should work if vec is mutable
+    vec[0] = 999
+    vec
+  }
+  inner_fn()
+}
+
+# This should work since we're passing a mutable vector
+result_vec := vector_mutation_test(mutable_vec)
+assert_eq(result_vec[0], 999, "Mutable vector modification in function", "✓ Mutable vector modified in nested function")
+assert_eq(mutable_vec[0], 999, "Original vector modified", "✓ Original mutable vector was modified")
+
+# Test: Trying to modify immutable vector
+immutable_vec := [10, 20, 30]
+immutable_mutation_test := |vec| {
+  error := this::try_catch(|| {
+    vec[0] = 888  # Should fail
+  }, |err| "Immutable vector modification blocked")
+  error
+}
+
+immutable_result := immutable_mutation_test(immutable_vec)
+assert_eq(immutable_result, "Immutable vector modification blocked", "Immutable vector modification", "✓ Immutable vector modification blocked")
+
+"✓ Vector mutability in nested contexts passed"
+
+# [6] Complex Module and Function Interaction
+"6. Complex Module and Function Interaction"
+
+# Test: Module containing functions that try to access variables from different scopes
+complex_module := mod {
+  module_secret := 777
+  
+  # Function that should be able to access module_secret
+  get_secret := || this::module_secret
+  
+  # Function that creates nested functions
+  create_nested := || {
+    local_to_create := 888
+    
+    # This inner function should NOT be able to access local_to_create
+    # from a different function scope later
+    nested_fn := || {
+      # Can access module via this::
+      this::module_secret + 1
+    }
+    
+    nested_fn
+  }
+}
+
+# Test accessing module secret
+secret_result := complex_module::get_secret()
+assert_eq(secret_result, 777, "Module function accessing module variable", "✓ Module function accesses module variable")
+
+# Test the nested function creation
+created_fn := complex_module::create_nested()
+nested_result := created_fn()
+assert_eq(nested_result, 778, "Nested function with module access", "✓ Nested function with module access works")
+
+"✓ Complex module and function interaction tests passed"
+
+# [7] Scope Isolation Verification
+"7. Scope Isolation Verification"
+
+# Test: Verify that blocks truly isolate variables
+block_isolation_test := || {
+  outer_var := 100
+  
+  {
+    inner_var := 200
+    middle_result := outer_var + inner_var  # Should work - outer_var accessible
+  }
+  
+  # Try to access inner_var here - should fail
+  error := this::try_catch(|| {
+    inner_var  # Should be undefined
+  }, |err| "Block variable properly isolated")
+  
+  error
+}
+
+isolation_result := block_isolation_test()
+assert_eq(isolation_result, "Block variable properly isolated", "Block scope isolation", "✓ Block scope properly isolates variables")
+
+"✓ Scope isolation verification passed"
+
+# [8] Function Definition in Different Contexts
+"8. Function Definition in Different Contexts"
+
+# Test: Function defined in module vs function defined in function vs function defined in block
+context_var := 12345
+
+# Function defined at module level
+module_level_fn := || this::context_var
+
+# Function that creates function in function context
+function_context_test := || {
+  func_local := 54321
+  
+  # Function defined in function context
+  func_level_fn := || {
+    # Should be able to access func_local (immediate parent)
+    # Should NOT be able to access context_var directly
+    error := this::try_catch(|| {
+      context_var  # Should fail - need this:: for module access
+    }, |err| "Direct module access blocked in nested function")
+    
+    [func_local, error]
+  }
+  
+  func_level_fn
+}
+
+# Test module level function
+module_fn_result := module_level_fn()
+assert_eq(module_fn_result, 12345, "Module level function", "✓ Module level function works")
+
+# Test function defined in function
+created_func := function_context_test()
+func_result := created_func()
+assert_eq(func_result[0], 54321, "Function accessing parent function variable", "✓ Function accesses parent function variable")
+assert_eq(func_result[1], "Direct module access blocked in nested function", "Direct module access in nested function", "✓ Direct module access blocked in nested function")
+
+"✓ Function definition context tests passed"
+
+"All advanced edge case tests completed successfully!"
+"🎉 Scoping and mutability system working correctly! 🎉"

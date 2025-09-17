@@ -1,14 +1,26 @@
 {
   "name": "bmath-vscode",
   "displayName": "BMath Language Support",
-  "description": "Support for the BMath language including syntax highlighting, type inference, and more.",
-  "version": "0.1.0",
+  "description": "Complete language support for BMath including syntax highlighting, diagnostics, hover information, auto-completion, and more.",
+  "version": "0.12.0",
   "publisher": "SolracHQ",
   "engines": {
-    "vscode": "^1.50.0"
+    "vscode": "^1.74.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters",
+    "Formatters",
+    "Other"
+  ],
+  "keywords": [
+    "bmath",
+    "mathematics",
+    "calculator",
+    "math",
+    "functional",
+    "vector",
+    "sequence"
   ],
   "activationEvents": [
     "onLanguage:bmath"
@@ -22,15 +34,31 @@
     "commands": [
       {
         "command": "bmath.showServerStatus",
-        "title": "BMath: Show Server Status",
+        "title": "Show LSP Server Status",
+        "category": "BMath"
+      },
+      {
+        "command": "bmath.restartServer",
+        "title": "Restart Language Server", 
+        "category": "BMath"
+      },
+      {
+        "command": "bmath.runDiagnostics",
+        "title": "Run Static Analysis",
         "category": "BMath"
       }
     ],
     "languages": [
       {
         "id": "bmath",
-        "extensions": [".bm"],
-        "aliases": ["BMath", "bmath"]
+        "extensions": [
+          ".bm"
+        ],
+        "aliases": [
+          "BMath",
+          "bmath"
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "snippets": [
@@ -45,16 +73,42 @@
         "scopeName": "source.bmath",
         "path": "./syntaxes/bmath.tmLanguage.json"
       }
-    ]
-  },
-  "configuration": {
-    "type": "object",
-    "title": "BMath",
-    "properties": {
-      "bmath.lspPath": {
-        "type": "string",
-        "description": "Path to the external BMath LSP server executable. If empty the extension will try workspace/bin/lsp or the extension's bundled bin/lsp.",
-        "default": ""
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "BMath Configuration",
+      "properties": {
+        "bmath.lspPath": {
+          "type": "string",
+          "description": "Path to the BMath LSP server executable. Leave empty to auto-detect from workspace/bin/lsp or extension bundle.",
+          "default": "",
+          "scope": "resource"
+        },
+        "bmath.enableDiagnostics": {
+          "type": "boolean",
+          "description": "Enable real-time diagnostics and error checking.",
+          "default": true,
+          "scope": "resource"
+        },
+        "bmath.enableHover": {
+          "type": "boolean", 
+          "description": "Enable hover information for symbols and expressions.",
+          "default": true,
+          "scope": "resource"
+        },
+        "bmath.enableCompletion": {
+          "type": "boolean",
+          "description": "Enable auto-completion for keywords, functions, and operators.",
+          "default": true,
+          "scope": "resource"
+        },
+        "bmath.logLevel": {
+          "type": "string",
+          "description": "Set the logging level for the language server.",
+          "default": "info",
+          "enum": ["error", "warn", "info", "debug"],
+          "scope": "resource"
+        }
       }
     }
   },

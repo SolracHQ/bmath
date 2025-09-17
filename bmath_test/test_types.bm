@@ -17,10 +17,10 @@ assert_eq(type([1, 2, 3]), Vec, "type([1,2,3]) is Vec", "✓ type([1,2,3]) is Ve
 assert_eq(type(|x| x + 1), Function, "type(lambda) is Function", "✓ type(lambda) is Function")
 
 # Test complex numbers
-complexNum = 3 + 4i
+complexNum := 3 + 4i
 assert_eq(type(complexNum), Complex, "type(3+4i) is Complex", "✓ type(3+4i) is Complex")
 
-pureImaginary = 5i
+pureImaginary := 5i
 assert_eq(type(pureImaginary), Complex, "type(5i) is Complex", "✓ type(5i) is Complex")
 
 "✓ Basic type checking tests passed"
@@ -42,12 +42,12 @@ assert_eq(5i is Real, false, "Wrong type 'is' check")
 # [3] Type Conversion - Arrow Operator
 "3. Type Conversion - Arrow Operator"
 # Integer to real
-intToReal = 42 -> Real
+intToReal := 42 -> Real
 assert_eq(intToReal, 42.0, "Integer to real conversion")
 assert_eq(type(intToReal), Real, "Converted value has real type")
 
 # Real to integer (truncation)
-realToInt = 3.14 -> Int
+realToInt := 3.14 -> Int
 assert_eq(realToInt, 3, "Real to Int conversion")
 assert_eq(type(realToInt), Int, "Converted value has Int type")
 
@@ -116,13 +116,13 @@ assert_eq((|x| x) is Any, true, "Function is Any")
 # [8] Type Promotion in Operations
 "8. Type Promotion in Operations"
 # Test automatic type promotion in arithmetic
-intPlusReal = 5 + 3.14
+intPlusReal := 5 + 3.14
 assert_eq(type(intPlusReal), Real, "int + Real promotes to Real")
 
-realPlusComplex = 3.14 + 2i
+realPlusComplex := 3.14 + 2i
 assert_eq(type(realPlusComplex), Complex, "Real + Complex promotes to Complex")
 
-intPlusComplex = 5 + 3i
+intPlusComplex := 5 + 3i
 assert_eq(type(intPlusComplex), Complex, "Int + Complex promotes to Complex")
 
 "✓ Type promotion tests passed"
@@ -130,11 +130,11 @@ assert_eq(type(intPlusComplex), Complex, "Int + Complex promotes to Complex")
 # [9] Type-specific Operations
 "9. Type-specific Operations"
 # Test operations that work only on specific types
-numericVector = [1, 2, 3]
+numericVector := [1, 2, 3]
 assert_eq(type(numericVector->sum), Int, "Vector sum type")
 
 # Test vector operations
-dotResult = [1, 2] -> dot([3, 4])
+dotResult := [1, 2] -> dot([3, 4])
 assert_eq(type(dotResult), Int, "Dot product result type")
 
 "✓ Type-specific operation tests passed"
@@ -153,11 +153,11 @@ assert_error(|| type(), "type() with no arguments should fail")
 
 # [11] Function Type Testing
 "11. Function Type Testing"
-testFunc = |x, y| x + y
+testFunc := |x, y| x + y
 assert_eq(type(testFunc), Function, "Lambda has Function type")
 
 # Test that functions are first-class
-funcInVar = testFunc
+funcInVar := testFunc
 assert_eq(type(funcInVar), Function, "Function stored in variable")
 assert_eq(funcInVar(3, 4), 7, "Function variable invocation")
 

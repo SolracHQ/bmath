@@ -1,39 +1,242 @@
 {
-  "BMath Function": {
-    "prefix": "bmathFunc",
+  "Immutable Variable Declaration": {
+    "prefix": "let",
     "body": [
-      "function ${1:functionName}(${2:params}) {",
-      "    $0",
+      "${1:variable} := ${2:value}$0"
+    ],
+    "description": "Declare an immutable variable"
+  },
+  "Mutable Variable Declaration": {
+    "prefix": "mut",
+    "body": [
+      "${1:variable} ;= ${2:value}$0"
+    ],
+    "description": "Declare a mutable variable"
+  },
+  "Function Literal": {
+    "prefix": "fn",
+    "body": [
+      "|${1:param}| ${2:body}$0"
+    ],
+    "description": "Create a function literal"
+  },
+  "Multi-Parameter Function": {
+    "prefix": "fnm",
+    "body": [
+      "|${1:param1}, ${2:param2}| ${3:body}$0"
+    ],
+    "description": "Create a multi-parameter function literal"
+  },
+  "Typed Function Parameter": {
+    "prefix": "fnt",
+    "body": [
+      "|${1:param}: ${2:Type}| ${3:body}$0"
+    ],
+    "description": "Create a function literal with typed parameter"
+  },
+  "If Expression": {
+    "prefix": "if",
+    "body": [
+      "if(${1:condition}) ${2:then_expr} else ${3:else_expr}$0"
+    ],
+    "description": "Create an if expression"
+  },
+  "Multi-line If Expression": {
+    "prefix": "ifm",
+    "body": [
+      "if(${1:condition}) \\",
+      "  ${2:then_expr} \\",
+      "else \\",
+      "  ${3:else_expr}$0"
+    ],
+    "description": "Create a multi-line if expression with backslashes"
+  },
+  "If-Elif-Else Expression": {
+    "prefix": "ife",
+    "body": [
+      "if(${1:condition1}) \\",
+      "  ${2:then_expr1} \\",
+      "elif(${3:condition2}) \\",
+      "  ${4:then_expr2} \\",
+      "else \\",
+      "  ${5:else_expr}$0"
+    ],
+    "description": "Create an if-elif-else expression with backslashes"
+  },
+  "Block Expression": {
+    "prefix": "block",
+    "body": [
+      "{",
+      "  ${1:expressions}$0",
       "}"
     ],
-    "description": "Create a new BMath function"
+    "description": "Create a block expression"
   },
-  "BMath If Expression": {
-    "prefix": "bmathIf",
+  "Vector Literal": {
+    "prefix": "vec",
     "body": [
-      "if(${1:condition}) {",
-      "    $2",
-      "} else {",
-      "    $3",
+      "[${1:item1}, ${2:item2}, ${3:item3}]$0"
+    ],
+    "description": "Create a vector literal"
+  },
+  "Empty Vector": {
+    "prefix": "vecempty",
+    "body": [
+      "[]$0"
+    ],
+    "description": "Create an empty vector"
+  },
+  "Range Vector": {
+    "prefix": "range",
+    "body": [
+      "range(${1:start}, ${2:end})$0"
+    ],
+    "description": "Create a range of numbers"
+  },
+  "Linspace Vector": {
+    "prefix": "linspace", 
+    "body": [
+      "linspace(${1:start}, ${2:end}, ${3:count})$0"
+    ],
+    "description": "Create linearly spaced numbers"
+  },
+  "Module Definition": {
+    "prefix": "mod",
+    "body": [
+      "mod ${1:name} {",
+      "  ${2:body}$0",
       "}"
     ],
-    "description": "Create a new BMath if expression"
+    "description": "Create a module definition"
   },
-  "BMath Vector": {
-    "prefix": "bmathVec",
+  "Anonymous Module": {
+    "prefix": "amod",
     "body": [
-      "[${1:item1}, ${2:item2}, ${3:item3}]",
-      "$0"
+      "mod {",
+      "  ${1:body}$0",
+      "}"
     ],
-    "description": "Create a new BMath vector"
+    "description": "Create an anonymous module"
   },
-  "BMath Sequence": {
-    "prefix": "bmathSeq",
+  "Use Statement": {
+    "prefix": "use",
     "body": [
-      "sequence(${1:length}, |${2:item}| {",
-      "    $0",
-      "})"
+      "use(${1:module})$0"
     ],
-    "description": "Create a new BMath sequence"
+    "description": "Import a module"
+  },
+  "Use with Specific Symbols": {
+    "prefix": "uses",
+    "body": [
+      "use(${1:module}::{${2:symbol1}, ${3:symbol2}})$0"
+    ],
+    "description": "Import specific symbols from a module"
+  },
+  "Use with Alias": {
+    "prefix": "useas",
+    "body": [
+      "use(${1:module} as ${2:alias})$0"
+    ],
+    "description": "Import a module with an alias"
+  },
+  "Chain Expression": {
+    "prefix": "chain",
+    "body": [
+      "${1:value} -> ${2:function}$0"
+    ],
+    "description": "Create a chain expression with arrow operator"
+  },
+  "Multi-step Chain": {
+    "prefix": "chainm",
+    "body": [
+      "${1:value} \\",
+      "  -> ${2:function1} \\",
+      "  -> ${3:function2}$0"
+    ],
+    "description": "Create a multi-step chain expression with backslashes"
+  },
+  "Map Operation": {
+    "prefix": "map",
+    "body": [
+      "${1:collection} -> map(|${2:item}| ${3:transformation})$0"
+    ],
+    "description": "Map over a collection"
+  },
+  "Filter Operation": {
+    "prefix": "filter",
+    "body": [
+      "${1:collection} -> filter(|${2:item}| ${3:condition})$0"
+    ],
+    "description": "Filter a collection"
+  },
+  "Reduce Operation": {
+    "prefix": "reduce",
+    "body": [
+      "${1:collection} -> reduce(|${2:acc}, ${3:item}| ${4:operation}, ${5:initial})$0"
+    ],
+    "description": "Reduce a collection"
+  },
+  "Assert Statement": {
+    "prefix": "assert",
+    "body": [
+      "assert(${1:condition}, ${2:\"message\"})$0"
+    ],
+    "description": "Create an assertion"
+  },
+  "Assert Equal": {
+    "prefix": "asserteq",
+    "body": [
+      "assert_eq(${1:actual}, ${2:expected}, ${3:\"message\"})$0"
+    ],
+    "description": "Assert two values are equal"
+  },
+  "Try-Catch Expression": {
+    "prefix": "try",
+    "body": [
+      "try_catch(${1:expression}, ${2:\"fallback_message\"})$0"
+    ],
+    "description": "Try an expression with error handling"
+  },
+  "Print Statement": {
+    "prefix": "print",
+    "body": [
+      "print(${1:value})$0"
+    ],
+    "description": "Print a value"
+  },
+  "Print Line": {
+    "prefix": "println",
+    "body": [
+      "println(${1:value})$0"
+    ],
+    "description": "Print a value with newline"
+  },
+  "Complex Number": {
+    "prefix": "complex",
+    "body": [
+      "${1:real} + ${2:imaginary}i$0"
+    ],
+    "description": "Create a complex number"
+  },
+  "Pure Imaginary": {
+    "prefix": "imag",
+    "body": [
+      "${1:value}i$0"
+    ],
+    "description": "Create a pure imaginary number"
+  },
+  "Mathematical Constants": {
+    "prefix": "const",
+    "body": [
+      "${1|pi,e,i,PI,E,I|}$0"
+    ],
+    "description": "Insert mathematical constant"
+  },
+  "Type Annotation": {
+    "prefix": "type",
+    "body": [
+      "${1:variable}: ${2|Int,Real,Complex,Bool,Vec,Seq,Function,String,Module,Any,Number,Type|}$0"
+    ],
+    "description": "Add type annotation"
   }
 }

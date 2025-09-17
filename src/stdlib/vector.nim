@@ -100,7 +100,7 @@ proc merge*(a, b: Value): Value =
     )
 
   result = Value(kind: vkVector)
-  result.vector = newVector[Value](a.vector.size + b.vector.size)
+  result.vector = newVector(a.vector.size + b.vector.size)
 
   # Add all elements from first vector
   for i in 0 ..< a.vector.size:
@@ -209,7 +209,7 @@ proc slice*(args: openArray[Value], invoker: FnInvoker): Value =
   # Create the result vector
   result = Value(kind: vkVector)
   # Create a new vector with the slice elements
-  result.vector = newVector[Value](endIndex - startIndex)
+  result.vector = newVector(endIndex - startIndex)
 
   # Copy elements from source to result
   for i in 0 ..< (endIndex - startIndex):

@@ -48,6 +48,10 @@ proc `$`*(token: Token): string =
     return "'%'"
   of tkAssign:
     return "'='"
+  of tkImmutableDecl:
+    return "':='"
+  of tkMutableDecl:
+    return "';='"
   of tkChain:
     return "'->'"
   # Boolean operators
@@ -103,10 +107,10 @@ proc `$`*(token: Token): string =
     return "else"
   of tkElif:
     return "elif"
-  of tkLocal:
-    return "local"
   of tkAs:
     return "as"
+  of tkThis:
+    return "this"
   # Types
   of tkType:
     return $token.value

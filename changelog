@@ -1,5 +1,93 @@
 # Changelog
 
+## Version 0.12.0
+
+### Core Language Features
+
+- **Declaration System Redesign**: Completely overhauled variable declaration with explicit mutability control:
+  - `:=` for immutable variable declarations (default behavior)
+  - `;=` for mutable variable declarations  
+  - `=` for assignment (only works with mutable variables)
+  - Immutable-by-default design reflects mathematical nature of the language
+
+- **Module System Implementation**: Added comprehensive module system with first-class module values:
+  - Module declaration syntax: `mod name { ... }` and anonymous `mod { ... }`
+  - Module member access: `module::member` with chainable syntax
+  - Advanced import system with `use()` expressions supporting:
+    - Basic imports: `use("module") as name`
+    - Selective imports: `use(module::{a, b as alias})`
+    - Automatic binding for imported identifiers
+    - Relative/filename imports: `use("../path/to/module.bm")`
+  - Module namespace isolation and scoping
+  - File-as-module semantics with `.bm` extension inference
+
+- **Scoping System Overhaul**: Redesigned variable scoping with explicit module access:
+  - Functions create isolated scopes by default
+  - Block scopes `{ }` remain non-isolating for backward compatibility
+  - Module-level variable access requires explicit `this::` syntax from within functions
+  - Implicit closure capture from immediate parent function scope
+  - Clear separation between local, function, and module scopes
+
+### Enhanced Error System
+
+- **Improved Diagnostics**: Enhanced error reporting and diagnostic system:
+  - Better error messages with precise location information
+  - Improved type error reporting with expected vs actual types
+  - Enhanced parsing error messages with context
+  - Better handling of lexer errors with character position details
+
+- **LSP Integration**: Complete rewrite of Language Server Protocol implementation:
+  - Real-time diagnostics integration without memory-intensive caching
+  - Proper error propagation from lexer/parser/interpreter to LSP
+  - Enhanced hover information with type details
+  - Improved code completion with context-aware suggestions
+  - Better handling of multi-line expressions with backslash continuation
+
+### Development Tooling
+
+- **VSCode Extension v0.12.0**: Completely updated VS Code extension:
+  - Updated syntax highlighting with actual stdlib functions
+  - Added support for new declaration syntax (`:=`, `;=`)
+  - Multi-line expression support with backslash continuation (`\`)
+  - Code snippets updated with real BMath constants and functions
+  - Modern Language Server Protocol client implementation
+  - Enhanced diagnostic display and error reporting
+
+- **Parser Infrastructure**: Major parser improvements:
+  - Pratt parser implementation for better precedence handling
+  - Modular parser optimization system with toggleable passes
+  - S-expression output for deterministic parser testing
+  - Improved tokenization with Unicode/UTF-8 support preparation
+  - Better handling of line continuation with backslash syntax
+
+- **Code Quality**: Enhanced development experience:
+  - Formatter module for BMath source formatting
+  - Dedicated `optimization` module for optimization passes
+  - Refactored core operations into `types/value` module
+  - Reduced circular dependencies in core modules
+  - Comprehensive test coverage for new features
+
+### Standard Library & Type System
+
+- **Type System Integration**: Enhanced type system with module support:
+  - Module type representation as first-class values
+  - Type checking integration with new scoping system
+  - Better type error messages with context
+  - Type annotations support for function parameters
+
+- **Core Operations Refactor**: Reorganized standard library:
+  - Arithmetic, comparison, and vector operations as methods on Value types
+  - Reduced stdlib dependencies from core modules
+  - Cleaner separation between core and stdlib functionality
+  - Updated stdlib to use refactored core operations
+
+### Breaking Changes
+
+- **Declaration Syntax**: All variable declarations now require `:=` (immutable) or `;=` (mutable)
+- **Module Access**: Module-level variables in functions require `this::` prefix
+- **Scoping**: Function scopes are isolated by default (affects variable capture)
+- **Assignment**: `=` only works with variables declared using `;=`
+
 ## Version 0.11.0
 
 - Runtime types: added a runtime type system. Types are first-class values, there are helpers for inspecting types at runtime, and the `is` operator enables clear runtime type checks.

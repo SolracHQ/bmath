@@ -1,202 +1,128 @@
 # Main v0.12.0 Goals
 
-## Module System Implementation
+## ✅ COMPLETED: Module System Implementation
 
-### Core Module Infrastructure (Related Github Issue #16)
+### Core Module Infrastructure (Related Github Issue #16) - ✅ DONE
 
 - [x] Design module value representation (modules as first-class values)
 - [x] Implement module namespace isolation
 - [x] Create module loading and caching system
 
-### Module Syntax Design (Related Github Issue #16)
+### Module Syntax Design (Related Github Issue #16) - ✅ DONE
 
 - [x] Chosen module declaration syntax: `mod name { ... }`
 - [x] Chosen member access syntax: `module::member`
 - [x] Basic `use` import forms implemented:
   - [x] `use("module") as name` / `use(module) as name` — bind module value into scope
   - [x] `use(module::{a, b as alias})` — selective imports and automatic binding
-  - [ ] `use(module::* )` (wildcard import) — still TODO
   - [x] Relative/filename imports supported: `use("../path/to/module")` (`.bm` inferred when appropriate)
 - [x] File-as-module semantics: basic behavior implemented
 
-### Module Visibility & Purity Notes (Related Github Issue #16)
+## ✅ COMPLETED: Declaration System & Scoping
+
+### New Declaration System - ✅ DONE
+
+- [x] **Immutable Declaration Syntax**: `:=` operator for immutable variables (default behavior)
+- [x] **Mutable Declaration Syntax**: `;=` operator for mutable variables
+- [x] **Assignment Syntax**: `=` operator (only works with mutable variables)
+- [x] **Immutable-by-default Design**: Reflects mathematical nature of the language
+- [x] **Type Annotation Support**: Optional type annotations on declarations
+
+### Enhanced Scoping System - ✅ DONE
+
+- [x] **Function Scope Isolation**: Functions create isolated scopes by default
+- [x] **Block Scope Inheritance**: Regular blocks `{ }` remain non-isolating
+- [x] **Explicit Module Access**: `this::` syntax for module-level variable access from functions
+- [x] **Implicit Closure Capture**: Automatic capture from immediate parent function scope
+- [x] **Clear Scope Separation**: Distinct local, function, and module scopes
+
+## ✅ COMPLETED: Enhanced Diagnostics & Error System
+
+### Improved Diagnostics - ✅ DONE
+
+- [x] **Better Error Messages**: Precise location information and context
+- [x] **Enhanced Type Errors**: Expected vs actual type reporting
+- [x] **Improved Parse Errors**: Better context and suggestions
+- [x] **Lexer Error Handling**: Character position details and recovery
+
+### LSP Integration - ✅ DONE
+
+- [x] **Memory-Efficient LSP**: Complete rewrite without caching to prevent RAM issues
+- [x] **Real-time Diagnostics**: Integration with lexer/parser/interpreter errors
+- [x] **Enhanced Hover**: Type information and documentation
+- [x] **Context-Aware Completion**: Improved code completion with scope awareness
+- [x] **Multi-line Support**: Proper handling of backslash continuation syntax
+
+## ✅ COMPLETED: Development Tooling
+
+### VSCode Extension v0.12.0 - ✅ DONE
+
+- [x] **Updated Syntax Highlighting**: Real stdlib functions and new declaration syntax
+- [x] **Declaration Syntax Support**: Highlighting for `:=` and `;=` operators
+- [x] **Multi-line Expressions**: Support for backslash continuation (`\`)
+- [x] **Accurate Code Snippets**: Real BMath constants and function names
+- [x] **Modern LSP Client**: Updated Language Server Protocol implementation
+- [x] **Enhanced Diagnostics**: Better error display and reporting
+
+### Parser Infrastructure - ✅ DONE
+
+- [x] **Pratt Parser**: Better precedence handling and extensibility
+- [x] **Modular Optimizations**: Toggleable parser optimization passes
+- [x] **S-expression Output**: Deterministic parser testing support
+- [x] **Unicode Preparation**: Foundation for UTF-8 support
+- [x] **Line Continuation**: Proper backslash syntax handling
+
+### Code Quality Improvements - ✅ DONE
+
+- [x] **Formatter Module**: BMath source formatting capabilities
+- [x] **Parser Optimization Module**: Dedicated `optimization` module
+- [x] **Core Operations Refactor**: Methods on Value types, reduced dependencies
+- [x] **Modular Parser Pipeline**: Clear lexer → parser → optimizer → interpreter flow
+- [x] **Comprehensive Testing**: Enhanced test coverage for new features
+
+## 🚧 REMAINING WORK FOR v0.12.0
+
+### Effect Tracking System Implementation
+
+- [ ] **Effect Analysis**: Automatic tracking of function side effects
+- [ ] **Purity Determination**: Runtime analysis of function purity
+- [ ] **Effect Propagation**: Tracking effects through function call chains
+
+### Vector Operation Parallelization
+
+- [ ] **Parallel Map**: Automatically parallelize `map` operations on pure functions
+- [ ] **Parallel Filter**: Automatically parallelize `filter` operations on pure functions  
+- [ ] **Side Effect Detection**: Ensure only pure functions are parallelized
+- [ ] **Performance Optimization**: Efficient parallel execution for large vectors
+
+## 📋 FUTURE VERSIONS (Not for v0.12.0)
+
+### Module Visibility & Purity Notes (Future)
 
 - [ ] `export` keyword to mark public members
 - [ ] Non-exported members are private to module
-- [ ] Importing a module does not make the caller impure; calling impure functions does
-- [ ] Top-level side-effects in modules mark import as impure; consider explicit opt-in for side-effecting modules
+- [ ] Module purity tracking and side-effect analysis
+- [ ] Top-level side-effects in modules mark import as impure
 
-## Variable Scoping Overhaul (Symbol-Based Capture System) (Related Github Issue #17)
+### Error Handling System Redesign (Future)
 
-### Language Design Changes (Related Github Issue #17)
+- [ ] **Error Values Mode**: Functions return Error type instead of exceptions
+- [ ] **Exception Mode**: `--panic-on-error` flag for backward compatibility
+- [ ] **Assert Variants**: `assert_eq`, `assert_ne`, `assert_approx`
+- [ ] **Error Propagation**: Integration with pure function chains
 
-- [ ] **Symbol-Based Capture Syntax**:
-  - [ ] Use `!` suffix for captured variables: `captured! = captured! + 1`
-  - [ ] Make local scoping the default behavior (variables without `!` are local)
-  - [ ] Only function bodies `|| { ... }` create isolated scopes by default
-  - [ ] Regular blocks `{ ... }` remain non-isolating (current behavior)
+### Advanced Pure Function Features (Future)
 
-### Capture Semantics Design (Related Github Issue #17)
+- [ ] **Function Auto-Differentiation**: Automatic derivative computation
+- [ ] **Function Composition Optimizations**: Automatic fusion and lazy evaluation
+- [ ] **Mathematical Properties Detection**: Commutativity, associativity, etc.
+- [ ] **Function Memoization**: Caching for pure functions
 
-- [ ] Define capture behavior with `!` syntax:
-  - [ ] `variable!` captures from outer scope (read/write access)
-  - [ ] Variables without `!` are always local to function
-  - [ ] Error on undefined captures: `undefined_var!` should fail clearly
-- [ ] Design capture resolution rules:
-  - [ ] Capture from immediate parent scope first, then traverse upward
-  - [ ] Module-level variables require explicit capture
-  - [ ] Built-in functions always accessible (no capture needed)
+### Migration and Compatibility Tools (Future)
 
-### Implementation Changes (Related Github Issue #17)
-
-- [ ] Update lexer to recognize `!` suffix on identifiers
-- [ ] Modify parser for new capture syntax
-- [ ] Redesign symbol resolution system in interpreter
-- [ ] Update environment management for capture tracking
-- [ ] Implement capture validation and error reporting
-- [ ] Add Unicode/UTF-8 support to lexer and file name handling
-
-### Documentation and Examples Updates (Related Github Issue #17)
-
-- [ ] Update language manual for new scoping rules
-- [ ] Revise all example files (.bm files in examples/)
-- [ ] Update test files to use new scoping syntax
-- [ ] Create migration guide from old to new syntax
-
-## Pure Function System with Runtime Purity Tracking (Related Github Issue #17)
-
-### Runtime Purity Analysis (Related Github Issue #17)
-
-- [ ] **Dynamic Purity Determination**:
-  - [ ] Functions with no `!` captures are pure
-  - [ ] Functions with `!` captures need runtime analysis:
-    - [ ] If captured value is a pure function → calling function remains pure
-    - [ ] If captured value is an impure function → calling function becomes impure
-    - [ ] If captured value is a variable → calling function becomes impure
-  - [ ] Runtime tracking of function purity status
-  - [ ] Purity inheritance: functions calling impure functions become impure
-  - [ ] Cache purity results to avoid repeated analysis
-
-### Purity for Parallelization (Related Github Issue #17)
-
-- [ ] **Iterator Parallelization**:
-  - [ ] `map`, `filter`, `reduce` operations check lambda purity
-  - [ ] Pure lambdas can be automatically parallelized
-  - [ ] Impure lambdas run sequentially
-  - [ ] Runtime decision making for parallel execution
-
-### Pure Function Optimizations (Related Github Issue #17)
-
-- [ ] Implement function memoization for pure functions
-- [ ] Add compile-time evaluation for pure expressions
-- [ ] Create pure function call optimization
-- [ ] Design immutable data structure optimizations
-
-### Advanced Pure Function Features (Related Github Issue #17)
-
-- [ ] **Function Auto-Differentiation** (if feasible):
-  - [ ] Implement automatic derivative computation
-  - [ ] Support forward-mode differentiation
-  - [ ] Support reverse-mode differentiation
-  - [ ] Add gradient computation for multi-variable functions
-- [ ] **Function Composition Optimizations**:
-  - [ ] Automatic function fusion
-  - [ ] Loop fusion for vector operations
-  - [ ] Lazy evaluation optimizations
-- [ ] **Mathematical Properties Detection**:
-  - [ ] Commutativity detection
-  - [ ] Associativity detection
-  - [ ] Identity element detection
-  - [ ] Inverse function detection
-
-## Error Handling System Redesign
-
-### Dual Error Handling Modes
-
-- [ ] **Default Mode: Error Values**:
-  - [ ] Functions return Error type instead of throwing exceptions
-  - [ ] Use `is` keyword for error checking: `if (result is Error)`
-  - [ ] Error propagation through pure function chains
-  - [ ] Integrate error values with existing type system
-
-- [ ] **Exception Mode with `--panic-on-error` Flag**:
-  - [ ] Command-line flag to enable exception throwing
-  - [ ] Backward compatibility with existing exception-based code
-  - [ ] Clear migration path between modes
-
-### Assert Function Behavior
-
-- [ ] **Assert Implementation Strategy**:
-  - [ ] **Default mode**: `assert(condition)` calls `exit()` on failure (clean termination)
-  - [ ] **Panic mode**: `assert(condition)` throws exception on failure (with stack trace)
-  - [ ] **Both modes terminate the program** - assertions are not recoverable
-  - [ ] **Assert variants**:
-    - [ ] `assert_eq(a, b)` for equality assertions
-    - [ ] `assert_ne(a, b)` for inequality assertions
-    - [ ] `assert_approx(a, b, epsilon)` for floating-point comparisons
-  - [ ] Integration with test framework and unit testing
-
-### Error Integration with Pure Functions
-
-- [ ] Ensure error values don't break function purity
-- [ ] Design error propagation in parallel contexts
-- [ ] Error handling in module system
-- [ ] Performance optimization for error-returning functions
-
-## Language Enhancements
-
-### Type System Integration
-
-- [ ] Add purity information to function types
-- [ ] Ensure module types work with existing type system
-- [ ] Design module type checking and validation
-- [ ] Error type integration with existing types
-
-## Development Infrastructure
-
-### Migration and Compatibility
-
-- [ ] **Migration Tools**:
-  - [ ] Create automatic migration script for `local` → `!` syntax
-  - [ ] Add compatibility warnings for deprecated features
-  - [ ] Design gradual migration strategy with both syntaxes supported
-
-### Testing
-
-- [ ] **Comprehensive Test Suite**:
-  - [ ] Module system tests with import/export scenarios
-  - [ ] Purity analysis tests with various capture patterns
-  - [ ] Parallelization tests for iterator operations
-  - [ ] Error handling tests for both modes (`--panic-on-error` on/off)
-  - [ ] Performance benchmarks for pure function optimizations
-
-### Documentation
-
-- [ ] **Updated Documentation**:
-  - [ ] Complete module system documentation with examples
-  - [ ] Pure function benefits and usage patterns
-  - [ ] Migration guide from v0.11.x syntax
-  - [ ] Error handling best practices guide
-
-- [ ] **Example Updates**:
-  - [ ] Revise all example files (`.bm` files in `examples/`) for new syntax
-  - [ ] Create advanced examples showcasing pure functions and modules
-  - [ ] Update test files (`bmath_test/`) to use new scoping syntax
-  - [ ] Create parallelization examples with iterator operations
-
-### Development Tools
-
-- [ ] **LSP Server Enhancements**:
-  - [ ] Add support for new `!` capture syntax
-  - [ ] Implement purity analysis in diagnostics
-  - [ ] Module-aware code completion and navigation
-  - [ ] Error value integration in type checking
-
-- [ ] **VSCode Extension Updates**:
-  - [ ] Syntax highlighting for `!` captures and module syntax
-  - [ ] Intelligent code completion for module members
-  - [ ] Purity indicators in function signatures
-  - [ ] Error handling snippets and templates
+- [ ] **Migration Scripts**: Automated syntax migration tools
+- [ ] **Compatibility Warnings**: Deprecated feature notifications
+- [ ] **Gradual Migration**: Support for mixed syntax during transition
 
 ## Parser Optimizations Modularization (Related Github Issue #16)
 

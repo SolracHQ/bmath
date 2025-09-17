@@ -9,15 +9,9 @@
 ## API endpoint for expression evaluation.
 
 import
-  pipeline/lexer,
-  pipeline/parser,
-  pipeline/interpreter,
-  pipeline/optimization,
-  logging,
-  types/[value, errors, core]
-
-when defined(debug):
-  import types/expression
+  ../pipeline/[lexer, parser, interpreter, optimization],
+  ../logging/logging,
+  ../types/[value, errors, core, expression]
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter
@@ -41,6 +35,7 @@ proc newEngine*(
 iterator run*(engine: Engine, source: string): Value =
   ## Executes source while maintaining interpreter state
   var lexer = newLexer(source)
+  var parser = newParser(engine.optimizationLevel)
 
   while not lexer.atEnd:
     debug("Starting lexing process")
@@ -58,7 +53,7 @@ iterator run*(engine: Engine, source: string): Value =
 
     debug("Starting parsing process")
     var ast = wrapError("PARSING", fatal = not engine.replMode):
-      parse(tokens, engine.optimizationLevel)
+      parser.parse(tokens)
 
     debug("AST: \n", $ast)
 

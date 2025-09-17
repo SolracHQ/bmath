@@ -1,61 +1,284 @@
 {
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "BMath",
   "scopeName": "source.bmath",
   "patterns": [
     {
-      "name": "comment.line.number-sign.bmath",
-      "begin": "#",
-      "end": "$"
+      "include": "#line_continuation"
     },
     {
-      "name": "keyword.control.bmath",
-      "match": "\\b(if|else|local|for|while|return|break|continue|exit)\\b"
+      "include": "#comments"
     },
     {
-      "name": "variable.parameter.bmath",
-      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+      "include": "#strings"
     },
     {
-      "name": "constant.numeric.bmath",
-      "match": "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?(i)?\\b"
+      "include": "#numbers"
     },
     {
-      "name": "constant.language.boolean.bmath",
-      "match": "\\b(true|false)\\b"
+      "include": "#keywords"
     },
     {
-      "name": "string.quoted.double.bmath",
-      "begin": "\"",
-      "end": "\"",
-      "patterns": [
-        {
-          "name": "constant.character.escape.bmath",
-          "match": "\\\\."
-        }
-      ]
+      "include": "#types"
     },
     {
-      "name": "meta.function.bmath",
-      "begin": "\\|",
-      "end": "\\|",
-      "patterns": [
-        {
-          "name": "variable.parameter.bmath",
-          "match": "[a-zA-Z_][a-zA-Z0-9_]*"
-        }
-      ]
+      "include": "#constants"
     },
     {
-      "name": "meta.function-call.bmath",
-      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\s*\\("
+      "include": "#operators"
     },
     {
-      "name": "keyword.operator.bmath",
-      "match": "\\+|\\-|\\*|\\/|\\^|==|!=|<=|>=|<|>|&|\\|"
+      "include": "#functions"
     },
     {
-      "name": "punctuation.separator.bmath",
-      "match": "[\\[\\]\\{\\}\\(\\),]"
+      "include": "#identifiers"
     }
   ],
-  "repository": {}
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.bmath",
+          "begin": "#",
+          "end": "\\n",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.bmath"
+            }
+          }
+        }
+      ]
+    },
+    "line_continuation": {
+      "patterns": [
+        {
+          "name": "constant.character.escape.line-continuation.bmath",
+          "match": "\\\\\\s*$",
+          "captures": {
+            "0": {
+              "name": "punctuation.separator.continuation.line.bmath"
+            }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.bmath",
+          "begin": "\"",
+          "end": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.bmath"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.bmath"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.bmath",
+              "match": "\\\\[ntr\"\\\\]"
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.complex.bmath",
+          "match": "\\b([0-9]*\\.?[0-9]+([eE][+-]?[0-9]+)?)[iI]\\b"
+        },
+        {
+          "name": "constant.numeric.complex.bmath",
+          "match": "\\b[iI]\\b"
+        },
+        {
+          "name": "constant.numeric.real.bmath",
+          "match": "\\b[0-9]*\\.[0-9]+([eE][+-]?[0-9]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.real.bmath", 
+          "match": "\\b[0-9]+[eE][+-]?[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.bmath",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.conditional.bmath",
+          "match": "\\b(if|else|elif)\\b"
+        },
+        {
+          "name": "keyword.other.module.bmath",
+          "match": "\\b(mod|use|this)\\b"
+        },
+        {
+          "name": "keyword.operator.declaration.bmath",
+          "match": "(:=|;=)"
+        },
+        {
+          "name": "keyword.operator.assignment.bmath",
+          "match": "\\b(=)\\b"
+        },
+        {
+          "name": "keyword.operator.chain.bmath",
+          "match": "(->)"
+        },
+        {
+          "name": "keyword.operator.module-access.bmath",
+          "match": "(::)"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.primitive.bmath",
+          "match": "\\b(Int|Real|Complex|Bool|Number)\\b"
+        },
+        {
+          "name": "storage.type.collection.bmath",
+          "match": "\\b(Vec|Seq)\\b"
+        },
+        {
+          "name": "storage.type.other.bmath",
+          "match": "\\b(Function|String|Module|Type|Any)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.bmath",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.numeric.math.bmath",
+          "match": "\\b(pi|e|i|PI|E|I)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arithmetic.bmath",
+          "match": "(\\+|\\-|\\*|\\/|%|\\^)"
+        },
+        {
+          "name": "keyword.operator.comparison.bmath", 
+          "match": "(==|!=|\\bis\\b|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.bmath",
+          "match": "(&|\\||!)"
+        },
+        {
+          "name": "punctuation.separator.bmath",
+          "match": "[,;]"
+        },
+        {
+          "name": "punctuation.section.brackets.bmath",
+          "match": "[\\[\\]]"
+        },
+        {
+          "name": "punctuation.section.braces.bmath",
+          "match": "[\\{\\}]"
+        },
+        {
+          "name": "punctuation.section.parens.bmath",
+          "match": "[\\(\\)]"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "meta.function.definition.bmath",
+          "begin": "\\|",
+          "end": "\\|",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.parameters.begin.bmath"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.parameters.end.bmath"
+            }
+          },
+          "patterns": [
+            {
+              "name": "variable.parameter.bmath",
+              "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+            },
+            {
+              "name": "punctuation.separator.parameter.bmath",
+              "match": ","
+            },
+            {
+              "include": "#types"
+            }
+          ]
+        },
+        {
+          "name": "support.function.builtin.arithmetic.bmath",
+          "match": "\\b(abs|sqrt|pow|floor|ceil|round|re|im)\\b"
+        },
+        {
+          "name": "support.function.builtin.trigonometry.bmath",
+          "match": "\\b(sin|cos|tan|cot|sec|csc|log|exp)\\b"
+        },
+        {
+          "name": "support.function.builtin.vector.bmath",
+          "match": "\\b(dot|first|last|len|merge|slice|set)\\b"
+        },
+        {
+          "name": "support.function.builtin.sequence.bmath",
+          "match": "\\b(skip|take|has_next|next|collect|zip)\\b"
+        },
+        {
+          "name": "support.function.builtin.functional.bmath",
+          "match": "\\b(map|filter|reduce|sum|any|all|nth|at)\\b"
+        },
+        {
+          "name": "support.function.builtin.comparison.bmath",
+          "match": "\\b(min|max)\\b"
+        },
+        {
+          "name": "support.function.builtin.assertion.bmath",
+          "match": "\\b(assert|assert_eq|assert_neq|assert_lt|assert_gt|assert_type|assert_error)\\b"
+        },
+        {
+          "name": "support.function.builtin.core.bmath",
+          "match": "\\b(exit|try_or|try_catch|print|vec|seq|concat|type)\\b"
+        },
+        {
+          "name": "meta.function-call.bmath",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.bmath"
+            }
+          }
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.bmath",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    }
+  }
 }

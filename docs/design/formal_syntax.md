@@ -7,10 +7,15 @@ The grammar for the BMath language is defined below using Extended Backus-Naur F
 ```ebnf
 program          ::= expression
 
-expression       ::= local_assignment
+expression       ::= declaration_expression
 
-local_assignment ::= 'local' IDENTIFIER (':' type_literal)? '=' expression
-                   | assignment_expression
+declaration_expression ::= immutable_declaration
+                         | mutable_declaration  
+                         | assignment_expression
+
+immutable_declaration ::= IDENTIFIER (':' type_literal)? ':=' expression
+
+mutable_declaration ::= IDENTIFIER (':' type_literal)? ';=' expression
 
 assignment_expression ::= logical_or_expression ('=' assignment_expression)?
 
@@ -32,7 +37,7 @@ pipeline_expression ::= unary_expression ('->' unary_expression)*
 
 unary_expression ::= ('-' | '!')? access_expression
 
-access_expression ::= module_access_expression ('[' expression ']' | '!')*
+access_expression ::= module_access_expression ('[' expression ']')*
 
 module_access_expression ::= call_expression ('::' IDENTIFIER)*
 
@@ -42,6 +47,7 @@ primary_expression ::= NUMBER
                      | STRING  
                      | BOOLEAN
                      | IDENTIFIER
+                     | module_qualified_identifier
                      | type_literal
                      | function_literal
                      | vector_literal
@@ -51,9 +57,11 @@ primary_expression ::= NUMBER
                      | if_expression
                      | '(' expression ')'
 
+module_qualified_identifier ::= 'this' '::' IDENTIFIER
+
 block_expression ::= '{' block_body '}'
 
-block_body       ::= expression (';'? expression)*
+block_body       ::= expression (expression)*
 
 if_expression    ::= 'if' '(' expression ')' expression 
                      ('elif' '(' expression ')' expression)* 
@@ -117,22 +125,23 @@ LINE_CONTINUATION ::= '\\' NEWLINE
 
 ## Operator Precedence (highest to lowest)
 
-Complete precedence table reflecting actual parser implementation:
+Complete precedence table reflecting the updated parser implementation:
 
 1. **Vector indexing**: `[]` *(precedence 80)*
-3. **Function calls**: `func()` *(precedence 80)*
-2. **Closure capture**: `!` *(precedence 79)*
-4. **Module access**: `::` *(precedence 78)*
-5. **Chain operator**: `->` *(precedence 75)*
-6. **Unary operators**: `-`, `!` *(precedence 70)*
-7. **Exponentiation**: `^` *(precedence 60, right associative)*
-8. **Multiplicative**: `*`, `/`, `%` *(precedence 50)*
-9. **Additive**: `+`, `-` *(precedence 40)*
-10. **Relational**: `<`, `<=`, `>`, `>=` *(precedence 30)*
-11. **Equality**: `==`, `!=`, `is` *(precedence 25)*
-12. **Logical AND**: `&` *(precedence 20)*
-13. **Logical OR**: `|` *(precedence 15)*
-14. **Assignment**: `=` *(precedence 5, right associative)*
+2. **Function calls**: `func()` *(precedence 80)*
+3. **Module access**: `::` *(precedence 78)*
+4. **Chain operator**: `->` *(precedence 75)*
+5. **Unary operators**: `-`, `!` *(precedence 70)*
+6. **Exponentiation**: `^` *(precedence 60, right associative)*
+7. **Multiplicative**: `*`, `/`, `%` *(precedence 50)*
+8. **Additive**: `+`, `-` *(precedence 40)*
+9. **Relational**: `<`, `<=`, `>`, `>=` *(precedence 30)*
+10. **Equality**: `==`, `!=`, `is` *(precedence 25)*
+11. **Logical AND**: `&` *(precedence 20)*
+12. **Logical OR**: `|` *(precedence 15)*
+13. **Assignment**: `=` *(precedence 5, right associative)*
+14. **Mutable declaration**: `;=` *(precedence 1, right associative)*
+15. **Immutable declaration**: `:=` *(precedence 1, right associative)*
 
 ## Lexical Notes
 
@@ -148,6 +157,12 @@ Complete precedence table reflecting actual parser implementation:
 
 ## Grammar Notes
 
+### Declaration vs Assignment
+
+- **Immutable declaration**: `:=` creates a new immutable binding
+- **Mutable declaration**: `;=` creates a new mutable binding  
+- **Assignment**: `=` modifies existing mutable bindings only
+
 ### Dual-Purpose `|` Token
 
 - **Prefix context**: Function parameter delimiter `|param| body`
@@ -157,26 +172,26 @@ Complete precedence table reflecting actual parser implementation:
 
 - Every construct evaluates to a value
 - Blocks return their last expression's value
-- Assignments return the assigned value
+- Declarations return the declared value
 - Conditionals require `else` clause and return chosen branch value
 
 ### Right-Associative Operators
 
 - **Exponentiation**: `2^3^4` → `2^(3^4)`
 - **Assignment**: `a = b = c` → `a = (b = c)`
+- **Declarations**: `a := b := c` → `a := (b := c)`
 
 ### Postfix Operators
 
 - **Function calls**: `func(args)` - multiple calls chain left-to-right
 - **Array indexing**: `arr[index]` - multiple indices chain left-to-right
-- **Closure capture**: `var!` - captures variable from outer scope
 - **Module access**: `module::member` - accesses module members
 
 ### Block Syntax
 
 - **Required braces**: `{` and `}` delimit block boundaries
-- **Optional semicolons**: Expressions can be separated by `;` or newlines
-- **Scoped**: Creates new lexical scope for local variables
+- **No semicolons**: Expressions are separated by newlines only
+- **Scoped**: Creates new lexical scope for variables
 - **Non-empty**: Must contain at least one expression
 
 ### Conditional Syntax
@@ -190,5 +205,53 @@ Complete precedence table reflecting actual parser implementation:
 
 - **Parenthesized target**: Always uses `use(target)` form
 - **Flexible imports**: Supports simple, aliased, and destructured imports
-- **Automatic binding**: Creates local variables for imported identifiers
+- **Automatic binding**: Creates immutable bindings for imported identifiers
 - **Nested access**: Supports `module::sub::member` patterns
+
+### Module Access Syntax
+
+- **Explicit module access**: `this::identifier` for accessing module-level variables
+- **High precedence**: Module access binds tighter than most operators
+- **Chained access**: Can be combined with regular member access
+
+## Operator Changes from Previous Version
+
+### Removed Operators
+
+- **Closure capture**: `!` (postfix) - removed in favor of implicit capture
+
+### Modified Operators
+
+- **Declaration operators**: Added `:=` (immutable) and `;=` (mutable)
+- **Module access**: `this::` added for explicit module scope access
+
+### Precedence Updates
+
+- **Closure capture**: Removed from precedence table
+- **Declaration operators**: Added at lowest precedence level
+- **Module access**: Clarified precedence for `this::` syntax
+
+## Expression Parsing Examples
+
+```bmath
+# Immutable declarations
+pi := 3.14159
+name := "BMath"
+
+# Mutable declarations  
+counter ;= 0
+data ;= [1, 2, 3]
+
+# Assignments (only to mutable variables)
+counter = counter + 1
+data[0] = 10
+
+# Module access in functions
+my_func := |x| this::pi * x
+
+# Chained operations
+result := data->map(|x| x * 2)->filter(|x| x > 5)
+
+# Complex expressions with precedence
+value := a := b + c->func() * 2  # parsed as: value := (a := ((b + (c->func())) * 2))
+```

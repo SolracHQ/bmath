@@ -53,6 +53,20 @@ proc evalVector(ctx: EvalContext, expr: Expression): Value {.inline.} =
 proc evalIdent(ctx: EvalContext, expr: Expression): Value {.inline.} =
   ctx.env[expr.identifier.ident]
 
+proc evalThis(ctx: EvalContext, expr: Expression): Value {.inline.} =
+  ## Returns the current module as a Value
+  # Find the current module environment by traversing up the chain
+  var current = ctx.env
+  while current != nil:
+    if current.kind == ekModule:
+      return Value(
+        kind: vkModule, metadata: ValueMetadata(isMutable: false), environment: current
+      )
+    current = current.parent
+
+  # If no module found, we're at the top level - return the global environment as a module
+  Value(kind: vkModule, metadata: ValueMetadata(isMutable: false), environment: ctx.env)
+
 # --- Unary Operations ---
 proc evalNeg(ctx: EvalContext, expr: Expression): Value {.inline.} =
   -ctx.evaluate(expr.unaryOp.operand)
@@ -87,11 +101,14 @@ proc evalAssign(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let val = ctx.evaluate(expr.assign.expr)
   case expr.assign.lvalue.kind
   of ekIdent:
-    ctx.env[expr.assign.lvalue.identifier.ident, expr.assign.isLocal] = val
+    # Assignment can only modify existing mutable variables
+    ctx.env.assignVariable(expr.assign.lvalue.identifier.ident, val)
   of ekVecIndex:
     let vectorValue = ctx.evaluate(expr.assign.lvalue.vectorIndex.vector)
     if vectorValue.kind != vkVector:
       raise newTypeError("Left-hand side of assignment is not a vector")
+    if not vectorValue.metadata.isMutable:
+      raise newTypeError("Cannot modify immutable vector")
     let indexValue = ctx.evaluate(expr.assign.lvalue.vectorIndex.index)
     if indexValue.kind != vkNumber and indexValue.number.kind != nkInteger:
       raise newTypeError("Vector index must be an integer")
@@ -101,10 +118,33 @@ proc evalAssign(ctx: EvalContext, expr: Expression): Value {.inline.} =
     let base = ctx.evaluate(expr.assign.lvalue.moduleAccess.target)
     if base.kind != vkModule:
       raise newTypeError("Left-hand side of assignment is not a module")
-    base.environment[expr.assign.lvalue.moduleAccess.member, expr.assign.isLocal] = val
+    base.environment.assignVariable(expr.assign.lvalue.moduleAccess.member, val)
   else:
     raise newTypeError("Invalid left-hand side in assignment")
   val
+
+# --- Declarations ---
+proc evalImmutableDecl(ctx: EvalContext, expr: Expression): Value {.inline.} =
+  let val = ctx.evaluate(expr.immutableDecl.expr)
+  let immutableVal = val.withMutability(false) # Ensure value is marked as immutable
+  case expr.immutableDecl.lvalue.kind
+  of ekIdent:
+    # Immutable declarations always create new bindings in the current scope
+    ctx.env.declareVariable(expr.immutableDecl.lvalue.identifier.ident, immutableVal)
+  else:
+    raise newTypeError("Invalid left-hand side in immutable declaration")
+  immutableVal
+
+proc evalMutableDecl(ctx: EvalContext, expr: Expression): Value {.inline.} =
+  let val = ctx.evaluate(expr.mutableDecl.expr)
+  let mutableVal = val.withMutability(true) # Ensure value is marked as mutable
+  case expr.mutableDecl.lvalue.kind
+  of ekIdent:
+    # Mutable declarations create new bindings marked as mutable
+    ctx.env.declareVariable(expr.mutableDecl.lvalue.identifier.ident, mutableVal)
+  else:
+    raise newTypeError("Invalid left-hand side in mutable declaration")
+  mutableVal
 
 # --- Control Flow ---
 proc evalIf(ctx: EvalContext, expr: Expression): Value {.inline.} =
@@ -121,7 +161,7 @@ proc evalIf(ctx: EvalContext, expr: Expression): Value {.inline.} =
 
 # --- Block Expressions ---
 proc evalBlock(ctx: EvalContext, expr: Expression): Value {.inline.} =
-  let blockEnv = newEnv(parent = ctx.env)
+  let blockEnv = newEnv(ekBlock, parent = ctx.env)
   let blockCtx = newEvalContext(ctx.interpreter, blockEnv)
   var lastVal: Value
   for e in expr.blockExpr.expressions:
@@ -129,7 +169,46 @@ proc evalBlock(ctx: EvalContext, expr: Expression): Value {.inline.} =
   lastVal
 
 proc evalFunctionDef(ctx: EvalContext, expr: Expression): Value {.inline.} =
-  newValue(expr.functionDef.body, ctx.env, expr.functionDef.params)
+  # Find the capture environment following the scoping rules:
+  # - Skip ekBlock environments (they're transparent for capture)
+  # - Functions can only capture from immediate ekModule or ekFunction parent
+  var currentEnv = ctx.env
+  var captureEnv: Environment = nil
+
+  # Find the actual scope boundary (function or module)
+  while currentEnv != nil:
+    if currentEnv.kind in {ekFunction, ekModule}:
+      captureEnv = currentEnv
+      break
+    currentEnv = currentEnv.parent
+
+  if captureEnv == nil:
+    # Fallback - use current environment
+    captureEnv = ctx.env
+
+  # Instead of creating a new environment, we'll use the capture environment directly
+  # but collect variables from intermediate blocks
+  if ctx.env != captureEnv:
+    # There are block environments between us and the capture environment
+    # We need to create a new environment that includes block variables
+    let functionCaptureEnv = newEnv(captureEnv.kind, parent = captureEnv.parent)
+
+    # Copy all variables from the capture environment
+    for name, value in captureEnv.values.pairs:
+      functionCaptureEnv.values[name] = value
+
+    # Walk back through blocks and collect their variables
+    currentEnv = ctx.env
+    while currentEnv != nil and currentEnv != captureEnv:
+      if currentEnv.kind == ekBlock:
+        for name, value in currentEnv.values.pairs:
+          functionCaptureEnv.values[name] = value
+      currentEnv = currentEnv.parent
+
+    newValue(expr.functionDef.body, functionCaptureEnv, expr.functionDef.params)
+  else:
+    # We're directly in the capture environment, use it as-is
+    newValue(expr.functionDef.body, captureEnv, expr.functionDef.params)
 
 proc callNativeFunction(
     ctx: EvalContext, nativeFn: NativeFn, args: openArray[Value]
@@ -144,9 +223,9 @@ proc callUserFunction(ctx: EvalContext, fun: Function, args: openArray[Value]): 
       "Function expects " & $(fun.params.len) & " arguments, got " & $(args.len)
     )
 
-  let funcEnv = newEnv(parent = fun.env)
+  let funcEnv = newEnv(ekFunction, parent = fun.env)
   for i, param in fun.params.pairs:
-    funcEnv[param.name, true] = args[i]
+    funcEnv.declareVariable(param.name, args[i])
 
   let funcCtx = newEvalContext(ctx.interpreter, funcEnv)
   funcCtx.evaluate(fun.body)
@@ -246,6 +325,7 @@ proc loadModule*(
     let ctx = newEvalContext(interpreter, moduleEnv)
 
     var lx = newLexer(content)
+    var parser = newParser()
     while not lx.atEnd:
       let tokens = lx.tokenizeExpression()
       if tokens.len == 0:
@@ -262,13 +342,13 @@ proc loadModule*(
     discard interpreter.importStack.pop()
 
 proc evalModule(ctx: EvalContext, expr: Expression): Value {.inline.} =
-  let modEnv = newEnv(parent = ctx.env)
+  let modEnv = newEnv(ekModule, parent = ctx.env)
   let modCtx = newEvalContext(ctx.interpreter, modEnv)
 
   for e in expr.moduleDef.content:
     discard modCtx.evaluate(e)
 
-  Value(kind: vkModule, environment: modEnv)
+  Value(kind: vkModule, metadata: ValueMetadata(isMutable: false), environment: modEnv)
 
 proc evalModuleAccess(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let base = ctx.evaluate(expr.moduleAccess.target)
@@ -285,7 +365,7 @@ proc evalVectorIndex(ctx: EvalContext, expr: Expression): Value {.inline.} =
   if indexValue.kind != vkNumber and indexValue.number.kind != nkInteger:
     raise newTypeError("Vector index must be an integer")
   let index = indexValue.number.integer
-  if index < 0 or index >= vectorValue.vector.size:
+  if index >= vectorValue.vector.size:
     raise newInvalidArgumentError("Vector index out of bounds")
   vectorValue.vector[index]
 
@@ -300,6 +380,7 @@ const EVALUATORS: array[ExpressionKind, ExpressionEvaluator] = [
   ekGroup: evalGroup,
   ekVector: evalVector,
   ekIdent: evalIdent,
+  ekThis: evalThis,
   ekFuncDef: evalFunctionDef,
   ekModule: evalModule,
   ekUse: evalUse,
@@ -342,6 +423,8 @@ const EVALUATORS: array[ExpressionKind, ExpressionEvaluator] = [
 
   # Assignment / Control
   ekAssign: evalAssign,
+  ekImmutableDecl: evalImmutableDecl,
+  ekMutableDecl: evalMutableDecl,
   ekIf: evalIf,
 ]
 
@@ -361,7 +444,7 @@ proc newInterpreter*(
     scriptPath: string = "", disableGlobals: bool = false
 ): Interpreter =
   result = Interpreter()
-  result.env = newEnv(disableGlobals = disableGlobals)
+  result.env = newEnv(ekModule, disableGlobals = disableGlobals)
   result.importStack = @[]
   result.disableGlobals = disableGlobals
   result.loadedModules = {"std": stdlib.createStdModule()}.toTable()

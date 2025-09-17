@@ -14,6 +14,8 @@ import std/[sets, tables, macros, complex]
 import ../stdlib/core
 import ../types/[value, expression, errors]
 
+from ../types/core import EnvironmentKind
+
 from math import E, PI
 
 macro native(call: untyped): Value =
@@ -48,6 +50,7 @@ macro native(call: untyped): Value =
   result = quote:
     Value(
       kind: vkNativeFunc,
+      metadata: ValueMetadata(isMutable: false),
       nativeFn: NativeFn(
         callable: proc(`param`: openArray[Value], _: FnInvoker): Value =
           if `callArgs` != `param`.len:
@@ -61,57 +64,101 @@ macro native(call: untyped): Value =
     )
 
 # Empty global environment for when globals are completely disabled
-let empty_global = Environment(parent: nil, values: initTable[string, Value]())
+let empty_global =
+  Environment(kind: ekModule, parent: nil, values: initTable[string, Value]())
 
 # Minimal global environment with only essential functions
 let minimal_global = Environment(
+  kind: ekModule,
   parent: nil,
   values: toTable(
     {
-      "exit":
-        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: exit, signatures: @[])),
-      "print":
-        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: print, signatures: @[])),
-      "try_or":
-        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: try_or, signatures: @[])),
-      "try_catch": Value(
-        kind: vkNativeFunc, nativeFn: NativeFn(callable: try_catch, signatures: @[])
+      "exit": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: exit, signatures: @[]),
       ),
-      "concat":
-        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: concat, signatures: @[])),
+      "print": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: print, signatures: @[]),
+      ),
+      "try_or": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: try_or, signatures: @[]),
+      ),
+      "try_catch": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: try_catch, signatures: @[]),
+      ),
+      "concat": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: concat, signatures: @[]),
+      ),
       "sqrt": native(sqrt(a)),
       "abs": native(abs(a)),
-      "vec":
-        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: vec, signatures: @[])),
-      "seq":
-        Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: seq, signatures: @[])),
+      "vec": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: vec, signatures: @[]),
+      ),
+      "seq": Value(
+        kind: vkNativeFunc,
+        metadata: ValueMetadata(isMutable: false),
+        nativeFn: NativeFn(callable: seq, signatures: @[]),
+      ),
     }
   ),
 )
 
-proc newEnv*(parent: Environment = nil, disableGlobals: bool = false): Environment =
-  ## Creates a new environment with an optional parent.
+proc newEnv*(
+    kind: EnvironmentKind = ekBlock,
+    parent: Environment = nil,
+    disableGlobals: bool = false,
+): Environment =
+  ## Creates a new environment with specified kind and optional parent.
   ##
   ## If no parent is provided, creates an environment with the appropriate global environment
   ## as its parent based on the disableGlobals flag.
   ##
   ## Params:
+  ##   kind: EnvironmentKind - The kind of scope this environment represents
   ##   parent: Environment - (optional) The parent environment for lexical scoping (default is nil)
   ##   disableGlobals: bool - (optional) If true, use empty globals; if false, use minimal globals
   ##
   ## Returns:
   ##   Environment - A new environment instance with the appropriate parent chain
   new(result)
+  result.kind = kind
+  result.values = initTable[string, Value]()
   if parent == nil:
     result.parent = if disableGlobals: empty_global else: minimal_global
   else:
     result.parent = parent
 
-proc `[]`*(env: Environment, name: string): var Value =
+proc `in`*(name: string, env: Environment): bool =
+  ## Checks if a variable name exists in the current environment.
+  ##
+  ## This only checks the current environment and does not traverse parent scopes.
+  ##
+  ## Params:
+  ##   name: string - The name of the variable to check
+  ##   env: Environment - The environment to check in
+  ##
+  ## Returns:
+  ##   bool - True if the variable exists in the current environment, false otherwise
+  name in env.values
+
+proc `[]`*(env: Environment, name: string): Value =
   ## Retrieves a value by name from the environment.
   ##
   ## Searches the current environment and traverses up the parent chain
   ## for a variable with the given name, implementing lexical scoping rules.
+  ## Functions can only access variables from their capture environment,
+  ## not traverse beyond function boundaries (must use this:: for module access).
   ##
   ## Params:
   ##   env: Environment - The environment to start the search in
@@ -123,39 +170,76 @@ proc `[]`*(env: Environment, name: string): var Value =
   ## Raises:
   ##   UndefinedVariableError - If the variable doesn't exist in any accessible scope
   var currentEnv = env
+  var foundFunctionBoundary = false
+
   while currentEnv != nil:
     if name in currentEnv.values:
       return currentEnv.values[name]
+
+    # If we hit a function boundary and we're looking from within a function,
+    # we should not traverse beyond it (except for the first function environment
+    # which is the function we're executing in)
+    if currentEnv.kind == ekFunction:
+      if foundFunctionBoundary:
+        break
+      foundFunctionBoundary = true
+
     currentEnv = currentEnv.parent
+
+  raise newUndefinedVariableError(name)
+
+proc declareVariable*(env: Environment, name: string, value: Value) =
+  ## Declares a new variable in the current environment.
+  ##
+  ## Creates a new variable binding in the local scope. This function enforces
+  ## that declarations can only happen in the current scope (no traversal up
+  ## the parent chain).
+  ##
+  ## Params:
+  ##   env: Environment - The environment to declare the variable in
+  ##   name: string - The name of the variable to declare
+  ##   value: Value - The value to bind to the variable name
+  ##
+  ## Raises:
+  ##   RedefinitionError - If the variable already exists in the current scope
+  if name in env.values:
+    raise
+      newRedefinitionError("Variable '" & name & "' is already defined in this scope")
+
+  env.values[name] = value
+
+proc assignVariable*(env: Environment, name: string, value: Value) =
+  ## Assigns a value to an existing mutable variable.
+  ## This is used by assignment (=) and only modifies existing variables.
+  ##
+  ## Params:
+  ##   env: Environment - The environment to start the search in
+  ##   name: string - The name of the variable to assign to
+  ##   value: Value - The value to assign
+  ##
+  ## Raises:
+  ##   UndefinedVariableError - If the variable doesn't exist in any accessible scope
+  ##   ImmutableAssignmentError - If trying to assign to an immutable variable
+  var currentEnv = env
+  var value = value
+  while currentEnv != nil:
+    if name in currentEnv.values:
+      let existingValue = currentEnv.values[name]
+      if not existingValue.metadata.isMutable:
+        raise newImmutableAssignmentError(name)
+      # set value as mutable
+      value.metadata.isMutable = true
+      currentEnv.values[name] = value
+      return
+    currentEnv = currentEnv.parent
+
   raise newUndefinedVariableError(name)
 
 proc `[]=`*(env: Environment, name: string, local: bool = false, value: Value) =
-  ## Sets or creates a variable in the environment.
-  ##
-  ## By default, attempts to update an existing variable in the current
-  ## or parent environments (lexical scoping). If local=true, always creates or
-  ## updates the variable in the current environment regardless of parent scopes.
-  ##
-  ## Params:
-  ##   env: Environment - The environment to modify
-  ##   name: string - The name of the variable to set
-  ##   local: bool - (optional) If true, forces creation in the current environment only (default is false)
-  ##   value: Value - The value to assign to the variable
-  ##
-  ## Raises:
-  ##   ValueError - If trying to write to a nil environment (programming error)
-  ##   ReservedNameError - If trying to modify a built-in/reserved name in CORE_NAMES
-  if env == nil:
-    # If this is reached, it means there's a bug in the interpreter
-    # because the environment should never be nil.
-    raise newException(ValueError, "Trying to write on a nil environment")
+  ## Legacy operator - now just calls declareVariable for local=true or assignVariable for local=false
+  ## This is kept for stdlib compatibility (I will chage it in the future but is not my priority now)
+  ## FIXME: Remove this in the future
   if local:
-    env.values[name] = value
-    return
-  var current = env
-  while current != nil and current != minimal_global and current != empty_global:
-    if current.values.hasKey(name):
-      current.values[name] = value
-      return
-    current = current.parent
-  env.values[name] = value
+    env.declareVariable(name, value)
+  else:
+    env.assignVariable(name, value)

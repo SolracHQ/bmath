@@ -17,6 +17,7 @@ type
   Position* = object ## Source code location information
     line*: int ## 1-based line number in source
     column*: int ## 1-based column number in source
+    filePath*: string ## Source file path, or "<expression>" for direct evaluation
 
   NumberKind* = enum
     nkInteger ## Integer number
@@ -32,12 +33,12 @@ type
     of nkComplex:
       complex*: Complex[float] ## Complex number value
 
-  VectorObj*[T] = object
+  VectorObj* = object
     ## Represents a vector object fixed size array of elements of type T.
-    p*: ptr UncheckedArray[T]
+    p*: ptr UncheckedArray[Value]
     len*: int
 
-  Vector*[T] = ref VectorObj[T]
+  Vector* = ref VectorObj
     ## Reference to a vector object, providing dynamic memory management.
 
   BMathTypeKind* = enum
@@ -68,6 +69,10 @@ type
       types*: HashSet[BMathSimpleType]
     of tkError:
       error*: cstring
+
+  ValueMetadata* = object
+    ## Metadata associated with runtime values for tracking mutability and other properties
+    isMutable*: bool ## Whether the value can be modified after creation
 
   ValueKind* = enum
     ## Discriminator for runtime value types stored in `Value` objects.
@@ -100,7 +105,8 @@ type
     transformers*: seq[Transformer] ## Functions to transform sequence values
 
   Value* = object
-    ## Variant type representing runtime numeric values with type tracking.
+    ## Variant type representing runtime values with mutability and type tracking.
+    metadata*: ValueMetadata ## Metadata for mutability and other properties
     case kind*: ValueKind ## Type discriminator determining active field
     of vkNumber:
       number*: Number ## Numeric storage when kind is `vkNumber`
@@ -111,7 +117,7 @@ type
     of vkFunction:
       function*: Function ## User-defined function storage when kind is `vkFunction`
     of vkVector:
-      vector*: Vector[Value] ## Vector storage when kind is `vkVector`
+      vector*: Vector ## Vector storage when kind is `vkVector`
     of vkSeq:
       sequence*: Sequence ## Sequence storage when kind is `vkSeq`
     of vkType:
@@ -149,8 +155,15 @@ type
       ## Native function callable from the interpreter
     signatures*: seq[Signature] ## Signatures for type checking
 
+  EnvironmentKind* = enum
+    ## Represents the kind of environment/scope for proper scoping rules
+    ekModule ## Module scope - isolated, accessible via this::
+    ekFunction ## Function scope - creates capture boundary
+    ekBlock ## Block scope - transparent for capture, creates local bindings
+
   Environment* = ref object
-    ## Environment for storing variable bindings and parent scopes.
+    ## Environment for storing variable bindings and parent scopes with context information.
+    kind*: EnvironmentKind ## The kind of scope this environment represents
     values*: Table[string, Value]
     parent*: Environment
 
@@ -171,6 +184,8 @@ type
     tkPow ## Exponentiation operator '^'
     tkMod ## Modulus operator '%'
     tkAssign ## Assignment operator '='
+    tkImmutableDecl ## Immutable declaration operator ':='
+    tkMutableDecl ## Mutable declaration operator ';='
     tkChain ## Chained function call operator '->'
 
     # Boolean operators
@@ -206,8 +221,8 @@ type
     tkIf ## If keyword
     tkElse ## Else keyword
     tkElif ## Elif keyword
-    tkLocal ## Local keyword
     tkAs ## As keyword for aliasing
+    tkThis ## This keyword for module scope reference
 
     # Types
     tkType ## Type Value
@@ -255,6 +270,7 @@ type
     ekGroup ## Grouping expression to preserve parentheses
     ekVector ## Vector literal
     ekIdent ## Identifier reference
+    ekThis ## This reference (module scope)
     ekFuncDef ## Function (lambda) literal
     ekModule ## Module definition expression
     ekUse ## Module import expression
@@ -297,6 +313,8 @@ type
 
     # Assignment and control (lowest precedence)
     ekAssign ## Variable assignment (ident = expr)
+    ekImmutableDecl ## Immutable declaration (ident := expr)
+    ekMutableDecl ## Mutable declaration (ident ;= expr)
     ekIf ## If-else conditional expression
 
   Parameter* = object
@@ -320,8 +338,6 @@ type
   Assign* = object
     lvalue*: Expression ## Left-hand side expression
     expr*: Expression ## Assigned expression
-    isLocal*: bool ## Flag indicating if the assignment is to a local variable
-    typ*: BMathType = ANY()
 
   FunctionCall* = object
     function*: Expression ## Expression that evaluates to a function
@@ -360,6 +376,16 @@ type
     vector*: Expression ## Expression evaluating to a vector
     index*: Expression ## Expression evaluating to the index
 
+  ImmutableDecl* = object ## Immutable variable declaration (identifier := value)
+    lvalue*: Expression ## Left-hand side (identifier)
+    expr*: Expression ## Right-hand side expression
+    typ*: BMathType ## Optional type annotation
+
+  MutableDecl* = object ## Mutable variable declaration (identifier ;= value)
+    lvalue*: Expression ## Left-hand side (identifier)
+    expr*: Expression ## Right-hand side expression
+    typ*: BMathType ## Optional type annotation
+
   Expression* = ref object
     ## Abstract Syntax Tree (AST) node (renamed to Expression).
     ##
@@ -372,7 +398,7 @@ type
     of ekGroup:
       groupExpr*: Expression
     of ekVector:
-      vector*: Vector[Expression]
+      vector*: seq[Expression]
     of ekNeg, ekNot:
       unaryOp*: UnaryOp
     of ekAdd, ekSub, ekMul, ekDiv, ekMod, ekPow, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
@@ -380,8 +406,14 @@ type
       binaryOp*: BinaryOp
     of ekIdent:
       identifier*: Identifier
+    of ekThis:
+      discard # Returns the current module
     of ekAssign:
       assign*: Assign
+    of ekImmutableDecl:
+      immutableDecl*: ImmutableDecl
+    of ekMutableDecl:
+      mutableDecl*: MutableDecl
     of ekFuncCall:
       functionCall*: FunctionCall
     of ekBlock:
@@ -398,3 +430,22 @@ type
       moduleAccess*: ModuleAccess
     of ekVecIndex:
       vectorIndex*: VectorIndex
+
+# Required due nim GC
+proc `=destroy`*(v: VectorObj) =
+  ## Frees the memory allocated for the vector when it goes out of scope.
+  ##
+  ## Params:
+  ##   v: VectorObj - the vector object being destroyed.
+  if v.p != nil:
+    dealloc(v.p)
+
+proc `=trace`*(v: var VectorObj, env: pointer) =
+  ## Traces the vector's elements for garbage collection.
+  ##
+  ## Params:
+  ##   v: var VectorObj - the vector being traced.
+  ##   env: pointer - environment pointer for the GC.
+  if v.p != nil:
+    for i in 0 ..< v.len:
+      `=trace`(v.p[i], env)

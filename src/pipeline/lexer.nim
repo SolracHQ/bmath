@@ -32,26 +32,34 @@ type Lexer* = object ## State container for lexical analysis process
   line*, col: int ## Current line and column position
   stack: seq[StackableElement] ## Stack for nested structures
   skipNewline: bool ## Flag to skip newline tokens
+  filePath: string ## Source file path for position tracking
 
-proc newLexer*(source: string): Lexer =
-  ## Initializes a new lexer.
+proc newLexer*(source: string, filePath: string = "<expression>"): Lexer =
+  ## Initializes a new lexer with optional file path for position tracking.
   ## 
   ## Params:
   ##   source: string - the mathematical expression to tokenize.
+  ##   filePath: string - the source file path for position tracking
   ## Returns: Lexer - the new lexer instance.
-  Lexer(source: source, current: 0, line: 1, col: 1)
+  Lexer(source: source, current: 0, line: 1, col: 1, filePath: filePath)
+
+proc position*(lexer: Lexer, line: int = -1, column: int = -1): Position =
+  ## Creates a position with the lexer's file path
+  let actualLine = if line == -1: lexer.line else: line
+  let actualCol = if column == -1: lexer.col else: column
+  pos(actualLine, actualCol, lexer.filePath)
 
 const KEYWORDS: Table[string, TokenKind] = {
   "if": tkIf,
   "else": tkElse,
   "elif": tkElif,
-  "local": tkLocal,
   "true": tkTrue,
   "false": tkFalse,
   "is": tkIs,
   "mod": tkModule,
   "use": tkUse,
   "as": tkAs,
+  "this": tkThis,
 }.toTable
 
 const TYPES: Table[string, BMathType] = {
@@ -148,9 +156,8 @@ proc handleClosing*(
         "Unmatched '" & $openingChar & "' at " & $stackable.position, stackable.position
       )
   else:
-    raise newUnexpectedCharacterError(
-      "Unmatched '" & $closingChar & "'", pos(lexer.line, lexer.col)
-    )
+    raise
+      newUnexpectedCharacterError("Unmatched '" & $closingChar & "'", lexer.position())
 
 proc parseNumber*(lexer: var Lexer, start: int): Token =
   ## Parses a numeric literal (integer, float, or complex).
@@ -177,18 +184,22 @@ proc parseNumber*(lexer: var Lexer, start: int): Token =
     if currentIsIn(lexer, {'i', 'I'}):
       lexer.advance()
       if isFloat:
-        return newToken(complex(0.0, parseFloat(numStr)), pos(lexer.line, startCol))
+        return newToken(
+          complex(0.0, parseFloat(numStr)), lexer.position(lexer.line, startCol)
+        )
       else:
-        return newToken(complex(0.0, parseInt(numStr).float), pos(lexer.line, startCol))
+        return newToken(
+          complex(0.0, parseInt(numStr).float), lexer.position(lexer.line, startCol)
+        )
     else:
       if isFloat:
-        return newToken(parseFloat(numStr), pos(lexer.line, startCol))
+        return newToken(parseFloat(numStr), lexer.position(lexer.line, startCol))
       else:
-        return newToken(parseInt(numStr), pos(lexer.line, startCol))
+        return newToken(parseInt(numStr), lexer.position(lexer.line, startCol))
   except:
     raise newInvalidNumberFormatError(
       "Invalid number format '" & numStr & "' is not a valid number",
-      pos(lexer.line, startCol),
+      lexer.position(lexer.line, startCol),
     )
 
 proc parseIdentifier*(lexer: var Lexer, start: int): Token =
@@ -201,7 +212,7 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
   let startCol = lexer.col
   lexer.readWhile(isIdentChar)
   let ident = lexer.source[start ..< lexer.current]
-  let position = pos(lexer.line, startCol)
+  let position = lexer.position(lexer.line, startCol)
   result = newIdentToken(ident, position)
   if KEYWORDS.hasKey(ident):
     result = Token(kind: KEYWORDS[ident], position: position)
@@ -209,7 +220,7 @@ proc parseIdentifier*(lexer: var Lexer, start: int): Token =
     result = TYPES[ident].newToken(position)
 
   if result.kind == tkIf:
-    lexer.stack.add(StackableElement(kind: skIf, position: pos(lexer.line, lexer.col)))
+    lexer.stack.add(StackableElement(kind: skIf, position: lexer.position()))
   elif result.kind == tkElse:
     if lexer.stack.len == 0:
       raise newUnexpectedCharacterError("Unexpected 'else' at " & $position, position)
@@ -226,7 +237,7 @@ proc parseString*(lexer: var Lexer, start: int): Token =
   ## Returns: Token - a token representing the string literal.
   ## Record starting column so the returned token points to the opening quote
   let startCol = lexer.col
-  let startPos = pos(lexer.line, startCol)
+  let startPos = lexer.position(lexer.line, startCol)
   lexer.advance() # Skip opening quote
   var content = ""
   while not lexer.atEnd and lexer.source[lexer.current] != '"':
@@ -249,7 +260,7 @@ proc parseString*(lexer: var Lexer, start: int): Token =
       else:
         raise newInvalidEscapeSequenceError(
           "Invalid escape sequence '\\" & lexer.source[lexer.current] & "'",
-          pos(lexer.line, lexer.col),
+          lexer.position(lexer.line, lexer.col),
         )
     else:
       content.add(lexer.source[lexer.current])
@@ -330,25 +341,19 @@ proc parseSymbol*(lexer: var Lexer): Token =
   of '|':
     kind = tkLine
   of '(':
-    lexer.stack.add(
-      StackableElement(kind: skParen, position: pos(lexer.line, lexer.col))
-    )
+    lexer.stack.add(StackableElement(kind: skParen, position: lexer.position()))
     kind = tkLPar
   of ')':
     kind = handleClosing(lexer, skParen, '(', ')', tkRPar)
   of ',':
     kind = tkComma
   of '{':
-    lexer.stack.add(
-      StackableElement(kind: skCurly, position: pos(lexer.line, lexer.col))
-    )
+    lexer.stack.add(StackableElement(kind: skCurly, position: lexer.position()))
     kind = tkLCurly
   of '}':
     kind = handleClosing(lexer, skCurly, '{', '}', tkRCurly)
   of '[':
-    lexer.stack.add(
-      StackableElement(kind: skSquare, position: pos(lexer.line, lexer.col))
-    )
+    lexer.stack.add(StackableElement(kind: skSquare, position: lexer.position()))
     kind = tkLSquare
   of ']':
     kind = handleClosing(lexer, skSquare, '[', ']', tkRSquare)
@@ -356,15 +361,25 @@ proc parseSymbol*(lexer: var Lexer): Token =
     if checkNext(lexer) == ':':
       kind = tkDoubleColon
       lexer.advance()
+    elif checkNext(lexer) == '=':
+      kind = tkImmutableDecl
+      lexer.advance()
     else:
       kind = tkColon
+  of ';':
+    if checkNext(lexer) == '=':
+      kind = tkMutableDecl
+      lexer.advance()
+    else:
+      raise newUnexpectedCharacterError(
+        "Unexpected character ';' (did you mean ';='?)", lexer.position()
+      )
   else:
     raise newUnexpectedCharacterError(
-      "Unexpected character '" & $(lexer.source[lexer.current]) & "'",
-      pos(lexer.line, lexer.col),
+      "Unexpected character '" & $(lexer.source[lexer.current]) & "'", lexer.position()
     )
   lexer.advance()
-  return Token(kind: kind, position: pos(lexer.line, startCol))
+  return Token(kind: kind, position: lexer.position(lexer.line, startCol))
 
 proc next*(lexer: var Lexer): Token =
   ## Retrieves the next token from the source.
@@ -391,9 +406,9 @@ proc next*(lexer: var Lexer): Token =
         lexer.skipNewline = false
         continue
       if lexer.stack.len == 0:
-        return Token(kind: tkEoe, position: pos(lexer.line, lexer.col))
+        return Token(kind: tkEoe, position: lexer.position())
       else:
-        return Token(kind: tkNewline, position: pos(lexer.line, lexer.col))
+        return Token(kind: tkNewline, position: lexer.position())
     # Parse comments
     if lexer.source[lexer.current] == '#':
       let start = lexer.current
@@ -406,7 +421,9 @@ proc next*(lexer: var Lexer): Token =
         lexer.advance()
 
       return Token(
-        kind: tkComment, comment: commentText, position: pos(lexer.line, startCol)
+        kind: tkComment,
+        comment: commentText,
+        position: lexer.position(lexer.line, startCol),
       )
     let start = lexer.current
     # Check for number: digit or a dot with a digit following (as in '.5')
@@ -423,7 +440,7 @@ proc next*(lexer: var Lexer): Token =
     # Otherwise, parse as symbol/operator
     return parseSymbol(lexer)
   # End of input
-  return Token(kind: tkEoe, position: pos(lexer.line, lexer.col))
+  return Token(kind: tkEoe, position: lexer.position())
 
 proc tokenizeExpression*(lexer: var Lexer, includeComments: bool = false): seq[Token] =
   ## Tokenizes the entire input into a sequence of tokens.

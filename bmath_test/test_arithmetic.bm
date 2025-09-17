@@ -65,8 +65,9 @@ assert_eq(round(-2.6), -3, "Round negative number", "✓ Round negative passed")
 
 # [6] Complex Number Arithmetic
 "6. Complex Number Tests"
-complex1 = 3 + 4i
-complex2 = 2 - 3i
+complex1 := 3 + 4i
+complex2 := 2 - 3i
+
 
 # Test complex number creation
 assert_eq(complex1, 3 + 4i, "Complex number creation", "✓ Complex creation passed")

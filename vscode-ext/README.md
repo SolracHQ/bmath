@@ -13,14 +13,15 @@ This project provides a Visual Studio Code extension for the BMath programming l
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/bmath-vscode.git
+   git clone https://github.com/solracHQ/bmath.git
+   cd bmath/vscode-ext
    ```
 2. Open the project in Visual Studio Code.
 3. Install the dependencies:
    ```
    npm install
    npx -y vsce package
-   code --install-extension bmath-vscode-0.1.0.vsix
+   code --install-extension bmath-vscode-0.12.0.vsix
    ```
 4. Launch the extension:
    - Press `F5` to open a new window with the extension loaded.

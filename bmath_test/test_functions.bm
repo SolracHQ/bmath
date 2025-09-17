@@ -11,15 +11,15 @@ use(std::{assert_eq, assert_error})
 # [1] Basic Function Definition
 "1. Basic Function Definition"
 # Simple function
-add = |a, b| a + b
+add := |a, b| a + b
 assert_eq(add(5, 3), 8, "Simple addition function", "✓ Simple addition function")
 
 # Function without parameters
-getPI = || 3.14159
+getPI := || 3.14159
 assert_eq(getPI(), 3.14159, "Function without parameters", "✓ Function without parameters")
 
 # Single parameter function
-square = |x| x * x
+square := |x| x * x
 assert_eq(square(5), 25, "Single parameter function", "✓ Single parameter function")
 
 "✓ Basic function definition tests passed"
@@ -27,15 +27,15 @@ assert_eq(square(5), 25, "Single parameter function", "✓ Single parameter func
 # [2] Lambda Functions and Inline Usage
 "2. Lambda Functions and Inline Usage"
 # Inline lambda
-inlineResult = (|x| x * 2)(5)
+inlineResult := (|x| x * 2)(5)
 assert_eq(inlineResult, 10, "Inline lambda execution", "✓ Inline lambda execution")
 
 # Lambda assigned to variable
-doubler = |x| x * 2
+doubler := |x| x * 2
 assert_eq(doubler(7), 14, "Lambda assigned to variable", "✓ Lambda assigned to variable")
 
 # Multiple lambdas
-cube = |x| x ^ 3
+cube := |x| x ^ 3
 assert_eq(cube(3), 27, "Cube function", "✓ Cube function")
 
 "✓ Lambda function tests passed"
@@ -43,14 +43,14 @@ assert_eq(cube(3), 27, "Cube function", "✓ Cube function")
 # [3] Higher-Order Functions
 "3. Higher-Order Functions"
 # Function that takes a function as parameter
-applyTwice = |f, x| f(f(x))
-doubleSquared = applyTwice(|x| x * 2, 3)
+applyTwice := |f, x| f(f(x))
+doubleSquared := applyTwice(|x| x * 2, 3)
 assert_eq(doubleSquared, 12, "Function taking function parameter", "✓ Function taking function parameter")
 
 # Function that returns a function
-makeMultiplier = |factor| |x| x * factor
-doubler2 = makeMultiplier(2)
-tripler = makeMultiplier(3)
+makeMultiplier := |factor| |x| x * factor
+doubler2 := makeMultiplier(2)
+tripler := makeMultiplier(3)
 assert_eq(doubler2(7), 14, "Function returning function - doubler", "✓ Function returning doubler")
 assert_eq(tripler(7), 21, "Function returning function - tripler", "✓ Function returning tripler")
 
@@ -59,13 +59,13 @@ assert_eq(tripler(7), 21, "Function returning function - tripler", "✓ Function
 # [4] Recursive Functions
 "4. Recursive Functions"
 # Factorial
-factorial = |n| if(n <= 1) 1 else n * factorial(n - 1)
+factorial := |n| if(n <= 1) 1 else n * factorial(n - 1)
 assert_eq(factorial(0), 1, "Factorial of 0", "✓ Factorial 0")
 assert_eq(factorial(1), 1, "Factorial of 1", "✓ Factorial 1")
 assert_eq(factorial(5), 120, "Factorial of 5", "✓ Factorial 5")
 
 # Fibonacci
-fibonacci = |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
+fibonacci := |n| if(n <= 1) n else fibonacci(n-1) + fibonacci(n-2)
 assert_eq(fibonacci(0), 0, "Fibonacci of 0", "✓ Fibonacci 0")
 assert_eq(fibonacci(1), 1, "Fibonacci of 1", "✓ Fibonacci 1")
 assert_eq(fibonacci(6), 8, "Fibonacci of 6", "✓ Fibonacci 6")
@@ -74,7 +74,7 @@ assert_eq(fibonacci(6), 8, "Fibonacci of 6", "✓ Fibonacci 6")
 
 # [5] Functions with Block Bodies
 "5. Functions with Block Bodies"
-complexFunction = |x, y| {
+complexFunction := |x, y| {
   local sum = x + y
   local product = x * y
   if(sum > product) sum else product
@@ -82,8 +82,8 @@ complexFunction = |x, y| {
 assert_eq(complexFunction(3, 4), 12, "Complex function with block body", "✓ Complex block body")
 
 # Function with multiple local variables
-calculator = |a, b, op| {
-  local result = 0
+calculator := |a, b, op| {
+  result ;= 0
   if(op == "add") {
     result = a + b
   } elif(op == "mul") {
@@ -101,14 +101,14 @@ assert_eq(calculator(5, 3, "mul"), 15, "Calculator function - multiplication", "
 # [6] Closures and Environment Capture
 "6. Closures and Environment Capture"
 # Simple closure
-outerVar = 10
-closure = |x| x + outerVar
+outerVar := 10
+closure := |x| x + outerVar
 assert_eq(closure(5), 15, "Simple closure capturing outer variable")
 
 # Closure factory
-makeAdder = |increment| |x| x + increment
-add5 = makeAdder(5)
-add10 = makeAdder(10)
+makeAdder := |increment| |x| x + increment
+add5 := makeAdder(5)
+add10 := makeAdder(10)
 assert_eq(add5(3), 8, "Closure factory - add5")
 assert_eq(add10(3), 13, "Closure factory - add10")
 
@@ -116,15 +116,15 @@ assert_eq(add10(3), 13, "Closure factory - add10")
 
 # [7] Function Composition
 "7. Function Composition"
-addOne = |x| x + 1
-multiplyByTwo = |x| x * 2
+addOne := |x| x + 1
+multiplyByTwo := |x| x * 2
 
 # Manual composition
-composed = |x| multiplyByTwo(addOne(x))
+composed := |x| multiplyByTwo(addOne(x))
 assert_eq(composed(5), 12, "Manual function composition")
 
 # Chain of operations
-result = 5
+result ;= 5
 result = addOne(result)    # 6
 result = multiplyByTwo(result)  # 12
 assert_eq(result, 12, "Sequential function application")
@@ -134,8 +134,8 @@ assert_eq(result, 12, "Sequential function application")
 # [8] Advanced Recursive Patterns
 "8. Advanced Recursive Patterns"
 # Mutual recursion
-isEven = |n| if(n == 0) true else isOdd(n - 1)
-isOdd = |n| if(n == 0) false else isEven(n - 1)
+isEven := |n| if(n == 0) true else isOdd(n - 1)
+isOdd := |n| if(n == 0) false else isEven(n - 1)
 
 assert_eq(isEven(4), true, "Mutual recursion - even number")
 assert_eq(isOdd(4), false, "Mutual recursion - odd test on even")
@@ -143,7 +143,7 @@ assert_eq(isEven(7), false, "Mutual recursion - even test on odd")
 assert_eq(isOdd(7), true, "Mutual recursion - odd number")
 
 # Tree recursion (binomial coefficient)
-binomial = |n, k| {
+binomial := |n, k| {
   if(k == 0 | k == n) 1
   else binomial(n-1, k-1) + binomial(n-1, k)
 }
@@ -155,7 +155,7 @@ assert_eq(binomial(5, 2), 10, "Tree recursion - binomial coefficient")
 "9. Function Error Cases"
 # Test calling non-function
 assert_error(|| {
-  notAFunction = 42
+  notAFunction := 42
   notAFunction(5)
 }, "Calling non-function should raise error")
 

@@ -1,6 +1,7 @@
 ## trigonometry.nim
 
 import ../types/[value, number, vector, errors, core]
+import std/sugar
 
 proc cos*(a: Value): Value {.inline, captureNumericError.} =
   ## Compute the cosine of a value
@@ -17,10 +18,7 @@ proc cos*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(cos(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = cos(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => cos(v)))
   else:
     raise newTypeError("cos expects a number or vector as argument")
 
@@ -39,10 +37,7 @@ proc sin*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(sin(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = sin(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => sin(v)))
   else:
     raise newTypeError("sin expects a number or vector as argument")
 
@@ -61,10 +56,7 @@ proc tan*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(tan(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = tan(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => tan(v)))
   else:
     raise newTypeError("tan expects a number or vector as argument")
 
@@ -83,10 +75,7 @@ proc cot*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(cot(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = cot(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => cot(v)))
   else:
     raise newTypeError("cot expects a number or vector as argument")
 
@@ -105,10 +94,7 @@ proc sec*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(sec(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = sec(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => sec(v)))
   else:
     raise newTypeError("sec expects a number or vector as argument")
 
@@ -127,10 +113,7 @@ proc csc*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(csc(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = csc(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => csc(v)))
   else:
     raise newTypeError("csc expects a number or vector as argument")
 
@@ -150,10 +133,7 @@ proc log*(a: Value, base: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber and base.kind == vkNumber:
     return newValue(log(a.number, base.number))
   elif a.kind == vkVector and base.kind == vkNumber:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = log(a.vector[i], base)
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => log(v, base)))
   else:
     raise newTypeError("log expects a number/vector and a number as arguments")
 
@@ -172,9 +152,6 @@ proc exp*(a: Value): Value {.inline, captureNumericError.} =
   if a.kind == vkNumber:
     return newValue(exp(a.number))
   elif a.kind == vkVector:
-    result = Value(kind: vkVector)
-    result.vector = newVector[Value](a.vector.size)
-    for i in 0 ..< a.vector.size:
-      result.vector[i] = exp(a.vector[i])
+    result = Value(kind: vkVector, vector: a.vector.map((v: Value) => exp(v)))
   else:
     raise newTypeError("exp expects a number or vector as argument")

@@ -11,17 +11,17 @@ use(std::{assert_eq, map, filter, reduce, sum, seq, collect, any as any_true, al
 # [1] Map Function Tests
 "1. Map Function Tests"
 # Map with vectors
-testVector = [1, 2, 3, 4, 5]
-mappedVector = testVector->map(|x| x * 2)
+testVector := [1, 2, 3, 4, 5]
+mappedVector := testVector->map(|x| x * 2)
 assert_eq(mappedVector, [2, 4, 6, 8, 10], "Vector map operation", "✓ Vector map operation")
 
 # Map with function syntax
-mappedVector2 = map(testVector, |x| x ^ 2)
+mappedVector2 := map(testVector, |x| x ^ 2)
 assert_eq(mappedVector2, [1, 4, 9, 16, 25], "Map function syntax", "✓ Map function syntax")
 
 # Map with sequences
-testSeq = seq(4, |i| i + 1)  # [1, 2, 3, 4]
-mappedSeq = testSeq->map(|x| x + 10)
+testSeq := seq(4, |i| i + 1)  # [1, 2, 3, 4]
+mappedSeq := testSeq->map(|x| x + 10)
 assert_eq(mappedSeq->collect, [11, 12, 13, 14], "Sequence map operation", "✓ Sequence map operation")
 
 "✓ Map function tests passed"
@@ -29,17 +29,17 @@ assert_eq(mappedSeq->collect, [11, 12, 13, 14], "Sequence map operation", "✓ S
 # [2] Filter Function Tests
 "2. Filter Function Tests"
 # Filter with vectors
-numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-evens = numbers->filter(|x| x % 2 == 0)
+numbers := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+evens := numbers->filter(|x| x % 2 == 0)
 assert_eq(evens, [2, 4, 6, 8, 10], "Filter even numbers", "✓ Filter even numbers")
 
 # Filter with function syntax
-odds = filter(numbers, |x| x % 2 == 1)
+odds := filter(numbers, |x| x % 2 == 1)
 assert_eq(odds, [1, 3, 5, 7, 9], "Filter function syntax", "✓ Filter function syntax")
 
 # Filter with sequences
-seqNumbers = seq(10, |i| i + 1)  # [1, 2, ..., 10]
-greaterThanFive = seqNumbers->filter(|x| x > 5)
+seqNumbers := seq(10, |i| i + 1)  # [1, 2, ..., 10]
+greaterThanFive := seqNumbers->filter(|x| x > 5)
 assert_eq(greaterThanFive->collect, [6, 7, 8, 9, 10], "Sequence filter", "✓ Sequence filter")
 
 "✓ Filter function tests passed"
@@ -47,16 +47,16 @@ assert_eq(greaterThanFive->collect, [6, 7, 8, 9, 10], "Sequence filter", "✓ Se
 # [3] Reduce Function Tests
 "3. Reduce Function Tests"
 # Reduce with vectors - sum
-values = [1, 2, 3, 4, 5]
-sumResult = values->reduce(0, |acc, x| acc + x)
+values := [1, 2, 3, 4, 5]
+sumResult := values->reduce(0, |acc, x| acc + x)
 assert_eq(sumResult, 15, "Reduce sum operation", "✓ Reduce sum operation")
 
 # Reduce with function syntax - product
-productResult = reduce(values, 1, |acc, x| acc * x)
+productResult := reduce(values, 1, |acc, x| acc * x)
 assert_eq(productResult, 120, "Reduce function syntax (product)", "✓ Reduce product")
 
 # Reduce to find maximum
-maxResult = values->reduce(0, |acc, x| if(x > acc) x else acc)
+maxResult := values->reduce(0, |acc, x| if(x > acc) x else acc)
 assert_eq(maxResult, 5, "Reduce to find maximum", "✓ Reduce max")
 
 # String concatenation (if strings are supported)
@@ -69,19 +69,19 @@ assert_eq(maxResult, 5, "Reduce to find maximum", "✓ Reduce max")
 # [4] Sum Function Tests
 "4. Sum Function Tests"
 # Sum with vectors
-sumVector = [10, 20, 30, 40]
+sumVector := [10, 20, 30, 40]
 assert_eq(sumVector->sum, 100, "Vector sum operation", "✓ Vector sum")
 
 # Sum with sequences
-sumSeq = seq(4, |i| (i + 1) * 5)  # [5, 10, 15, 20]
+sumSeq := seq(4, |i| (i + 1) * 5)  # [5, 10, 15, 20]
 assert_eq(sumSeq->sum, 50, "Sequence sum operation", "✓ Sequence sum")
 
 # Sum with single element
-singleSum = [42]->sum
+singleSum := [42]->sum
 assert_eq(singleSum, 42, "Single element sum", "✓ Single sum")
 
 # Sum with empty vector
-emptySum = []->sum
+emptySum := []->sum
 assert_eq(emptySum, 0, "Empty vector sum", "✓ Empty sum")
 
 "✓ Sum function tests passed"
@@ -89,25 +89,25 @@ assert_eq(emptySum, 0, "Empty vector sum", "✓ Empty sum")
 # [5] Any and All Function Tests
 "5. Any and All Function Tests"
 # Any with boolean vectors
-mixedBools = [false, false, true, false]
+mixedBools := [false, false, true, false]
 assert_eq(mixedBools->any_true, true, "Any with mixed booleans", "✓ Any mixed booleans")
 
-allFalse = [false, false, false]
+allFalse := [false, false, false]
 assert_eq(allFalse->any_true, false, "Any with all false", "✓ Any all false")
 
 # All with boolean vectors
-allTrue = [true, true, true]
+allTrue := [true, true, true]
 assert_eq(allTrue->all_true, true, "All with all true", "✓ All all true")
 
 assert_eq(mixedBools->all_true, false, "All with mixed booleans", "✓ All mixed booleans")
 
 # Any/All with predicate-like usage (via map)
-numbersForTest = [2, 4, 6, 8]
-evenTest = numbersForTest->map(|x| x % 2 == 0)->all_true
+numbersForTest := [2, 4, 6, 8]
+evenTest := numbersForTest->map(|x| x % 2 == 0)->all_true
 assert_eq(evenTest, true, "All numbers are even")
 
-numbersWithOdd = [2, 3, 4, 6]
-hasEven = numbersWithOdd->map(|x| x % 2 == 0)->any_true
+numbersWithOdd := [2, 3, 4, 6]
+hasEven := numbersWithOdd->map(|x| x % 2 == 0)->any_true
 assert_eq(hasEven, true, "Has even numbers")
 
 "✓ Any/All function tests passed"
@@ -115,7 +115,7 @@ assert_eq(hasEven, true, "Has even numbers")
 # [6] Nth and At Function Tests
 "6. Nth and At Function Tests"
 # Nth with vectors
-indexVector = [10, 20, 30, 40, 50]
+indexVector := [10, 20, 30, 40, 50]
 assert_eq(indexVector->nth(0), 10, "Nth element - first")
 assert_eq(indexVector->nth(2), 30, "Nth element - middle")
 assert_eq(indexVector->nth(4), 50, "Nth element - last")
@@ -124,7 +124,7 @@ assert_eq(indexVector->nth(4), 50, "Nth element - last")
 assert_eq(indexVector->at(1), 20, "At function - second element")
 
 # Nth with sequences
-seqForIndex = seq(5, |i| i * 10)  # [0, 10, 20, 30, 40]
+seqForIndex := seq(5, |i| i * 10)  # [0, 10, 20, 30, 40]
 assert_eq(seqForIndex->nth(3), 30, "Sequence nth element")
 
 "✓ Nth/At function tests passed"
@@ -132,16 +132,16 @@ assert_eq(seqForIndex->nth(3), 30, "Sequence nth element")
 # [7] Complex Functional Chains
 "7. Complex Functional Chains"
 # Multiple chained operations
-data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+data := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 # Chain: filter evens -> square -> filter < 50 -> sum
-result = data->filter(|x| x % 2 == 0)->map(|x| x * x)->filter(|x| x < 50)->sum
+result := data->filter(|x| x % 2 == 0)->map(|x| x * x)->filter(|x| x < 50)->sum
 
 assert_eq(result, 56, "Complex functional chain")
 
 # Another complex example
-fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+fibonacci := [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
 # Chain: filter < 20 -> add 1 -> sum
-fibResult = fibonacci->filter(|x| x < 20)->map(|x| x + 1)->reduce(0, |acc, x| acc + x)
+fibResult := fibonacci->filter(|x| x < 20)->map(|x| x + 1)->reduce(0, |acc, x| acc + x)
 
 assert_eq(fibResult, 40, "Fibonacci processing chain")
 
@@ -150,17 +150,17 @@ assert_eq(fibResult, 40, "Fibonacci processing chain")
 # [8] Function Composition
 "8. Function Composition"
 # Manual function composition
-addOne = |x| x + 1
-double = |x| x * 2
-square = |x| x * x
+addOne := |x| x + 1
+double := |x| x * 2
+square := |x| x * x
 
 # Compose functions manually
-composed = |x| double(addOne(x))
+composed := |x| double(addOne(x))
 assert_eq(composed(5), 12, "Manual function composition")
 
 # use(map to apply composed function)
-testData = [1, 2, 3, 4]
-composedResult = testData->map(|x| square(double(x)))
+testData := [1, 2, 3, 4]
+composedResult := testData->map(|x| square(double(x)))
 assert_eq(composedResult, [4, 16, 36, 64], "Map with composition")
 
 "✓ Function composition tests passed"
@@ -168,21 +168,21 @@ assert_eq(composedResult, [4, 16, 36, 64], "Map with composition")
 # [9] Higher-Order Function Creation
 "9. Higher-Order Function Creation"
 # Function that creates other functions
-makeAdder = |n| |x| x + n
-add5 = makeAdder(5)
-add10 = makeAdder(10)
+makeAdder := |n| |x| x + n
+add5 := makeAdder(5)
+add10 := makeAdder(10)
 
-testNumbers = [1, 2, 3]
-added5 = testNumbers->map(add5)
+testNumbers := [1, 2, 3]
+added5 := testNumbers->map(add5)
 assert_eq(added5, [6, 7, 8], "Higher-order function - add5")
 
-added10 = testNumbers->map(add10)
+added10 := testNumbers->map(add10)
 assert_eq(added10, [11, 12, 13], "Higher-order function - add10")
 
 # Function that takes a function and applies it twice
-applyTwice = |f| |x| f(f(x))
-doubler = |x| x * 2
-quadrupler = applyTwice(doubler)
+applyTwice := |f| |x| f(f(x))
+doubler := |x| x * 2
+quadrupler := applyTwice(doubler)
 assert_eq(quadrupler(3), 12, "Apply function twice")
 
 "✓ Higher-order function creation tests passed"

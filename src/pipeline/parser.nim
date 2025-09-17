@@ -76,19 +76,46 @@ proc cleanUpNewlines(parser: var Parser) =
   while parser.match({tkNewline}):
     discard
 
-proc newParser*(
-    tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull
-): Parser {.inline.} =
-  Parser(tokens: tokens, current: 0, optimizer: newOptimizer(optimizationLevel))
-
 # Forward declarations
 proc parsePrattExpr(parser: var Parser, minPrec: int = 0): Expression
-proc parseLocalAssignment(parser: var Parser): Expression
+proc parseDeclaration(parser: var Parser): Expression
 proc getChildren(parser: var Parser): seq[seq[ModPart]]
 
 proc parseExpression(parser: var Parser): Expression {.inline.} =
-  ## Entry point for expression parsing, delegates to parseLocalAssignment
-  return parser.parseLocalAssignment()
+  ## Entry point for expression parsing, delegates to parsePrattExpr
+  # Check if this looks like a declaration (starts with ident followed by : or := or ;=)
+  if parser.peek().kind == tkIdent:
+    return parser.parseDeclaration()
+  return parser.parsePrattExpr()
+
+proc parseDeclaration(parser: var Parser): Expression =
+  ## Parses a declaration: ident (: type)? (:= | ;=) expr
+  ## If no declaration operator is found, restore parser position and
+  ## parse using the normal Pratt expression entry.
+  let startIdx = parser.current
+  let identToken = parser.advance() # consume tkIdent
+
+  var varType: BMathType = AnyType
+  if parser.match({tkColon}):
+    if not parser.match({tkType}):
+      raise newMissingTokenError("Expected type after ':'", parser.previous().position)
+    varType = parser.previous().value.typ
+
+  if not parser.match({tkImmutableDecl, tkMutableDecl}):
+    # Not a declaration after all — rewind and parse as a normal expression
+    parser.current = startIdx
+    return parser.parsePrattExpr()
+
+  let declToken = parser.previous()
+    # either tkImmutableDecl (':=') or tkMutableDecl (';=')
+
+  let expr = parser.parseExpression()
+    # expression like a: Real := b: Complex ;= 2.2 are valid
+  let identExpr = newIdentExpr(identToken.position, identToken.name)
+  if declToken.kind == tkImmutableDecl:
+    return newImmutableDeclExpr(identToken.position, identExpr, expr, varType)
+  else:
+    return newMutableDeclExpr(identToken.position, identExpr, expr, varType)
 
 # =============================================================================
 # PREFIX PARSERS (NUD - Null Denotation)
@@ -114,6 +141,10 @@ proc parseType(parser: var Parser, token: Token): Expression =
 proc parseIdent(parser: var Parser, token: Token): Expression =
   newIdentExpr(token.position, token.name)
 
+proc parseThis(parser: var Parser, token: Token): Expression =
+  ## Parses 'this' which returns the current module
+  Expression(kind: ekThis, position: token.position)
+
 proc parseGroup(parser: var Parser, token: Token): Expression =
   ## Parses (expression)
   parser.cleanUpNewlines()
@@ -137,7 +168,7 @@ proc parseVector(parser: var Parser, token: Token): Expression =
 
   while not parser.match({tkRSquare}): # tkRSquare is ']'
     parser.cleanUpNewlines()
-    let expr = parser.parsePrattExpr()
+    let expr = parser.parseExpression()
 
     values.add(expr)
     parser.cleanUpNewlines()
@@ -206,7 +237,7 @@ proc parseFunction(parser: var Parser, token: Token): Expression =
       raise newMissingTokenError("Expected type after '=>'", parser.previous().position)
     returnType = parser.previous().value.typ
 
-  let body = parser.parsePrattExpr()
+  let body = parser.parseExpression()
   let funcExpr = newFuncExpr(token.position, params, body, returnType)
 
   return funcExpr
@@ -234,10 +265,10 @@ proc parseModule(parser: var Parser, token: Token): Expression =
   let blockExpr = parseBlock(parser, lcurly)
   let moduleExpr = newModuleExpr(token.position, blockExpr.blockExpr.expressions)
 
-  # If we have an identifier, wrap in assignment (syntactic sugar)
+  # If we have an identifier, wrap in immutable declaration (syntactic sugar)
   if identifierName != "":
     let identExpr = newIdentExpr(identifierPos, identifierName)
-    return newAssignExpr(token.position, identExpr, moduleExpr, true, AnyType)
+    return newImmutableDeclExpr(token.position, identExpr, moduleExpr, AnyType)
   else:
     return moduleExpr
 
@@ -278,7 +309,7 @@ proc parseUse(parser: var Parser, token: Token): Expression =
         let moduleCall = newModuleAccessExpr(token.position, useResult, c[0].name)
         let aliasExpr = newIdentExpr(token.position, c[0].alias)
         assignments.add(
-          newAssignExpr(token.position, aliasExpr, moduleCall, true, AnyType)
+          newImmutableDeclExpr(token.position, aliasExpr, moduleCall, AnyType)
         )
       else:
         # Nested access: module::sub1::sub2::member
@@ -288,7 +319,7 @@ proc parseUse(parser: var Parser, token: Token): Expression =
         # Final assignment uses the last part's alias
         let aliasExpr = newIdentExpr(token.position, c[^1].alias)
         assignments.add(
-          newAssignExpr(token.position, aliasExpr, moduleCall, true, AnyType)
+          newImmutableDeclExpr(token.position, aliasExpr, moduleCall, AnyType)
         )
 
     # Return single assignment or vector of assignments
@@ -305,7 +336,7 @@ proc parseUse(parser: var Parser, token: Token): Expression =
       )
     let aliasToken = parser.previous()
     let aliasExpr = newIdentExpr(aliasToken.position, aliasToken.name)
-    useResult = newAssignExpr(token.position, aliasExpr, useResult, true, AnyType)
+    useResult = newImmutableDeclExpr(token.position, aliasExpr, useResult, AnyType)
 
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
@@ -388,7 +419,7 @@ proc parseIf(parser: var Parser, token: Token): Expression =
   if not parser.match({tkLpar}):
     raise newMissingTokenError("Expected '(' after 'if'", token.position)
   parser.cleanUpNewlines()
-  let ifCond = parser.parsePrattExpr()
+  let ifCond = parser.parseExpression()
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
     raise
@@ -404,13 +435,13 @@ proc parseIf(parser: var Parser, token: Token): Expression =
       raise
         newMissingTokenError("Expected '(' after 'elif'", parser.previous().position)
     parser.cleanUpNewlines()
-    let elifCond = parser.parsePrattExpr()
+    let elifCond = parser.parseExpression()
     parser.cleanUpNewlines()
     if not parser.match({tkRpar}):
       raise
         newMissingTokenError("Expected ')' after condition", parser.previous().position)
     parser.cleanUpNewlines()
-    let elifThen = parser.parsePrattExpr()
+    let elifThen = parser.parseExpression()
     branches.add(newBranch(elifCond, elifThen))
     parser.cleanUpNewlines()
 
@@ -420,7 +451,7 @@ proc parseIf(parser: var Parser, token: Token): Expression =
       "Expected 'else' after if-elif conditions", parser.previous().position
     )
   parser.cleanUpNewlines()
-  let elseBranch = parser.parsePrattExpr()
+  let elseBranch = parser.parseExpression()
 
   let ifResult = newIfExpr(token.position, branches, elseBranch)
 
@@ -625,40 +656,9 @@ proc parseAssignment(parser: var Parser, left: Expression, token: Token): Expres
 
   # Parse the right side with right-associativity (precedence - 1)
   let value = parser.parsePrattExpr(opTable[tkAssign].precedence - 1)
-  let assignExpr = newAssignExpr(token.position, left, value, false, AnyType)
+  let assignExpr = newAssignExpr(token.position, left, value)
 
   return assignExpr
-
-proc parseLocalAssignment(parser: var Parser): Expression =
-  ## Handles local assignments and regular expressions
-  if parser.match({tkLocal}):
-    # For local assignments, we only allow identifiers as lvalues
-    if not parser.match({tkIdent}):
-      raise newMissingTokenError(
-        "Expected identifier after 'local'", parser.previous().position
-      )
-    let identToken = parser.previous()
-    let identExpr = newIdentExpr(identToken.position, identToken.name)
-
-    var typ: BMathType = AnyType
-    if parser.match({tkColon}):
-      if parser.match({tkType}):
-        typ = parser.previous().value.typ
-      else:
-        raise
-          newMissingTokenError("Expected type after ':'", parser.previous().position)
-    if not parser.match({tkAssign}):
-      raise newMissingTokenError(
-        &"Expected '=' after local '{identToken.name}'", parser.previous().position
-      )
-    let value = parser.parsePrattExpr()
-    let assignExpr = newAssignExpr(identToken.position, identExpr, value, true, typ)
-
-    return assignExpr
-
-  let expr = parser.parsePrattExpr()
-
-  return expr
 
 # =============================================================================
 # OPERATOR REGISTRATION
@@ -687,6 +687,7 @@ proc initOperatorTable*() =
   registerPrefix(tkString, parseString)
   registerPrefix(tkType, parseType)
   registerPrefix(tkIdent, parseIdent)
+  registerPrefix(tkThis, parseThis)
   registerPrefix(tkLpar, parseGroup)
   registerPrefix(tkLSquare, parseVector) # '[' starts vector
   registerPrefix(tkLCurly, parseBlock) # '{' starts block
@@ -724,25 +725,22 @@ proc initOperatorTable*() =
 # PUBLIC API
 # =============================================================================
 
-proc parse*(
-    tokens: seq[Token], optimizationLevel: OptimizationLevel = olFull
-): Expression =
+if opTable.len == 0:
+  initOperatorTable()
+
+proc newParser*(optimizationLevel: OptimizationLevel = olFull): Parser {.inline.} =
+  Parser(tokens: @[], current: 0, optimizer: newOptimizer(optimizationLevel))
+
+proc parse*(parser: var Parser, tokens: seq[Token]): Expression =
   ## Main parsing function that processes tokens into an expression AST
   # Initialize operator table if needed
-  if opTable.len == 0:
-    initOperatorTable()
 
-  var parser = newParser(tokens, optimizationLevel)
+  parser.tokens = tokens
 
   parser.cleanUpNewlines()
 
   # Check if we only have comments or are at end
-  var parseResult: Expression
-  if parser.isAtEnd:
-    # No expression to parse, return nil or raise error
-    raise newInvalidExpressionError("No expression to parse", pos(1, 1))
-  else:
-    parseResult = parser.parseLocalAssignment()
+  var parseResult: Expression = parser.parseExpression()
 
   # Check if there are any unexpected tokens left
   if not parser.isAtEnd:
