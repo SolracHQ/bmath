@@ -4,72 +4,69 @@
 
 use(std::{print, sqrt, pow, abs, floor, ceil, round})
 
-runArithmeticExamples = || {
+runArithmeticExamples := || => String {
   print("=== Arithmetic Examples ===")
 
   # [1] Basic Arithmetic Operations
-  addResult = 5 + 3
-  subResult = 10 - 4
-  mulResult = 7 * 6
-  divResult = 20 / 5
-  intDivResult = floor(17 / 5)
-  expResult = 2 ^ 3
-  modResult = 17 % 5
+  addResult := 5 + 3
+  subResult := 10 - 4
+  mulResult := 7 * 6
+  divResult := 20 / 5
+  intDivResult := floor(17 / 5)
+  expResult := 2 ^ 3
+  modResult := 17 % 5
 
   print("Add:", addResult, "Sub:", subResult, "Mul:", mulResult)
   print("Div:", divResult, "IntDiv:", intDivResult, "Exp:", expResult, "Mod:", modResult)
 
   # [2] Order of Operations
-  orderedResult = 2 + 3 * 4
-  groupedResult = (2 + 3) * 4
+  orderedResult := 2 + 3 * 4
+  groupedResult := (2 + 3) * 4
   print("Ordered:", orderedResult, "Grouped:", groupedResult)
 
   # [3] Complex Expressions
-  complexCalc = (5 + 3) * (10 - 2) / 2
-  nestedCalc = ((4 + 6) / 2) ^ 2
+  complexCalc := (5 + 3) * (10 - 2) / 2
+  nestedCalc := ((4 + 6) / 2) ^ 2
   print("Complex calc:", complexCalc, "Nested:", nestedCalc)
 
   # [4] Mathematical Functions
-  squareRoot = sqrt(16)
-  cubeRoot = pow(27, 1/3)
-  absValue = abs(-42)
+  squareRoot := sqrt(16)
+  cubeRoot := pow(27, 1/3)
+  absValue := abs(-42)
   print("Sqrt:", squareRoot, "Cuberoot:", cubeRoot, "Abs:", absValue)
 
   # [5] Working with Variables
-  a = 15
-  b = 4
-  varSum = a + b
-  varDiff = a - b
-  varProd = a * b
-  varDiv = a / b
+  a := 15
+  b := 4
+  varSum := a + b
+  varDiff := a - b
+  varProd := a * b
+  varDiv := a / b
   print("Vars:", varSum, varDiff, varProd, varDiv)
 
   # [6] Scientific Notation
-  largeNum = 1e5
-  smallNum = 1.5e-4
-  combinedSci = largeNum + smallNum
+  largeNum := 1e5
+  smallNum := 1.5e-4
+  combinedSci := largeNum + smallNum
   print("Sci:", largeNum, smallNum, combinedSci)
 
   # [7] Complex Number Arithmetic
-  complex1 = 3 + 4i
-  complex2 = 1 - 2i
-  complexAdd = complex1 + complex2
-  complexSub = complex1 - complex2
-  complexMul = complex1 * complex2
-  complexDiv = complex1 / complex2
-  complexSqrt = sqrt(-9)
-  complexAbs = abs(complex1)
+  complex1 := 3 + 4i
+  complex2 := 1 - 2i
+  complexAdd := complex1 + complex2
+  complexSub := complex1 - complex2
+  complexMul := complex1 * complex2
+  complexDiv := complex1 / complex2
+  complexSqrt := sqrt(-9)
+  complexAbs := abs(complex1)
   print("Complex operations:", complexAdd, complexSub, complexMul, complexDiv)
   print("Complex sqrt:", complexSqrt, "Complex abs:", complexAbs)
 
   # [9] Mixed Type Arithmetic (Type Promotion)
-  intPlusFlt = 5 + 2.5
-  fltTimesInt = 2.5 * 4
-  mixedComplex = 3 + (2 + 3i)
+  intPlusFlt := 5 + 2.5
+  fltTimesInt := 2.5 * 4
+  mixedComplex := 3 + (2 + 3i)
   print("Mixed types:", intPlusFlt, fltTimesInt, mixedComplex)
 
-  print("=== Arithmetic examples completed ===")
+  "=== Arithmetic examples completed ==="
 }
-
-# Run the examples
-runArithmeticExamples()

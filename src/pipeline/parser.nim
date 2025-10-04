@@ -736,6 +736,7 @@ proc parse*(parser: var Parser, tokens: seq[Token]): Expression =
   # Initialize operator table if needed
 
   parser.tokens = tokens
+  parser.current = 0 # Reset parser position for reuse
 
   parser.cleanUpNewlines()
 

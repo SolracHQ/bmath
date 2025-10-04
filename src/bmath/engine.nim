@@ -11,13 +11,14 @@
 import
   ../pipeline/[lexer, parser, interpreter, optimization],
   ../logging/logging,
-  ../types/[value, errors, core, expression]
+  ../types/[value, errors, core, expression, token]
 
 type Engine* = ref object ## Stateful evaluation engine maintaining interpreter context
   interpreter*: Interpreter
   replMode*: bool
   optimizationLevel*: OptimizationLevel
   disableGlobals*: bool
+  scriptPath*: string
 
 proc newEngine*(
     replMode: bool = false,
@@ -31,10 +32,11 @@ proc newEngine*(
   result.replMode = replMode
   result.optimizationLevel = optimizationLevel
   result.disableGlobals = disableGlobals
+  result.scriptPath = if scriptPath != "": scriptPath else: "<expression>"
 
 iterator run*(engine: Engine, source: string): Value =
   ## Executes source while maintaining interpreter state
-  var lexer = newLexer(source)
+  var lexer = newLexer(source, engine.scriptPath)
   var parser = newParser(engine.optimizationLevel)
 
   while not lexer.atEnd:
@@ -49,7 +51,7 @@ iterator run*(engine: Engine, source: string): Value =
     if tokens.len == 0:
       continue
 
-    debug("Tokens: ", tokens)
+    debug("Tokens (JSON):\n", tokensToJson(tokens))
 
     debug("Starting parsing process")
     var ast = wrapError("PARSING", fatal = not engine.replMode):

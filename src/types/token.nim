@@ -1,5 +1,5 @@
 import value
-import std/complex
+import std/[complex, json]
 
 import position
 import number
@@ -134,3 +134,28 @@ proc `$`*(token: Token): string =
     return "use"
   of tkDoubleColon:
     return "'::'"
+
+proc toJson*(token: Token): JsonNode =
+  ## Converts a token to JSON representation for debugging
+  result = newJObject()
+  result["kind"] = %($token.kind)
+  result["line"] = %(token.position.line)
+  result["col"] = %(token.position.column)
+  result["source"] = %(token.position.filePath)
+  
+  case token.kind
+  of tkNumber, tkString, tkType:
+    result["value"] = %($token.value)
+  of tkIdent:
+    result["name"] = %(token.name)
+  of tkComment:
+    result["comment"] = %(token.comment)
+  else:
+    discard
+
+proc tokensToJson*(tokens: seq[Token]): string =
+  ## Converts a sequence of tokens to a pretty-printed JSON string
+  var arr = newJArray()
+  for token in tokens:
+    arr.add(token.toJson())
+  return arr.pretty()
