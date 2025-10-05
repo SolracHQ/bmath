@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Generate BMath Standard Library Documentation from JSON signatures.
+Generate BMath Standard Library Documentation from JSON.
 
-This script reads the stdlib_signatures_v2.json file and generates
-comprehensive Markdown documentation for all standard library functions.
+This script reads the stdlib.json file and generates
+comprehensive Markdown documentation for all standard library functions and constants.
 """
 
 import json
@@ -128,18 +128,34 @@ def generate_function_doc(func_name: str, func_data: Dict[str, Any]) -> str:
 
 
 def categorize_functions(functions: Dict[str, Dict[str, Any]]) -> Dict[str, List[str]]:
-    """Categorize functions into logical groups based on their purpose."""
-    categories = {
-        "Core Functions": ["exit", "try_or", "try_catch", "print", "help"],
-        "Arithmetic": ["pow", "sqrt", "abs", "floor", "ceil", "round", "re", "im"],
-        "Trigonometric": ["sin", "cos", "tan", "cot", "sec", "csc", "log", "exp"],
-        "Vector Operations": ["vec", "dot", "first", "last", "len", "merge", "slice", "set"],
-        "Sequence Operations": ["seq", "skip", "take", "has_next", "next", "collect", "zip"],
-        "Functional": ["map", "filter", "reduce", "sum", "any", "all", "nth", "at"],
-        "Comparison": ["min", "max"],
-        "Assertions": ["assert", "assert_eq", "assert_neq", "assert_lt", "assert_gt", "assert_type", "assert_error"],
-        "Type System": ["type"],
+    """Categorize functions based on their 'category' field in JSON."""
+    # Category display name mapping
+    CATEGORY_NAMES = {
+        "core": "Core Functions",
+        "arithmetic": "Arithmetic",
+        "trigonometric": "Trigonometric",
+        "vector": "Vector Operations",
+        "sequence": "Sequence Operations",
+        "functional": "Functional",
+        "comparison": "Comparison",
+        "assertions": "Assertions",
+        "type-system": "Type System",
     }
+    
+    categories: Dict[str, List[str]] = {}
+    
+    # Group functions by their category field
+    for func_name, func_data in functions.items():
+        category = func_data.get("category", "other")
+        display_name = CATEGORY_NAMES.get(category, "Other")
+        
+        if display_name not in categories:
+            categories[display_name] = []
+        categories[display_name].append(func_name)
+    
+    # Sort functions within each category
+    for func_list in categories.values():
+        func_list.sort()
     
     return categories
 
@@ -188,7 +204,7 @@ def main():
     # Paths
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent
-    json_path = project_dir / "data" / "stdlib_signatures.json"
+    json_path = project_dir / "data" / "stdlib.json"
     output_dir = project_dir / "docs" / "stdlib"
     
     # Ensure output directory exists
@@ -213,7 +229,7 @@ def main():
     
     with open(output_path, "w") as f:
         # Write header
-        f.write(f"<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->\n")
+        f.write(f"<!-- Auto-generated from stdlib.json - DO NOT EDIT MANUALLY -->\n")
         f.write(f"<!-- Version: {version} -->\n\n")
         
         # Write index
@@ -233,7 +249,7 @@ def main():
         
         print(f"  - {filename}")
         with open(category_path, "w") as f:
-            f.write(f"<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->\n")
+            f.write(f"<!-- Auto-generated from stdlib.json - DO NOT EDIT MANUALLY -->\n")
             f.write(f"<!-- Version: {version} -->\n\n")
             f.write(generate_category_doc(category, func_names, functions))
     
@@ -241,7 +257,7 @@ def main():
     index_path = output_dir / "index.md"
     print(f"\nGenerating index: {index_path}")
     with open(index_path, "w") as f:
-        f.write(f"<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->\n")
+        f.write(f"<!-- Auto-generated from stdlib.json - DO NOT EDIT MANUALLY -->\n")
         f.write(f"<!-- Version: {version} -->\n\n")
         f.write("# BMath Standard Library Documentation\n\n")
         f.write(f"Version: {version}\n\n")

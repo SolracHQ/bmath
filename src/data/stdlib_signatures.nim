@@ -1,8 +1,9 @@
-## stdlib_signatures.nim - Load standard library signatures from JSON at compile time
+## stdlib_signatures.nim - Load standard library data from JSON at compile time
 ##
-## This module provides utilities to load function signatures from the
-## stdlib_signatures.json file, which serves as a single source of truth
-## for type information used by the type checker, LSP, and documentation.
+## This module provides utilities to load function signatures, constants,
+## and documentation from the stdlib.json file, which serves as a single
+## source of truth for all stdlib information used by the type checker,
+## LSP, and documentation.
 ##
 ## The JSON file is embedded at compile time for zero runtime overhead.
 
@@ -16,9 +17,18 @@ type
     ## Temporary type for loading function data from JSON
     metadata*: FunctionMetadata
     signatures*: seq[Signature]
+    category*: string  # Function category for organization
+
+  ConstantInfo* = object
+    ## Information about a standard library constant
+    description*: string
+    constType*: string
+    category*: string
+    examples*: seq[string]
+    alias*: string  # If this constant is an alias for another
 
 # Load JSON at compile time
-const stdlibSignaturesJson = staticRead("../../data/stdlib_signatures.json")
+const stdlibJson = staticRead("../../data/stdlib.json")
 
 proc parseTypeString(typeStr: string): BMathType =
   ## Parse a type string from JSON into a BMathType
@@ -105,7 +115,7 @@ proc loadStdlibSignatures(): Table[string, LoadedFunctionData] =
   ## - A table mapping function names to their function data
   result = initTable[string, LoadedFunctionData]()
   
-  let rootNode = parseJson(stdlibSignaturesJson)
+  let rootNode = parseJson(stdlibJson)
   
   if not rootNode.hasKey("functions"):
     return
@@ -113,6 +123,9 @@ proc loadStdlibSignatures(): Table[string, LoadedFunctionData] =
   let functionsNode = rootNode["functions"]
   for funcName, funcData in functionsNode.pairs:
     var funcInfo = LoadedFunctionData()
+    
+    if funcData.hasKey("category"):
+      funcInfo.category = funcData["category"].getStr()
     
     if funcData.hasKey("description"):
       funcInfo.metadata.description = funcData["description"].getStr()
@@ -127,14 +140,50 @@ proc loadStdlibSignatures(): Table[string, LoadedFunctionData] =
     
     result[funcName] = funcInfo
 
-# Cache loaded signatures (initialized once at runtime)
+proc loadStdlibConstants(): Table[string, ConstantInfo] =
+  ## Load all stdlib constants from the embedded JSON
+  ##
+  ## Returns:
+  ## - A table mapping constant names to their info
+  result = initTable[string, ConstantInfo]()
+  
+  let rootNode = parseJson(stdlibJson)
+  
+  if not rootNode.hasKey("constants"):
+    return
+  
+  let constantsNode = rootNode["constants"]
+  for constName, constData in constantsNode.pairs:
+    var info = ConstantInfo()
+    
+    if constData.hasKey("description"):
+      info.description = constData["description"].getStr()
+    
+    if constData.hasKey("type"):
+      info.constType = constData["type"].getStr()
+    
+    if constData.hasKey("category"):
+      info.category = constData["category"].getStr()
+    
+    if constData.hasKey("alias"):
+      info.alias = constData["alias"].getStr()
+    
+    if constData.hasKey("examples"):
+      for example in constData["examples"]:
+        info.examples.add(example.getStr())
+    
+    result[constName] = info
+
+# Cache loaded data (initialized once at runtime)
 var signaturesCache {.global.}: Table[string, LoadedFunctionData]
+var constantsCache {.global.}: Table[string, ConstantInfo]
 var cacheInitialized {.global.} = false
 
 proc initSignaturesCache*() =
-  ## Initialize the signatures cache from embedded JSON
+  ## Initialize the caches from embedded JSON
   if not cacheInitialized:
     signaturesCache = loadStdlibSignatures()
+    constantsCache = loadStdlibConstants()
     cacheInitialized = true
 
 proc getSignaturesFor*(funcName: string): seq[Signature] =
@@ -196,3 +245,77 @@ proc getAllFunctionNames*(): seq[string] =
   result = @[]
   for name in signaturesCache.keys:
     result.add(name)
+
+proc getConstantInfo*(constName: string): ConstantInfo =
+  ## Get information for a given constant name
+  ##
+  ## Parameters:
+  ## - constName: Name of the constant
+  ##
+  ## Returns:
+  ## - Constant information, or empty if not found
+  if not cacheInitialized:
+    initSignaturesCache()
+  
+  if constantsCache.hasKey(constName):
+    return constantsCache[constName]
+  else:
+    return ConstantInfo()
+
+proc getConstantDescription*(constName: string): string =
+  ## Get description for a given constant name
+  ##
+  ## Parameters:
+  ## - constName: Name of the constant
+  ##
+  ## Returns:
+  ## - Description string, or empty if not found
+  if not cacheInitialized:
+    initSignaturesCache()
+  
+  if constantsCache.hasKey(constName):
+    return constantsCache[constName].description
+  else:
+    return ""
+
+proc getAllConstantNames*(): seq[string] =
+  ## Get all constant names defined in stdlib
+  ##
+  ## Returns:
+  ## - Sequence of all constant names
+  if not cacheInitialized:
+    initSignaturesCache()
+  
+  result = @[]
+  for name in constantsCache.keys:
+    result.add(name)
+
+proc isConstant*(name: string): bool =
+  ## Check if a name is a stdlib constant
+  ##
+  ## Parameters:
+  ## - name: Name to check
+  ##
+  ## Returns:
+  ## - True if it's a constant, false otherwise
+  if not cacheInitialized:
+    initSignaturesCache()
+  
+  return constantsCache.hasKey(name)
+
+proc getCategoryFor*(funcName: string): string =
+  ## Get the category for a given function name
+  ##
+  ## Parameters:
+  ## - funcName: Name of the function
+  ##
+  ## Returns:
+  ## - Category string, or "other" if not found
+  if not cacheInitialized:
+    initSignaturesCache()
+  
+  if signaturesCache.hasKey(funcName):
+    let category = signaturesCache[funcName].category
+    return if category != "": category else: "other"
+  else:
+    return "other"

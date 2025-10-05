@@ -106,7 +106,8 @@ proc inferExpressionType(analyzer: var HoverAnalyzer, expr: Expression): string 
   of ekIdent:
     try:
       let varInfo = analyzer.currentScope.lookupVariable(expr.identifier.ident)
-      return if varInfo.varType.len > 0: varInfo.varType else: "Unknown"
+      let typeStr = $varInfo.varType
+      return if typeStr != "Any" and typeStr != "": typeStr else: "Unknown"
     except KeyError:
       return "Unknown"
   of ekVector:
@@ -178,7 +179,7 @@ proc findSymbolAtPosition(analyzer: var HoverAnalyzer, expr: Expression) =
         # Look up symbol in scope chain
         try:
           let varInfo = analyzer.currentScope.lookupVariable(name)
-          analyzer.symbolInfo.symbolType = varInfo.varType
+          analyzer.symbolInfo.symbolType = $varInfo.varType
           analyzer.symbolInfo.isMutable = varInfo.isMutable
           analyzer.symbolInfo.isUsed = varInfo.isUsed
           analyzer.symbolInfo.declaredAt = varInfo.position
@@ -231,13 +232,13 @@ proc findSymbolAtPosition(analyzer: var HoverAnalyzer, expr: Expression) =
       analyzer.isInFunction = true
 
       # Check function parameters
-      for param in expr.functionDef.params:
+      for param in expr.functionDef.signature.params:
         if param.name == analyzer.targetWord:
           analyzer.foundSymbol = true
           analyzer.symbolInfo.name = param.name
           analyzer.symbolInfo.isParameter = true
           analyzer.symbolInfo.isMutable = false
-          analyzer.symbolInfo.symbolType = $param.typ
+          analyzer.symbolInfo.symbolType = $param.bmath_type
           analyzer.symbolInfo.scope = "parameter"
           analyzer.symbolInfo.declaredAt = expr.position
           return

@@ -1,0 +1,300 @@
+{
+  "version": "0.12.0",
+  "snippets": [
+    {
+      "name": "Immutable Variable Declaration",
+      "prefix": "let",
+      "body": ["${1:variable} := ${2:value}$0"],
+      "description": "Declare an immutable variable"
+    },
+    {
+      "name": "Mutable Variable Declaration",
+      "prefix": "mut",
+      "body": ["${1:variable} ;= ${2:value}$0"],
+      "description": "Declare a mutable variable"
+    },
+    {
+      "name": "Typed Immutable Declaration",
+      "prefix": "lett",
+      "body": ["${1:variable}: ${2:Type} := ${3:value}$0"],
+      "description": "Declare an immutable variable with type annotation"
+    },
+    {
+      "name": "Typed Mutable Declaration",
+      "prefix": "mutt",
+      "body": ["${1:variable}: ${2:Type} ;= ${3:value}$0"],
+      "description": "Declare a mutable variable with type annotation"
+    },
+    {
+      "name": "Function Literal",
+      "prefix": "fn",
+      "body": ["|${1:param}| ${2:body}$0"],
+      "description": "Create a function literal"
+    },
+    {
+      "name": "Multi-Parameter Function",
+      "prefix": "fnm",
+      "body": ["|${1:param1}, ${2:param2}| ${3:body}$0"],
+      "description": "Create a multi-parameter function literal"
+    },
+    {
+      "name": "Typed Function Parameter",
+      "prefix": "fnt",
+      "body": ["|${1:param}: ${2:Type}| ${3:body}$0"],
+      "description": "Create a function literal with typed parameter"
+    },
+    {
+      "name": "Typed Function Return",
+      "prefix": "fnr",
+      "body": ["|${1:param}| => ${2:ReturnType} ${3:body}$0"],
+      "description": "Create a function literal with return type"
+    },
+    {
+      "name": "No-Parameter Function",
+      "prefix": "fn0",
+      "body": ["|| ${1:body}$0"],
+      "description": "Create a function with no parameters"
+    },
+    {
+      "name": "If Expression",
+      "prefix": "if",
+      "body": ["if(${1:condition}) ${2:then_expr} else ${3:else_expr}$0"],
+      "description": "Create an if expression"
+    },
+    {
+      "name": "Multi-line If Expression",
+      "prefix": "ifm",
+      "body": [
+        "if(${1:condition}) \\",
+        "  ${2:then_expr} \\",
+        "else \\",
+        "  ${3:else_expr}$0"
+      ],
+      "description": "Create a multi-line if expression with backslashes"
+    },
+    {
+      "name": "If-Elif-Else Expression",
+      "prefix": "ife",
+      "body": [
+        "if(${1:condition1}) \\",
+        "  ${2:then_expr1} \\",
+        "elif(${3:condition2}) \\",
+        "  ${4:then_expr2} \\",
+        "else \\",
+        "  ${5:else_expr}$0"
+      ],
+      "description": "Create an if-elif-else expression with backslashes"
+    },
+    {
+      "name": "Block Expression",
+      "prefix": "block",
+      "body": ["{", "  ${1:expressions}$0", "}"],
+      "description": "Create a block expression"
+    },
+    {
+      "name": "Multi-line Block",
+      "prefix": "blockm",
+      "body": [
+        "{",
+        "  ${1:expr1}",
+        "  ${2:expr2}",
+        "  ${3:result}$0",
+        "}"
+      ],
+      "description": "Create a multi-expression block"
+    },
+    {
+      "name": "Vector Literal",
+      "prefix": "vec",
+      "body": ["[${1:item1}, ${2:item2}, ${3:item3}]$0"],
+      "description": "Create a vector literal"
+    },
+    {
+      "name": "Empty Vector",
+      "prefix": "vecempty",
+      "body": ["[]$0"],
+      "description": "Create an empty vector"
+    },
+    {
+      "name": "Range Vector",
+      "prefix": "range",
+      "body": ["range(${1:start}, ${2:end})$0"],
+      "description": "Create a range of numbers"
+    },
+    {
+      "name": "Linspace Vector",
+      "prefix": "linspace",
+      "body": ["linspace(${1:start}, ${2:end}, ${3:count})$0"],
+      "description": "Create linearly spaced numbers"
+    },
+    {
+      "name": "Module Definition",
+      "prefix": "mod",
+      "body": ["mod ${1:name} {", "  ${2:body}$0", "}"],
+      "description": "Create a module definition"
+    },
+    {
+      "name": "Anonymous Module",
+      "prefix": "amod",
+      "body": ["mod {", "  ${1:body}$0", "}"],
+      "description": "Create an anonymous module"
+    },
+    {
+      "name": "Use Statement",
+      "prefix": "use",
+      "body": ["use(${1:module})$0"],
+      "description": "Import a module"
+    },
+    {
+      "name": "Use File Path",
+      "prefix": "usef",
+      "body": ["use(\"${1:path.bm}\")$0"],
+      "description": "Import a module from file path"
+    },
+    {
+      "name": "Use with Specific Symbols",
+      "prefix": "uses",
+      "body": ["use(${1:module}::{${2:symbol1}, ${3:symbol2}})$0"],
+      "description": "Import specific symbols from a module"
+    },
+    {
+      "name": "Use with Alias",
+      "prefix": "useas",
+      "body": ["use(${1:module} as ${2:alias})$0"],
+      "description": "Import a module with an alias"
+    },
+    {
+      "name": "Chain Expression",
+      "prefix": "chain",
+      "body": ["${1:value} -> ${2:function}$0"],
+      "description": "Create a chain expression with arrow operator"
+    },
+    {
+      "name": "Multi-step Chain",
+      "prefix": "chainm",
+      "body": [
+        "${1:value} \\",
+        "  -> ${2:function1} \\",
+        "  -> ${3:function2}$0"
+      ],
+      "description": "Create a multi-step chain expression with backslashes"
+    },
+    {
+      "name": "Map Operation",
+      "prefix": "map",
+      "body": ["${1:collection} -> map(|${2:item}| ${3:transformation})$0"],
+      "description": "Map over a collection"
+    },
+    {
+      "name": "Filter Operation",
+      "prefix": "filter",
+      "body": ["${1:collection} -> filter(|${2:item}| ${3:condition})$0"],
+      "description": "Filter a collection"
+    },
+    {
+      "name": "Reduce Operation",
+      "prefix": "reduce",
+      "body": [
+        "${1:collection} -> reduce(|${2:acc}, ${3:item}| ${4:operation}, ${5:initial})$0"
+      ],
+      "description": "Reduce a collection"
+    },
+    {
+      "name": "Map-Filter-Reduce Chain",
+      "prefix": "mfr",
+      "body": [
+        "${1:collection} \\",
+        "  -> map(|${2:x}| ${3:transform}) \\",
+        "  -> filter(|${4:x}| ${5:condition}) \\",
+        "  -> reduce(|${6:acc}, ${7:x}| ${8:operation}, ${9:initial})$0"
+      ],
+      "description": "Common map-filter-reduce pipeline"
+    },
+    {
+      "name": "Assert Statement",
+      "prefix": "assert",
+      "body": ["assert(${1:condition}, ${2:\"message\"})$0"],
+      "description": "Create an assertion"
+    },
+    {
+      "name": "Assert Equal",
+      "prefix": "asserteq",
+      "body": ["assert_eq(${1:actual}, ${2:expected}, ${3:\"message\"})$0"],
+      "description": "Assert two values are equal"
+    },
+    {
+      "name": "Assert Not Equal",
+      "prefix": "assertneq",
+      "body": ["assert_neq(${1:actual}, ${2:expected}, ${3:\"message\"})$0"],
+      "description": "Assert two values are not equal"
+    },
+    {
+      "name": "Assert Type",
+      "prefix": "asserttype",
+      "body": ["assert_type(${1:value}, ${2:Type}, ${3:\"message\"})$0"],
+      "description": "Assert value has expected type"
+    },
+    {
+      "name": "Try-Or Expression",
+      "prefix": "tryor",
+      "body": ["try_or(${1:expression}, ${2:default_value})$0"],
+      "description": "Try an expression with a default fallback"
+    },
+    {
+      "name": "Try-Catch Expression",
+      "prefix": "try",
+      "body": ["try_catch(${1:expression}, ${2:\"fallback_message\"})$0"],
+      "description": "Try an expression with error handling"
+    },
+    {
+      "name": "Print Statement",
+      "prefix": "print",
+      "body": ["print(${1:value})$0"],
+      "description": "Print a value"
+    },
+    {
+      "name": "Print Line",
+      "prefix": "println",
+      "body": ["println(${1:value})$0"],
+      "description": "Print a value with newline"
+    },
+    {
+      "name": "Complex Number",
+      "prefix": "complex",
+      "body": ["${1:real} + ${2:imaginary}i$0"],
+      "description": "Create a complex number"
+    },
+    {
+      "name": "Pure Imaginary",
+      "prefix": "imag",
+      "body": ["${1:value}i$0"],
+      "description": "Create a pure imaginary number"
+    },
+    {
+      "name": "Mathematical Constants",
+      "prefix": "const",
+      "body": ["${1|pi,e,i,PI,E,I|}$0"],
+      "description": "Insert mathematical constant"
+    },
+    {
+      "name": "Type Annotation",
+      "prefix": "type",
+      "body": [
+        "${1:variable}: ${2|Int,Real,Complex,Bool,Vec,Seq,Function,String,Module,Any,Number,Type|}$0"
+      ],
+      "description": "Add type annotation"
+    },
+    {
+      "name": "Type Check",
+      "prefix": "is",
+      "body": ["${1:value} is ${2:Type}$0"],
+      "description": "Check if value is of type"
+    },
+    {
+      "name": "Get Type",
+      "prefix": "typeof",
+      "body": ["type(${1:value})$0"],
+      "description": "Get the type of a value"
+    }
+  ]
+}

@@ -1,0 +1,468 @@
+{
+  "version": "0.12.0",
+  "keywords": [
+    {
+      "name": "if",
+      "category": "control-flow",
+      "description": "**if** - Conditional expression\n\nSyntax: `if(condition) expr else expr`\n\nIf expressions always evaluate to a value. The `else` branch is required.",
+      "syntax": "if(condition) expr else expr",
+      "examples": [
+        "if(x > 0) 1 else -1",
+        "if(temp > 30) \"hot\" else \"cold\""
+      ]
+    },
+    {
+      "name": "else",
+      "category": "control-flow",
+      "description": "**else** - Alternative branch in conditional statement\n\nUsed with `if` to provide the value when the condition is false.",
+      "syntax": "if(condition) expr else expr",
+      "examples": [
+        "if(x > 0) 1 else -1"
+      ]
+    },
+    {
+      "name": "elif",
+      "category": "control-flow",
+      "description": "**elif** - Additional conditional branch\n\nSyntax: `elif(condition) expr`\n\nProvides intermediate conditions between `if` and `else`.",
+      "syntax": "if(cond1) expr1 elif(cond2) expr2 else expr3",
+      "examples": [
+        "if(x > 0) \"positive\" elif(x < 0) \"negative\" else \"zero\""
+      ]
+    },
+    {
+      "name": "true",
+      "category": "literal",
+      "description": "**true** - Boolean literal representing logical truth",
+      "syntax": "true",
+      "examples": [
+        "active := true",
+        "if(true) \"always\" else \"never\""
+      ]
+    },
+    {
+      "name": "false",
+      "category": "literal",
+      "description": "**false** - Boolean literal representing logical falsehood",
+      "syntax": "false",
+      "examples": [
+        "active := false",
+        "if(false) \"never\" else \"always\""
+      ]
+    },
+    {
+      "name": "mod",
+      "category": "module",
+      "description": "**mod** - Module definition\n\nSyntax: `mod name { ... }` or `mod { ... }` for anonymous modules\n\nDefines a module containing related functions and variables.",
+      "syntax": "mod name { body }",
+      "examples": [
+        "mod math { pi := 3.14159 }",
+        "mod { x := 10 }"
+      ]
+    },
+    {
+      "name": "use",
+      "category": "module",
+      "description": "**use** - Import module or symbols\n\nSyntax: `use(module_name)` or `use(module::symbol)`\n\nImports a module or specific symbols from a module.",
+      "syntax": "use(module_name)",
+      "examples": [
+        "use(\"math.bm\")",
+        "use(math::{sin, cos})",
+        "use(\"lib\" as mylib)"
+      ]
+    },
+    {
+      "name": "this",
+      "category": "module",
+      "description": "**this** - Reference to current module context\n\nSyntax: `this::symbol`\n\nAccesses module-level variables from within functions.",
+      "syntax": "this::variable",
+      "examples": [
+        "this::counter",
+        "this::global_config"
+      ]
+    },
+    {
+      "name": "is",
+      "category": "operator",
+      "description": "**is** - Type checking operator\n\nSyntax: `value is Type`\n\nChecks if a value is of a specific type. Returns Bool.",
+      "syntax": "value is Type",
+      "examples": [
+        "x is Int",
+        "fn is Function",
+        "if(value is Real) \"float\" else \"other\""
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "Int",
+      "category": "numeric",
+      "description": "**Int** - Integer number type\n\nRepresents whole numbers without fractional components.",
+      "examples": [
+        "42",
+        "-17",
+        "0"
+      ]
+    },
+    {
+      "name": "Real",
+      "category": "numeric",
+      "description": "**Real** - Real number type\n\nRepresents floating-point numbers with decimal precision.",
+      "examples": [
+        "3.14",
+        "-2.5",
+        "1.0e-10"
+      ]
+    },
+    {
+      "name": "Complex",
+      "category": "numeric",
+      "description": "**Complex** - Complex number type\n\nRepresents numbers with real and imaginary components.",
+      "examples": [
+        "3 + 4i",
+        "2i",
+        "i"
+      ]
+    },
+    {
+      "name": "Bool",
+      "category": "primitive",
+      "description": "**Bool** - Boolean type\n\nRepresents logical values: true or false.",
+      "examples": [
+        "true",
+        "false",
+        "x > 10"
+      ]
+    },
+    {
+      "name": "String",
+      "category": "primitive",
+      "description": "**String** - Text string type\n\nRepresents sequences of characters.",
+      "examples": [
+        "\"hello\"",
+        "\"BMath 0.12.0\"",
+        "\"\""
+      ]
+    },
+    {
+      "name": "Vec",
+      "category": "collection",
+      "description": "**Vec** - Vector type\n\nRepresents eagerly-evaluated collections of values with indexed access.",
+      "examples": [
+        "[1, 2, 3]",
+        "[]",
+        "vec(1, 2, 3)"
+      ]
+    },
+    {
+      "name": "Seq",
+      "category": "collection",
+      "description": "**Seq** - Sequence type\n\nRepresents lazy-evaluated collections for streaming operations.",
+      "examples": [
+        "seq(1, 10)",
+        "range(1, 100) -> map(|x| x * 2)"
+      ]
+    },
+    {
+      "name": "Function",
+      "category": "callable",
+      "description": "**Function** - Function type\n\nRepresents callable procedures and expressions.",
+      "examples": [
+        "|x| x * 2",
+        "|a, b| a + b",
+        "|| 42"
+      ]
+    },
+    {
+      "name": "Module",
+      "category": "organizational",
+      "description": "**Module** - Module type\n\nRepresents organizational units of code containing related definitions.",
+      "examples": [
+        "mod math { pi := 3.14 }",
+        "mod { x := 1 }"
+      ]
+    },
+    {
+      "name": "Any",
+      "category": "meta",
+      "description": "**Any** - Universal type\n\nTop type that can represent any value. Used for generic operations.",
+      "examples": [
+        "x: Any := 42",
+        "x: Any := \"hello\""
+      ]
+    },
+    {
+      "name": "Number",
+      "category": "meta",
+      "description": "**Number** - Generic number type\n\nUnion type covering Int, Real, and Complex. Used for numeric operations.",
+      "examples": [
+        "x: Number := 42",
+        "x: Number := 3.14",
+        "x: Number := 2 + 3i"
+      ]
+    },
+    {
+      "name": "Type",
+      "category": "meta",
+      "description": "**Type** - Type of types\n\nMeta-type representing type information. Returned by the `type()` function.",
+      "examples": [
+        "t := type(42)",
+        "type(\"hello\") == String"
+      ]
+    }
+  ],
+  "operators": [
+    {
+      "name": ":=",
+      "category": "declaration",
+      "description": "**:=** - Immutable variable declaration\n\nDeclares a variable that cannot be reassigned after initialization.",
+      "syntax": "name := value",
+      "examples": [
+        "pi := 3.14159",
+        "name := \"BMath\""
+      ]
+    },
+    {
+      "name": ";=",
+      "category": "declaration",
+      "description": "**;=** - Mutable variable declaration\n\nDeclares a variable that can be reassigned after initialization.",
+      "syntax": "name ;= value",
+      "examples": [
+        "counter ;= 0",
+        "total ;= 100"
+      ]
+    },
+    {
+      "name": "=",
+      "category": "assignment",
+      "description": "**=** - Assignment operator\n\nAssigns a new value to a mutable variable. Cannot be used on immutable variables.",
+      "syntax": "mutable_var = new_value",
+      "examples": [
+        "counter = counter + 1",
+        "total = 0"
+      ]
+    },
+    {
+      "name": "+",
+      "category": "arithmetic",
+      "description": "**+** - Addition operator\n\nAdds two numbers or concatenates strings.",
+      "syntax": "a + b",
+      "precedence": 4,
+      "examples": [
+        "2 + 3",
+        "1.5 + 2.5",
+        "\"hello\" + \"world\""
+      ]
+    },
+    {
+      "name": "-",
+      "category": "arithmetic",
+      "description": "**-** - Subtraction or negation operator\n\nSubtracts two numbers or negates a number.",
+      "syntax": "a - b or -a",
+      "precedence": 4,
+      "examples": [
+        "5 - 3",
+        "-10",
+        "x - 1"
+      ]
+    },
+    {
+      "name": "*",
+      "category": "arithmetic",
+      "description": "***** - Multiplication operator\n\nMultiplies two numbers.",
+      "syntax": "a * b",
+      "precedence": 5,
+      "examples": [
+        "3 * 4",
+        "2.5 * 2"
+      ]
+    },
+    {
+      "name": "/",
+      "category": "arithmetic",
+      "description": "**/** - Division operator\n\nDivides two numbers.",
+      "syntax": "a / b",
+      "precedence": 5,
+      "examples": [
+        "10 / 2",
+        "7 / 2"
+      ]
+    },
+    {
+      "name": "%",
+      "category": "arithmetic",
+      "description": "**%** - Modulo operator\n\nReturns the remainder of division.",
+      "syntax": "a % b",
+      "precedence": 5,
+      "examples": [
+        "10 % 3",
+        "7 % 2"
+      ]
+    },
+    {
+      "name": "^",
+      "category": "arithmetic",
+      "description": "**^** - Exponentiation operator\n\nRaises a number to a power.",
+      "syntax": "a ^ b",
+      "precedence": 6,
+      "examples": [
+        "2 ^ 3",
+        "10 ^ -2"
+      ]
+    },
+    {
+      "name": "==",
+      "category": "comparison",
+      "description": "**==** - Equality operator\n\nChecks if two values are equal.",
+      "syntax": "a == b",
+      "precedence": 3,
+      "examples": [
+        "x == 10",
+        "\"hello\" == \"hello\""
+      ]
+    },
+    {
+      "name": "!=",
+      "category": "comparison",
+      "description": "**!=** - Inequality operator\n\nChecks if two values are not equal.",
+      "syntax": "a != b",
+      "precedence": 3,
+      "examples": [
+        "x != 0",
+        "name != \"\""
+      ]
+    },
+    {
+      "name": "<",
+      "category": "comparison",
+      "description": "**<** - Less than operator\n\nChecks if left value is less than right value.",
+      "syntax": "a < b",
+      "precedence": 3,
+      "examples": [
+        "x < 10",
+        "2.5 < 3.0"
+      ]
+    },
+    {
+      "name": "<=",
+      "category": "comparison",
+      "description": "**<=** - Less than or equal operator\n\nChecks if left value is less than or equal to right value.",
+      "syntax": "a <= b",
+      "precedence": 3,
+      "examples": [
+        "x <= 10",
+        "count <= max"
+      ]
+    },
+    {
+      "name": ">",
+      "category": "comparison",
+      "description": "**>** - Greater than operator\n\nChecks if left value is greater than right value.",
+      "syntax": "a > b",
+      "precedence": 3,
+      "examples": [
+        "x > 0",
+        "temp > 100"
+      ]
+    },
+    {
+      "name": ">=",
+      "category": "comparison",
+      "description": "**>=** - Greater than or equal operator\n\nChecks if left value is greater than or equal to right value.",
+      "syntax": "a >= b",
+      "precedence": 3,
+      "examples": [
+        "x >= 0",
+        "score >= passing"
+      ]
+    },
+    {
+      "name": "&",
+      "category": "logical",
+      "description": "**&** - Logical AND operator\n\nReturns true if both operands are true.",
+      "syntax": "a & b",
+      "precedence": 2,
+      "examples": [
+        "x > 0 & x < 10",
+        "active & ready"
+      ]
+    },
+    {
+      "name": "|",
+      "category": "logical",
+      "description": "**|** - Logical OR operator\n\nReturns true if either operand is true.",
+      "syntax": "a | b",
+      "precedence": 1,
+      "examples": [
+        "x < 0 | x > 10",
+        "error | warning"
+      ]
+    },
+    {
+      "name": "!",
+      "category": "logical",
+      "description": "**!** - Logical NOT operator\n\nNegates a boolean value.",
+      "syntax": "!a",
+      "precedence": 7,
+      "examples": [
+        "!active",
+        "!(x > 0)"
+      ]
+    },
+    {
+      "name": "->",
+      "category": "pipeline",
+      "description": "**->** - Pipeline operator\n\nPasses the result of the left expression as the first argument to the right function.",
+      "syntax": "value -> function",
+      "precedence": 6,
+      "examples": [
+        "x -> sqrt",
+        "[1,2,3] -> map(|x| x * 2)",
+        "data -> filter(|x| x > 0) -> sum"
+      ]
+    },
+    {
+      "name": "::",
+      "category": "access",
+      "description": "**::** - Module access operator\n\nAccesses members of a module.",
+      "syntax": "module::member",
+      "examples": [
+        "math::pi",
+        "this::counter",
+        "mymodule::function"
+      ]
+    },
+    {
+      "name": "[]",
+      "category": "access",
+      "description": "**[]** - Index access operator\n\nAccesses elements of a vector by index (0-based).",
+      "syntax": "vector[index]",
+      "examples": [
+        "vec[0]",
+        "data[i]",
+        "[1,2,3][1]"
+      ]
+    }
+  ],
+  "declarations": {
+    "immutable": {
+      "operator": ":=",
+      "description": "Declares an immutable variable that cannot be reassigned",
+      "syntax": "name := value"
+    },
+    "mutable": {
+      "operator": ";=",
+      "description": "Declares a mutable variable that can be reassigned",
+      "syntax": "name ;= value"
+    },
+    "typed_immutable": {
+      "operator": ":=",
+      "description": "Declares an immutable variable with explicit type",
+      "syntax": "name: Type := value"
+    },
+    "typed_mutable": {
+      "operator": ";=",
+      "description": "Declares a mutable variable with explicit type",
+      "syntax": "name: Type ;= value"
+    }
+  }
+}

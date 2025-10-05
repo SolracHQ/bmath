@@ -1,12 +1,73 @@
 {
-  "description": "BMath Standard Library Function Signatures - Version 2 with Sum Types",
+  "description": "BMath Standard Library - Functions, Constants, and Signatures",
   "version": "0.12.0",
   "types": {
-    "Collection": ["Vec", "Seq"],
-    "Number": ["Int", "Real", "Complex"]
+    "Collection": [
+      "Vec",
+      "Seq"
+    ],
+    "Number": [
+      "Int",
+      "Real",
+      "Complex"
+    ]
+  },
+  "constants": {
+    "PI": {
+      "description": "**PI** - Mathematical constant π (3.14159...)\n\nThe ratio of a circle's circumference to its diameter.",
+      "value": 3.141592653589793,
+      "type": "Real",
+      "category": "mathematical",
+      "examples": [
+        "PI",
+        "2 * PI",
+        "area := PI * r^2"
+      ]
+    },
+    "E": {
+      "description": "**E** - Mathematical constant e (2.71828...)\n\nEuler's number, the base of natural logarithms.",
+      "value": 2.718281828459045,
+      "type": "Real",
+      "category": "mathematical",
+      "examples": [
+        "E",
+        "E^2",
+        "exp(1) == E"
+      ]
+    },
+    "I": {
+      "description": "**I** - Imaginary unit (√-1)\n\nThe fundamental imaginary number, where I² = -1.",
+      "value": "0+1i",
+      "type": "Complex",
+      "category": "mathematical",
+      "examples": [
+        "I",
+        "3 + 4*I",
+        "I^2 == -1"
+      ]
+    },
+    "pi": {
+      "description": "**pi** - Alias for PI\n\nThe ratio of a circle's circumference to its diameter.",
+      "alias": "PI",
+      "type": "Real",
+      "category": "mathematical"
+    },
+    "e": {
+      "description": "**e** - Alias for E\n\nEuler's number, the base of natural logarithms.",
+      "alias": "E",
+      "type": "Real",
+      "category": "mathematical"
+    },
+    "i": {
+      "description": "**i** - Alias for I\n\nThe fundamental imaginary number, where i² = -1.",
+      "alias": "I",
+      "type": "Complex",
+      "category": "mathematical"
+    }
   },
   "functions": {
     "exit": {
+      "category": "core",
       "description": "Exits the program with an optional exit code",
       "signatures": [
         {
@@ -23,6 +84,7 @@
       ]
     },
     "try_or": {
+      "category": "core",
       "description": "Executes a function and returns its result, or a default value if an exception occurs",
       "signatures": [
         {
@@ -43,6 +105,7 @@
       ]
     },
     "try_catch": {
+      "category": "core",
       "description": "Executes a function and returns its result, or passes the exception to a handler function",
       "signatures": [
         {
@@ -74,9 +137,13 @@
               "description": "Values to print"
             }
           ],
-          "returns": ["Any", "Vec"]
+          "returns": [
+            "Any",
+            "Vec"
+          ]
         }
-      ]
+      ],
+      "category": "core"
     },
     "help": {
       "description": "Display help information for a function or value",
@@ -97,7 +164,8 @@
         "help(sqrt)",
         "help(print)",
         "help(map)"
-      ]
+      ],
+      "category": "core"
     },
     "sqrt": {
       "description": "Square root of a number",
@@ -112,7 +180,8 @@
           ],
           "returns": "Number"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "abs": {
       "description": "Absolute value of a number",
@@ -127,7 +196,8 @@
           ],
           "returns": "Number"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "vec": {
       "description": "Create a vector of specified length",
@@ -147,7 +217,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "seq": {
       "description": "Create a sequence",
@@ -177,7 +248,8 @@
           ],
           "returns": "Seq"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "pow": {
       "description": "Raise base to exponent power",
@@ -195,7 +267,8 @@
           ],
           "returns": "Number"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "floor": {
       "description": "Round down to nearest integer",
@@ -204,12 +277,16 @@
           "params": [
             {
               "name": "a",
-              "type": ["Int", "Real"]
+              "type": [
+                "Int",
+                "Real"
+              ]
             }
           ],
           "returns": "Int"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "ceil": {
       "description": "Round up to nearest integer",
@@ -218,12 +295,16 @@
           "params": [
             {
               "name": "a",
-              "type": ["Int", "Real"]
+              "type": [
+                "Int",
+                "Real"
+              ]
             }
           ],
           "returns": "Int"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "round": {
       "description": "Round to nearest integer",
@@ -232,12 +313,16 @@
           "params": [
             {
               "name": "a",
-              "type": ["Int", "Real"]
+              "type": [
+                "Int",
+                "Real"
+              ]
             }
           ],
           "returns": "Int"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "re": {
       "description": "Real part of a complex number",
@@ -251,7 +336,8 @@
           ],
           "returns": "Real"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "im": {
       "description": "Imaginary part of a complex number",
@@ -265,7 +351,8 @@
           ],
           "returns": "Real"
         }
-      ]
+      ],
+      "category": "arithmetic"
     },
     "sin": {
       "description": "Sine trigonometric function",
@@ -288,7 +375,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "cos": {
       "description": "Cosine trigonometric function",
@@ -311,7 +399,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "tan": {
       "description": "Tangent trigonometric function",
@@ -334,7 +423,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "cot": {
       "description": "Cotangent trigonometric function",
@@ -357,7 +447,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "sec": {
       "description": "Secant trigonometric function",
@@ -380,7 +471,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "csc": {
       "description": "Cosecant trigonometric function",
@@ -403,7 +495,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "log": {
       "description": "Logarithm with optional base",
@@ -434,7 +527,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "exp": {
       "description": "Exponential function (e^x)",
@@ -457,7 +551,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "trigonometric"
     },
     "dot": {
       "description": "Dot product of two vectors",
@@ -475,7 +570,8 @@
           ],
           "returns": "Number"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "first": {
       "description": "First element of a vector",
@@ -489,7 +585,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "last": {
       "description": "Last element of a vector",
@@ -503,7 +600,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "len": {
       "description": "Length of a vector",
@@ -517,7 +615,8 @@
           ],
           "returns": "Int"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "merge": {
       "description": "Merge two vectors",
@@ -535,7 +634,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "slice": {
       "description": "Extract a slice from a vector",
@@ -573,7 +673,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "set": {
       "description": "Set an element in a vector",
@@ -595,7 +696,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "vector"
     },
     "skip": {
       "description": "Skip n elements from a sequence",
@@ -613,7 +715,8 @@
           ],
           "returns": "Seq"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "take": {
       "description": "Take first n elements from a sequence",
@@ -631,7 +734,8 @@
           ],
           "returns": "Seq"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "has_next": {
       "description": "Check if sequence has more elements",
@@ -645,7 +749,8 @@
           ],
           "returns": "Bool"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "next": {
       "description": "Get next element from sequence",
@@ -659,7 +764,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "collect": {
       "description": "Collect all elements from a sequence into a vector",
@@ -673,7 +779,8 @@
           ],
           "returns": "Vec"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "zip": {
       "description": "Zip two sequences together",
@@ -691,7 +798,8 @@
           ],
           "returns": "Seq"
         }
-      ]
+      ],
+      "category": "sequence"
     },
     "map": {
       "description": "Apply a function to each element of a collection",
@@ -726,7 +834,8 @@
           ],
           "returns": "Seq"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "filter": {
       "description": "Filter elements by predicate function",
@@ -761,7 +870,8 @@
           ],
           "returns": "Seq"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "reduce": {
       "description": "Reduce collection with accumulator function",
@@ -806,7 +916,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "sum": {
       "description": "Sum all numeric elements in a collection",
@@ -815,12 +926,16 @@
           "params": [
             {
               "name": "a",
-              "type": ["Vec", "Seq"]
+              "type": [
+                "Vec",
+                "Seq"
+              ]
             }
           ],
           "returns": "Number"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "any": {
       "description": "Check if any element is truthy",
@@ -829,12 +944,16 @@
           "params": [
             {
               "name": "a",
-              "type": ["Vec", "Seq"]
+              "type": [
+                "Vec",
+                "Seq"
+              ]
             }
           ],
           "returns": "Bool"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "all": {
       "description": "Check if all elements are truthy",
@@ -843,12 +962,16 @@
           "params": [
             {
               "name": "a",
-              "type": ["Vec", "Seq"]
+              "type": [
+                "Vec",
+                "Seq"
+              ]
             }
           ],
           "returns": "Bool"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "nth": {
       "description": "Get nth element from a vector or sequence",
@@ -857,7 +980,10 @@
           "params": [
             {
               "name": "value",
-              "type": ["Vec", "Seq"]
+              "type": [
+                "Vec",
+                "Seq"
+              ]
             },
             {
               "name": "index",
@@ -866,7 +992,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "at": {
       "description": "Alias for nth - get element at index",
@@ -875,7 +1002,10 @@
           "params": [
             {
               "name": "sequence",
-              "type": ["Vec", "Seq"]
+              "type": [
+                "Vec",
+                "Seq"
+              ]
             },
             {
               "name": "index",
@@ -884,7 +1014,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "functional"
     },
     "min": {
       "description": "Find minimum value from multiple arguments, vector, or sequence",
@@ -904,7 +1035,10 @@
           "params": [
             {
               "name": "collection",
-              "type": ["Vec", "Seq"],
+              "type": [
+                "Vec",
+                "Seq"
+              ],
               "description": "Collection to find minimum in"
             }
           ],
@@ -914,7 +1048,10 @@
           "params": [
             {
               "name": "collection",
-              "type": ["Vec", "Seq"],
+              "type": [
+                "Vec",
+                "Seq"
+              ],
               "description": "Collection to find minimum in"
             },
             {
@@ -936,7 +1073,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "comparison"
     },
     "max": {
       "description": "Find maximum value from multiple arguments, vector, or sequence",
@@ -956,7 +1094,10 @@
           "params": [
             {
               "name": "collection",
-              "type": ["Vec", "Seq"],
+              "type": [
+                "Vec",
+                "Seq"
+              ],
               "description": "Collection to find maximum in"
             }
           ],
@@ -966,7 +1107,10 @@
           "params": [
             {
               "name": "collection",
-              "type": ["Vec", "Seq"],
+              "type": [
+                "Vec",
+                "Seq"
+              ],
               "description": "Collection to find maximum in"
             },
             {
@@ -988,7 +1132,8 @@
           ],
           "returns": "Any"
         }
-      ]
+      ],
+      "category": "comparison"
     },
     "assert": {
       "description": "Assert condition is true",
@@ -1013,9 +1158,13 @@
               "description": "Message to return on success"
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "assert_eq": {
       "description": "Assert two values are equal",
@@ -1041,9 +1190,13 @@
               "optional": true
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "assert_neq": {
       "description": "Assert two values are not equal",
@@ -1069,9 +1222,13 @@
               "optional": true
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "assert_lt": {
       "description": "Assert first value is less than second",
@@ -1097,9 +1254,13 @@
               "optional": true
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "assert_gt": {
       "description": "Assert first value is greater than second",
@@ -1125,9 +1286,13 @@
               "optional": true
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "assert_type": {
       "description": "Assert value has expected type",
@@ -1153,9 +1318,13 @@
               "optional": true
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "assert_error": {
       "description": "Assert function throws an error",
@@ -1177,9 +1346,13 @@
               "optional": true
             }
           ],
-          "returns": ["Bool", "String"]
+          "returns": [
+            "Bool",
+            "String"
+          ]
         }
-      ]
+      ],
+      "category": "assertions"
     },
     "type": {
       "description": "Get the type of a value",
@@ -1193,7 +1366,8 @@
           ],
           "returns": "Type"
         }
-      ]
+      ],
+      "category": "type-system"
     }
   }
 }

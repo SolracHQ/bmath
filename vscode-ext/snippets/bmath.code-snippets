@@ -13,6 +13,20 @@
     ],
     "description": "Declare a mutable variable"
   },
+  "Typed Immutable Declaration": {
+    "prefix": "lett",
+    "body": [
+      "${1:variable}: ${2:Type} := ${3:value}$0"
+    ],
+    "description": "Declare an immutable variable with type annotation"
+  },
+  "Typed Mutable Declaration": {
+    "prefix": "mutt",
+    "body": [
+      "${1:variable}: ${2:Type} ;= ${3:value}$0"
+    ],
+    "description": "Declare a mutable variable with type annotation"
+  },
   "Function Literal": {
     "prefix": "fn",
     "body": [
@@ -33,6 +47,20 @@
       "|${1:param}: ${2:Type}| ${3:body}$0"
     ],
     "description": "Create a function literal with typed parameter"
+  },
+  "Typed Function Return": {
+    "prefix": "fnr",
+    "body": [
+      "|${1:param}| => ${2:ReturnType} ${3:body}$0"
+    ],
+    "description": "Create a function literal with return type"
+  },
+  "No-Parameter Function": {
+    "prefix": "fn0",
+    "body": [
+      "|| ${1:body}$0"
+    ],
+    "description": "Create a function with no parameters"
   },
   "If Expression": {
     "prefix": "if",
@@ -72,6 +100,17 @@
     ],
     "description": "Create a block expression"
   },
+  "Multi-line Block": {
+    "prefix": "blockm",
+    "body": [
+      "{",
+      "  ${1:expr1}",
+      "  ${2:expr2}",
+      "  ${3:result}$0",
+      "}"
+    ],
+    "description": "Create a multi-expression block"
+  },
   "Vector Literal": {
     "prefix": "vec",
     "body": [
@@ -94,7 +133,7 @@
     "description": "Create a range of numbers"
   },
   "Linspace Vector": {
-    "prefix": "linspace", 
+    "prefix": "linspace",
     "body": [
       "linspace(${1:start}, ${2:end}, ${3:count})$0"
     ],
@@ -124,6 +163,13 @@
       "use(${1:module})$0"
     ],
     "description": "Import a module"
+  },
+  "Use File Path": {
+    "prefix": "usef",
+    "body": [
+      "use(\"${1:path.bm}\")$0"
+    ],
+    "description": "Import a module from file path"
   },
   "Use with Specific Symbols": {
     "prefix": "uses",
@@ -176,6 +222,16 @@
     ],
     "description": "Reduce a collection"
   },
+  "Map-Filter-Reduce Chain": {
+    "prefix": "mfr",
+    "body": [
+      "${1:collection} \\",
+      "  -> map(|${2:x}| ${3:transform}) \\",
+      "  -> filter(|${4:x}| ${5:condition}) \\",
+      "  -> reduce(|${6:acc}, ${7:x}| ${8:operation}, ${9:initial})$0"
+    ],
+    "description": "Common map-filter-reduce pipeline"
+  },
   "Assert Statement": {
     "prefix": "assert",
     "body": [
@@ -189,6 +245,27 @@
       "assert_eq(${1:actual}, ${2:expected}, ${3:\"message\"})$0"
     ],
     "description": "Assert two values are equal"
+  },
+  "Assert Not Equal": {
+    "prefix": "assertneq",
+    "body": [
+      "assert_neq(${1:actual}, ${2:expected}, ${3:\"message\"})$0"
+    ],
+    "description": "Assert two values are not equal"
+  },
+  "Assert Type": {
+    "prefix": "asserttype",
+    "body": [
+      "assert_type(${1:value}, ${2:Type}, ${3:\"message\"})$0"
+    ],
+    "description": "Assert value has expected type"
+  },
+  "Try-Or Expression": {
+    "prefix": "tryor",
+    "body": [
+      "try_or(${1:expression}, ${2:default_value})$0"
+    ],
+    "description": "Try an expression with a default fallback"
   },
   "Try-Catch Expression": {
     "prefix": "try",
@@ -238,5 +315,19 @@
       "${1:variable}: ${2|Int,Real,Complex,Bool,Vec,Seq,Function,String,Module,Any,Number,Type|}$0"
     ],
     "description": "Add type annotation"
+  },
+  "Type Check": {
+    "prefix": "is",
+    "body": [
+      "${1:value} is ${2:Type}$0"
+    ],
+    "description": "Check if value is of type"
+  },
+  "Get Type": {
+    "prefix": "typeof",
+    "body": [
+      "type(${1:value})$0"
+    ],
+    "description": "Get the type of a value"
   }
 }
