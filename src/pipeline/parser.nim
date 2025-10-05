@@ -35,6 +35,7 @@ type
   ModPart = object
     name: string # The identifier name
     alias: string # The alias name (defaults to name)
+    aliasPos: Position # The position of the alias (for better error reporting)
 
 # Global operator table
 var opTable: Table[TokenKind, OpInfo]
@@ -99,7 +100,7 @@ proc parseDeclaration(parser: var Parser): Expression =
   if parser.match({tkColon}):
     if not parser.match({tkType}):
       raise newMissingTokenError("Expected type after ':'", parser.previous().position)
-    varType = parser.previous().value.typ
+    varType = parser.previous().value.bmath_type
 
   if not parser.match({tkImmutableDecl, tkMutableDecl}):
     # Not a declaration after all — rewind and parse as a normal expression
@@ -217,13 +218,13 @@ proc parseFunction(parser: var Parser, token: Token): Expression =
     parser.cleanUpNewlines()
     if parser.match({tkIdent}):
       let name = parser.previous().name
-      var typ = AnyType
+      var bmath_type = AnyType
       if parser.match({tkColon}):
         if not parser.match({tkType}):
           raise
             newMissingTokenError("Expected type after ':'", parser.previous().position)
-        typ = parser.previous().value.typ
-      params.add(Parameter(name: name, typ: typ))
+        bmath_type = parser.previous().value.bmath_type
+      params.add(Parameter(name: name, bmath_type: bmath_type))
     elif parser.match({tkLine}):
       break
     else:
@@ -235,7 +236,7 @@ proc parseFunction(parser: var Parser, token: Token): Expression =
   if parser.match({tkFatArrow}):
     if not parser.match({tkType}):
       raise newMissingTokenError("Expected type after '=>'", parser.previous().position)
-    returnType = parser.previous().value.typ
+    returnType = parser.previous().value.bmath_type
 
   let body = parser.parseExpression()
   let funcExpr = newFuncExpr(token.position, params, body, returnType)
@@ -307,19 +308,19 @@ proc parseUse(parser: var Parser, token: Token): Expression =
       if c.len == 1:
         # Simple access: module::member
         let moduleCall = newModuleAccessExpr(token.position, useResult, c[0].name)
-        let aliasExpr = newIdentExpr(token.position, c[0].alias)
+        let aliasExpr = newIdentExpr(c[0].aliasPos, c[0].alias)
         assignments.add(
-          newImmutableDeclExpr(token.position, aliasExpr, moduleCall, AnyType)
+          newMutableDeclExpr(c[0].aliasPos, aliasExpr, moduleCall, AnyType)
         )
       else:
         # Nested access: module::sub1::sub2::member
         var moduleCall = useResult
         for i in 0 ..< c.len:
           moduleCall = newModuleAccessExpr(token.position, moduleCall, c[i].name)
-        # Final assignment uses the last part's alias
-        let aliasExpr = newIdentExpr(token.position, c[^1].alias)
+        # Final assignment uses the last part's alias and position
+        let aliasExpr = newIdentExpr(c[^1].aliasPos, c[^1].alias)
         assignments.add(
-          newImmutableDeclExpr(token.position, aliasExpr, moduleCall, AnyType)
+          newMutableDeclExpr(c[^1].aliasPos, aliasExpr, moduleCall, AnyType)
         )
 
     # Return single assignment or vector of assignments
@@ -336,7 +337,7 @@ proc parseUse(parser: var Parser, token: Token): Expression =
       )
     let aliasToken = parser.previous()
     let aliasExpr = newIdentExpr(aliasToken.position, aliasToken.name)
-    useResult = newImmutableDeclExpr(token.position, aliasExpr, useResult, AnyType)
+    useResult = newMutableDeclExpr(aliasToken.position, aliasExpr, useResult, AnyType)
 
   parser.cleanUpNewlines()
   if not parser.match({tkRpar}):
@@ -352,7 +353,12 @@ proc getChildren(parser: var Parser): seq[seq[ModPart]] =
 
   if parser.match({tkIdent}):
     # Single identifier
-    var part = @[ModPart(name: parser.previous().name, alias: parser.previous().name)]
+    let identToken = parser.previous()
+    var part = @[ModPart(
+      name: identToken.name,
+      alias: identToken.name,
+      aliasPos: identToken.position
+    )]
 
     if parser.match({tkAs}):
       parser.cleanUpNewlines()
@@ -360,7 +366,9 @@ proc getChildren(parser: var Parser): seq[seq[ModPart]] =
         raise newMissingTokenError(
           "Expected identifier after 'as'", parser.previous().position
         )
-      part[0].alias = parser.previous().name
+      let aliasToken = parser.previous()
+      part[0].alias = aliasToken.name
+      part[0].aliasPos = aliasToken.position
 
     if parser.match({tkDoubleColon}):
       # Continue parsing children
@@ -379,7 +387,12 @@ proc getChildren(parser: var Parser): seq[seq[ModPart]] =
           "Expected identifier in destructuring", parser.peek().position
         )
 
-      var part = @[ModPart(name: parser.previous().name, alias: parser.previous().name)]
+      let identToken = parser.previous()
+      var part = @[ModPart(
+        name: identToken.name,
+        alias: identToken.name,
+        aliasPos: identToken.position
+      )]
 
       if parser.match({tkAs}):
         parser.cleanUpNewlines()
@@ -387,7 +400,9 @@ proc getChildren(parser: var Parser): seq[seq[ModPart]] =
           raise newMissingTokenError(
             "Expected identifier after 'as'", parser.previous().position
           )
-        part[0].alias = parser.previous().name
+        let aliasToken = parser.previous()
+        part[0].alias = aliasToken.name
+        part[0].aliasPos = aliasToken.position
 
       if parser.match({tkDoubleColon}):
         # Nested destructuring

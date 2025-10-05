@@ -199,7 +199,7 @@ proc optimizeTypeCheck*(
   if not optimizer.isEnabled(okTypeCheckSimplification):
     return nil
 
-  if right.kind == ekValue and right.value.kind == vkType and right.value.typ === AnyType:
+  if right.kind == ekValue and right.value.kind == vkType and right.value.bmath_type === AnyType:
     return newValueExpr(pos, newValue(true))
 
   return nil

@@ -2,7 +2,6 @@
 ## Standard library functions for testing and validation
 
 import ../types/[value, number, bm_types, errors, core]
-from types import getType
 
 type AssertionError* = object of RuntimeError ## Raised when an assertion fails
 
@@ -315,9 +314,9 @@ proc assert_type*(args: openArray[Value], invoker: FnInvoker): Value =
 
   let valueType = getType(value)
 
-  if not (valueType === expectedType.typ):
+  if not (valueType === expectedType.bmath_type):
     var message =
-      "Assertion failed: expected type " & $expectedType.typ & ", but got " & $valueType
+      "Assertion failed: expected type " & $expectedType.bmath_type & ", but got " & $valueType
 
     # If custom failure message provided, validate and use it
     if args.len >= 3:
@@ -326,7 +325,7 @@ proc assert_type*(args: openArray[Value], invoker: FnInvoker): Value =
           "assert_type failure message must be a string, but got " & $args[2].kind
         )
       message =
-        args[2].content & " (expected type " & $expectedType.typ & ", got " & $valueType &
+        args[2].content & " (expected type " & $expectedType.bmath_type & ", got " & $valueType &
         ")"
 
     raise newAssertionError(message)

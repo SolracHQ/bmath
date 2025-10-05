@@ -8,11 +8,11 @@ import vector
 from core import
   Expression, ExpressionKind, UnaryOp, BinaryOp, Identifier, Value, ValueKind, Assign,
   FunctionCall, Block, Parameter, FunctionDef, IfExpr, Branch, ModuleDef, UseModule,
-  ModuleAccess, VectorIndex, ImmutableDecl, MutableDecl
+  ModuleAccess, VectorIndex, ImmutableDecl, MutableDecl, Signature
 export
   Expression, ExpressionKind, Parameter, Branch, Assign, FunctionCall, Block, Parameter,
   FunctionDef, IfExpr, Branch, ModuleDef, UseModule, ModuleAccess, VectorIndex,
-  ImmutableDecl, MutableDecl
+  ImmutableDecl, MutableDecl, Signature
 export Expression, ExpressionKind, Parameter, Branch
 
 proc newLiteralExpr*[T](pos: Position, value: T): Expression =
@@ -65,21 +65,21 @@ proc newAssignExpr*(
   )
 
 proc newImmutableDeclExpr*(
-    pos: Position, lvalue: Expression, expr: Expression, typ: BMathType = AnyType
+    pos: Position, lvalue: Expression, expr: Expression, bmath_type: BMathType = AnyType
 ): Expression {.inline.} =
   result = Expression(
     kind: ekImmutableDecl,
     position: pos,
-    immutableDecl: ImmutableDecl(lvalue: lvalue, expr: expr, typ: typ),
+    immutableDecl: ImmutableDecl(lvalue: lvalue, expr: expr, bmath_type: bmath_type),
   )
 
 proc newMutableDeclExpr*(
-    pos: Position, lvalue: Expression, expr: Expression, typ: BMathType = AnyType
+    pos: Position, lvalue: Expression, expr: Expression, bmath_type: BMathType = AnyType
 ): Expression {.inline.} =
   result = Expression(
     kind: ekMutableDecl,
     position: pos,
-    mutableDecl: MutableDecl(lvalue: lvalue, expr: expr, typ: typ),
+    mutableDecl: MutableDecl(lvalue: lvalue, expr: expr, bmath_type: bmath_type),
   )
 
 proc newFuncCallExpr*(
@@ -126,10 +126,11 @@ proc newFuncExpr*(
     body: Expression,
     returnType: BMathType = AnyType,
 ): Expression {.inline.} =
+  let signature = Signature(params: params, returnType: returnType)
   result = Expression(
     kind: ekFuncDef,
     position: pos,
-    functionDef: FunctionDef(params: params, body: body, returnType: returnType),
+    functionDef: FunctionDef(body: body, signature: signature),
   )
 
 proc newIfExpr*(
@@ -144,9 +145,9 @@ proc newIfExpr*(
 proc newBranch*(conditionExpr: Expression, thenExpr: Expression): Branch {.inline.} =
   Branch(condition: conditionExpr, then: thenExpr)
 
-proc newParameter*(name: string, typ: BMathType = AnyType): Parameter {.inline.} =
+proc newParameter*(name: string, bmath_type: BMathType = AnyType): Parameter {.inline.} =
   ## Creates a new function parameter with the given name and type.
-  Parameter(name: name, typ: typ)
+  Parameter(name: name, bmath_type: bmath_type)
 
 proc stringify(node: Expression, indent: int): string =
   ## Helper for AST string representation (internal use)
@@ -187,21 +188,22 @@ proc stringify(node: Expression, indent: int): string =
     result.add(node.immutableDecl.lvalue.stringify(indent + 4))
     result.add("\n" & indentation & "  expr:\n")
     result.add(node.immutableDecl.expr.stringify(indent + 4))
-    result.add("\n" & indentation & "  type: " & $node.immutableDecl.typ & "\n")
+    result.add("\n" & indentation & "  type: " & $node.immutableDecl.bmath_type & "\n")
   of ekMutableDecl:
     result.add indentation & "mutable declaration:\n"
     result.add(indentation & "  lvalue:\n")
     result.add(node.mutableDecl.lvalue.stringify(indent + 4))
     result.add("\n" & indentation & "  expr:\n")
     result.add(node.mutableDecl.expr.stringify(indent + 4))
-    result.add("\n" & indentation & "  type: " & $node.mutableDecl.typ & "\n")
+    result.add("\n" & indentation & "  type: " & $node.mutableDecl.bmath_type & "\n")
   of eKBlock:
     result.add indentation & "block:\n"
     for expr in node.blockExpr.expressions:
       result.add(expr.stringify(indent + 2))
   of ekFuncDef:
     result.add indentation & "function:\n"
-    result.add(indentation & "  params: " & $node.functionDef.params & "\n")
+    result.add(indentation & "  params: " & $node.functionDef.signature.params & "\n")
+    result.add(indentation & "  returnType: " & $node.functionDef.signature.returnType & "\n")
     result.add(node.functionDef.body.stringify(indent + 2))
   of eKVector:
     result.add indentation & "vector:\n"
@@ -255,7 +257,7 @@ proc `$`*(node: Expression): string =
 
 proc `$`(param: Parameter): string =
   ## Returns string representation of function parameter
-  return param.name & ": " & $param.typ
+  return param.name & ": " & $param.bmath_type
 
 proc asSexp*(expr: Expression): string =
   ## Returns a string representation of the expression as an S-expression
@@ -272,7 +274,7 @@ proc asSexp*(expr: Expression): string =
     of vkString:
       return "\"" & expr.value.content & "\""
     of vkType:
-      return $expr.value.typ
+      return $expr.value.bmath_type
     else:
       return $expr.value
   of ekIdent:
@@ -331,11 +333,11 @@ proc asSexp*(expr: Expression): string =
   of ekImmutableDecl:
     return
       "(immutable-decl " & expr.immutableDecl.lvalue.asSexp() & " " &
-      expr.immutableDecl.expr.asSexp() & " : " & $expr.immutableDecl.typ & ")"
+      expr.immutableDecl.expr.asSexp() & " : " & $expr.immutableDecl.bmath_type & ")"
   of ekMutableDecl:
     return
       "(mutable-decl " & expr.mutableDecl.lvalue.asSexp() & " " &
-      expr.mutableDecl.expr.asSexp() & " : " & $expr.mutableDecl.typ & ")"
+      expr.mutableDecl.expr.asSexp() & " : " & $expr.mutableDecl.bmath_type & ")"
   of ekFuncCall:
     var argsStr = ""
     for i, arg in expr.functionCall.params:
@@ -345,10 +347,10 @@ proc asSexp*(expr: Expression): string =
     return "(call " & expr.functionCall.function.asSexp() & " " & argsStr & ")"
   of ekFuncDef:
     var paramsStr = ""
-    for i, param in expr.functionDef.params:
+    for i, param in expr.functionDef.signature.params:
       if i > 0:
         paramsStr.add(" ")
-      paramsStr.add(param.name & ": " & $param.typ)
+      paramsStr.add(param.name & ": " & $param.bmath_type)
     return "(lambda (" & paramsStr & ") " & expr.functionDef.body.asSexp() & ")"
   of ekVector:
     var elementsStr = ""
@@ -392,6 +394,6 @@ proc asSexp*(expr: Expression): string =
       "(index " & expr.vectorIndex.vector.asSexp() & " " &
       expr.vectorIndex.index.asSexp() & ")"
 
-# S-Expressions are better for debug than asSource so 
+# S-Expressions are better for debug than asSource so
 # I will remove asSource for the moment since it is hard to maintain when changing the AST
 # but if some contributor wants to maintain it, feel free to re-add it :D

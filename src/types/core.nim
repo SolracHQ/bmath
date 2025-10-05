@@ -45,7 +45,6 @@ type
     ## Represents the kind of type in the BMath type system.
     tkSimple
     tkSum
-    tkError
 
   BMathSimpleType* = enum
     ## Represents simple types in the BMath type system.
@@ -67,8 +66,6 @@ type
       simpleType*: BMathSimpleType
     of tkSum:
       types*: HashSet[BMathSimpleType]
-    of tkError:
-      error*: cstring
 
   ValueMetadata* = object
     ## Metadata associated with runtime values for tracking mutability and other properties
@@ -87,18 +84,23 @@ type
     vkError ## Error value
     vkModule ## Module value
 
+  FunctionMetadata* = object
+    ## Metadata for functions including documentation
+    description*: string = "" ## Function description
+    examples*: seq[string] = @[] ## Usage examples
+
   Signature* = object
     ## Represents a function signature with parameter types.
     ##
     ## Contains the parameter names and their types.
     params*: seq[Parameter] ## Parameter names and types
-    returnType*: BMathType ## Return type of the function
+    returnType*: BMathType = ANY() ## Return type of the function
 
   Function* = ref object ## User-defined function data
     body*: Expression ## Function body
     env*: Environment ## Environment for variable bindings
-    params*: seq[Parameter] ## Parameter names for the function
     signature*: Signature ## Function signature for type checking
+    metadata*: FunctionMetadata ## Function metadata including description
 
   Sequence* = ref object ## Lazily evaluated sequence
     generator*: Generator ## Function to generate sequence values
@@ -121,7 +123,7 @@ type
     of vkSeq:
       sequence*: Sequence ## Sequence storage when kind is `vkSeq`
     of vkType:
-      typ*: BMathType ## Type storage when kind is `vkType`
+      bmath_type*: BMathType ## Type storage when kind is `vkType`
     of vkString:
       content*: string ## String storage when kind is `vkString`
     of vkError:
@@ -154,6 +156,7 @@ type
     callable*: proc(args: openArray[Value], invoker: FnInvoker): Value
       ## Native function callable from the interpreter
     signatures*: seq[Signature] ## Signatures for type checking
+    metadata*: FunctionMetadata ## Function metadata including description
 
   EnvironmentKind* = enum
     ## Represents the kind of environment/scope for proper scoping rules
@@ -169,7 +172,7 @@ type
 
   TokenKind* = enum
     ## Lexical token categories produced by the lexer.
-    ## 
+    ##
     ## These represent fundamental syntactic elements including:
     ## - Operators (arithmetic, assignment)
     ## - Literal values
@@ -243,7 +246,7 @@ type
 
   Token* = object
     ## Lexical token with source position and type-specific data.
-    ## 
+    ##
     ## The active field depends on the token kind:
     ## - `iValue` for integer literals (tkInt)
     ## - `fValue` for floating-point literals (tkFloat)
@@ -320,9 +323,12 @@ type
   Parameter* = object
     ## Represents a function parameter.
     ##
-    ## Contains the parameter name and its type.
+    ## Contains the parameter name, its type, and documentation.
     name*: string
-    typ*: BMathType = ANY()
+    bmath_type*: BMathType = ANY()
+    isVariadic*: bool = false
+    isOptional*: bool = false
+    description*: string = "" ## Parameter description for documentation
 
   # New specialized types for each expression variant
   UnaryOp* = object
@@ -348,8 +354,7 @@ type
 
   FunctionDef* = object
     body*: Expression ## Function body expression
-    params*: seq[Parameter] ## Function parameter names
-    returnType*: BMathType = ANY()
+    signature*: Signature ## Function signature for parameters and return type
 
   Branch* = object
     ## Represents a condition in an if-elif expression.
@@ -379,12 +384,12 @@ type
   ImmutableDecl* = object ## Immutable variable declaration (identifier := value)
     lvalue*: Expression ## Left-hand side (identifier)
     expr*: Expression ## Right-hand side expression
-    typ*: BMathType ## Optional type annotation
+    bmath_type*: BMathType ## Optional type annotation
 
   MutableDecl* = object ## Mutable variable declaration (identifier ;= value)
     lvalue*: Expression ## Left-hand side (identifier)
     expr*: Expression ## Right-hand side expression
-    typ*: BMathType ## Optional type annotation
+    bmath_type*: BMathType ## Optional type annotation
 
   Expression* = ref object
     ## Abstract Syntax Tree (AST) node (renamed to Expression).

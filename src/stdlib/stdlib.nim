@@ -6,7 +6,9 @@
 ## the modular organization for development and maintenance.
 
 import std/complex
-import ../types/[value, environment]
+import std/macros
+import ../types/[value, environment, errors]
+import ../data/stdlib_signatures
 from math import E, PI
 
 # Import all stdlib modules
@@ -19,7 +21,65 @@ import sequence
 import trigonometry
 import types
 import vector
-from utils import native
+
+proc regFn(env: Environment, name: string, 
+           fn: proc(args: openArray[Value], invoker: FnInvoker): Value) =
+  ## Register a function that already has the correct signature with signatures loaded from JSON
+  env[name, true] = Value(
+    kind: vkNativeFunc,
+    nativeFn: NativeFn(
+      callable: fn,
+      signatures: getSignaturesFor(name),
+      metadata: getMetadataFor(name)
+    ),
+  )
+
+macro regFnNative(env: Environment, name: string, call: untyped): untyped =
+  ## Register a function using automatic argument wrapping with signatures loaded from JSON.
+  ## 
+  ## This macro wraps a simple function call (e.g., sqrt(a)) into a native function
+  ## that validates argument counts and unpacks arguments automatically.
+  let funcSym: NimNode = call[0]
+  let funcName = $funcSym
+  let callArgs = call.len - 1
+  let param = ident("args")
+  
+  # Generate argument unpacking
+  var funcCall = newCall(funcSym)
+  for i in 0 ..< callArgs:
+    funcCall.add(newTree(nnkBracketExpr, param, newLit(i)))
+  
+  result = quote do:
+    `env`[`name`, true] = Value(
+      kind: vkNativeFunc,
+      nativeFn: NativeFn(
+        callable: proc(`param`: openArray[Value], _: FnInvoker): Value =
+          if `callArgs` != `param`.len:
+            raise newInvalidArgumentError(
+              "Invalid number of arguments for function `" & `funcName` & "`" &
+                " expected " & $`callArgs` & " got " & $`param`.len
+            )
+          `funcCall`,
+        signatures: getSignaturesFor(`name`),
+        metadata: getMetadataFor(`name`)
+      ),
+    )
+
+proc injectCoreGlobals*(env: Environment) =
+  ## Injects essential core functions into the given environment.
+  ## These are the minimal functions needed for basic operation.
+  ##
+  ## Parameters:
+  ## - env: The environment to inject core globals into
+  
+  # Initialize signatures from JSON
+  initSignaturesCache()
+  
+  # Inject only the most essential core functions
+  env.regFn("exit", exit)
+  env.regFn("print", print)
+  env.regFn("help", help)
+  env.regFnNative("type", extractType(value))
 
 proc createStdModule*(): Value =
   ## Creates and returns a unified standard library module containing all functions.
@@ -27,22 +87,20 @@ proc createStdModule*(): Value =
   ## Returns:
   ##   Value - A module value containing all standard library functions
   let moduleEnv = newEnv()
+  
+  # Initialize signatures from JSON
+  initSignaturesCache()
 
   # Core functions
-  moduleEnv["exit", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: exit, signatures: @[]))
-  moduleEnv["try_or", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: try_or, signatures: @[]))
-  moduleEnv["try_catch", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: try_catch, signatures: @[]))
-  moduleEnv["print", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: print, signatures: @[]))
-  moduleEnv["sqrt", true] = native(sqrt(a))
-  moduleEnv["abs", true] = native(abs(a))
-  moduleEnv["vec", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: vec, signatures: @[]))
-  moduleEnv["seq", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: seq, signatures: @[]))
+  moduleEnv.regFn("exit", exit)
+  moduleEnv.regFn("try_or", try_or)
+  moduleEnv.regFn("try_catch", try_catch)
+  moduleEnv.regFn("print", print)
+  moduleEnv.regFn("help", help)
+  moduleEnv.regFnNative("sqrt", sqrt(a))
+  moduleEnv.regFnNative("abs", abs(a))
+  moduleEnv.regFn("vec", vec)
+  moduleEnv.regFn("seq", seq)
 
   # Constants (directly from math module and complex)
   moduleEnv["PI", true] = newValue(PI)
@@ -53,79 +111,64 @@ proc createStdModule*(): Value =
   moduleEnv["i", true] = newValue(complex[float](0.0, 1.0))
 
   # Arithmetic functions
-  moduleEnv["pow", true] = native(`^`(base, exp))
-  moduleEnv["floor", true] = native(floor(a))
-  moduleEnv["ceil", true] = native(ceil(a))
-  moduleEnv["round", true] = native(round(a))
-  moduleEnv["re", true] = native(re(a))
-  moduleEnv["im", true] = native(im(a))
+  moduleEnv.regFnNative("pow", `^`(base, exp))
+  moduleEnv.regFnNative("floor", floor(a))
+  moduleEnv.regFnNative("ceil", ceil(a))
+  moduleEnv.regFnNative("round", round(a))
+  moduleEnv.regFnNative("re", re(a))
+  moduleEnv.regFnNative("im", im(a))
 
   # Trigonometry functions
-  moduleEnv["sin", true] = native(sin(a))
-  moduleEnv["cos", true] = native(cos(a))
-  moduleEnv["tan", true] = native(tan(a))
-  moduleEnv["cot", true] = native(cot(a))
-  moduleEnv["sec", true] = native(sec(a))
-  moduleEnv["csc", true] = native(csc(a))
-  moduleEnv["log", true] = native(log(a, base))
-  moduleEnv["exp", true] = native(exp(a))
+  moduleEnv.regFnNative("sin", sin(a))
+  moduleEnv.regFnNative("cos", cos(a))
+  moduleEnv.regFnNative("tan", tan(a))
+  moduleEnv.regFnNative("cot", cot(a))
+  moduleEnv.regFnNative("sec", sec(a))
+  moduleEnv.regFnNative("csc", csc(a))
+  moduleEnv.regFnNative("log", log(a, base))
+  moduleEnv.regFnNative("exp", exp(a))
 
   # Vector functions
-  moduleEnv["dot", true] = native(dotProduct(a, b))
-  moduleEnv["first", true] = native(first(vector))
-  moduleEnv["last", true] = native(last(vector))
-  moduleEnv["len", true] = native(len(vector))
-  moduleEnv["merge", true] = native(merge(a, b))
-  moduleEnv["slice", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: slice, signatures: @[]))
-  moduleEnv["set", true] = native(set(vector, index, value))
+  moduleEnv.regFnNative("dot", dotProduct(a, b))
+  moduleEnv.regFnNative("first", first(vector))
+  moduleEnv.regFnNative("last", last(vector))
+  moduleEnv.regFnNative("len", len(vector))
+  moduleEnv.regFnNative("merge", merge(a, b))
+  moduleEnv.regFn("slice", slice)
+  moduleEnv.regFnNative("set", set(vector, index, value))
 
   # Sequence functions
-  moduleEnv["skip", true] = native(skip(sequence, n))
-  moduleEnv["take", true] = native(take(sequence, n))
-  moduleEnv["has_next", true] = native(hasNext(sequence))
-  moduleEnv["next", true] = native(next(sequence))
-  moduleEnv["collect", true] = native(collect(s))
-  moduleEnv["zip", true] = native(zip(seq1, seq2))
+  moduleEnv.regFnNative("skip", skip(sequence, n))
+  moduleEnv.regFnNative("take", take(sequence, n))
+  moduleEnv.regFnNative("has_next", hasNext(sequence))
+  moduleEnv.regFnNative("next", next(sequence))
+  moduleEnv.regFnNative("collect", collect(s))
+  moduleEnv.regFnNative("zip", zip(seq1, seq2))
 
   # Functional programming functions
-  moduleEnv["map", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: map, signatures: @[]))
-  moduleEnv["filter", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: filter, signatures: @[]))
-  moduleEnv["reduce", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: reduce, signatures: @[]))
-  moduleEnv["sum", true] = native(sum(a))
-  moduleEnv["any", true] = native(any(a))
-  moduleEnv["all", true] = native(all(a))
-  moduleEnv["nth", true] = native(nth(value, index))
-  moduleEnv["at", true] = native(nth(sequence, index)) # 'at' is an alias for 'nth'
+  moduleEnv.regFn("map", map)
+  moduleEnv.regFn("filter", filter)
+  moduleEnv.regFn("reduce", reduce)
+  moduleEnv.regFnNative("sum", sum(a))
+  moduleEnv.regFnNative("any", any(a))
+  moduleEnv.regFnNative("all", all(a))
+  moduleEnv.regFnNative("nth", nth(value, index))
+  moduleEnv.regFnNative("at", nth(sequence, index)) # 'at' is an alias for 'nth'
 
   # Comparison functions
-  moduleEnv["min", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: min, signatures: @[]))
-  moduleEnv["max", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: max, signatures: @[]))
+  moduleEnv.regFn("min", min)
+  moduleEnv.regFn("max", max)
 
   # Assertion functions
-  moduleEnv["assert", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: assert, signatures: @[]))
-  moduleEnv["assert_eq", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: assert_eq, signatures: @[]))
-  moduleEnv["assert_neq", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: assert_neq, signatures: @[]))
-  moduleEnv["assert_lt", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: assert_lt, signatures: @[]))
-  moduleEnv["assert_gt", true] =
-    Value(kind: vkNativeFunc, nativeFn: NativeFn(callable: assert_gt, signatures: @[]))
-  moduleEnv["assert_type", true] = Value(
-    kind: vkNativeFunc, nativeFn: NativeFn(callable: assert_type, signatures: @[])
-  )
-  moduleEnv["assert_error", true] = Value(
-    kind: vkNativeFunc, nativeFn: NativeFn(callable: assert_error, signatures: @[])
-  )
+  moduleEnv.regFn("assert", assert)
+  moduleEnv.regFn("assert_eq", assert_eq)
+  moduleEnv.regFn("assert_neq", assert_neq)
+  moduleEnv.regFn("assert_lt", assert_lt)
+  moduleEnv.regFn("assert_gt", assert_gt)
+  moduleEnv.regFn("assert_type", assert_type)
+  moduleEnv.regFn("assert_error", assert_error)
 
   # Type functions
-  moduleEnv["type", true] = native(extractType(value))
+  moduleEnv.regFnNative("type", extractType(value))
 
   result = Value(kind: vkModule, environment: moduleEnv)

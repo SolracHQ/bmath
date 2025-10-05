@@ -1,77 +1,164 @@
-# Trigonometric and Mathematical Functions
+<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->
+<!-- Version: 0.12.0 -->
 
-This section covers trigonometric functions and other mathematical operations.
+## Trigonometric
 
-- **sin**  
-  Computes the sine of a given number (angle in radians). Supports Complex values as well.  
-  **Accepted Types:** A single numeric value (Int, Real, or Complex).  
-  **Example:**
+### `sin`
 
-  ```bm
-  sin(pi/2) # output: 1
-  ```
+Sine trigonometric function
 
-- **cos**  
-  Computes the cosine of a given number (angle in radians). Supports complex numbers.  
-  **Accepted Types:** A single numeric value (integer, float, or complex).  
-  **Example:**
+**Signatures:**
 
-  ```bm
-  cos(0) # output: 1
-  ```
+```bmath
+|a: Number| -> Number
+```
 
-- **tan**  
-  Computes the tangent of a given number (angle in radians). Supports complex numbers.  
-  **Accepted Types:** A single numeric value (integer, float, or complex).  
-  **Example:**
+**Returns:** `Number`
 
-  ```bm
-  tan(pi/4) # output: 1
-  ```
+```bmath
+|a: Vec| -> Vec
+```
 
-- **cot**  
-  Computes the cotangent of a given number (angle in radians). Supports complex numbers.  
-  **Accepted Types:** A single numeric value (integer, float, or complex).  
-  **Example:**
+**Returns:** `Vec`
 
-  ```bm
-  cot(pi/4) # output: 1
-  ```
+---
 
-- **sec**  
-  Computes the secant of a given number (angle in radians). Supports complex numbers.  
-  **Accepted Types:** A single numeric value (integer, float, or complex).  
-  **Example:**
+### `cos`
 
-  ```bm
-  sec(0) # output: 1
-  ```
+Cosine trigonometric function
 
-- **csc**  
-  Computes the cosecant of a given number (angle in radians). Supports complex numbers.  
-  **Accepted Types:** A single numeric value (integer, float, or complex).  
-  **Example:**
+**Signatures:**
 
-  ```bm
-  csc(pi/2) # output: 1
-  ```
+```bmath
+|a: Number| -> Number
+```
 
-- **log**  
-  Computes the logarithm of a number with respect to a given base. Supports Complex values if either argument is Complex.  
-  **Accepted Types:** Two numeric values (Int, Real, or Complex).  
-  **Example:**
+**Returns:** `Number`
 
-  ```bm
-  log(e, e) # output: 1
-  
-  log(100, 10) # output: 2
-  ```
+```bmath
+|a: Vec| -> Vec
+```
 
-- **exp**  
-  Computes the exponential (e^x) of a given number. Supports complex numbers.  
-  **Accepted Types:** A single numeric value (integer, float, or complex).  
-  **Example:**
+**Returns:** `Vec`
 
-  ```bm
-  exp(1) # output: 2.718281828459045
-  ```
+---
+
+### `tan`
+
+Tangent trigonometric function
+
+**Signatures:**
+
+```bmath
+|a: Number| -> Number
+```
+
+**Returns:** `Number`
+
+```bmath
+|a: Vec| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `cot`
+
+Cotangent trigonometric function
+
+**Signatures:**
+
+```bmath
+|a: Number| -> Number
+```
+
+**Returns:** `Number`
+
+```bmath
+|a: Vec| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `sec`
+
+Secant trigonometric function
+
+**Signatures:**
+
+```bmath
+|a: Number| -> Number
+```
+
+**Returns:** `Number`
+
+```bmath
+|a: Vec| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `csc`
+
+Cosecant trigonometric function
+
+**Signatures:**
+
+```bmath
+|a: Number| -> Number
+```
+
+**Returns:** `Number`
+
+```bmath
+|a: Vec| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `log`
+
+Logarithm with optional base
+
+**Signatures:**
+
+```bmath
+|a: Number, base: Number| -> Number
+```
+
+**Returns:** `Number`
+
+```bmath
+|a: Vec, base: Number| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `exp`
+
+Exponential function (e^x)
+
+**Signatures:**
+
+```bmath
+|a: Number| -> Number
+```
+
+**Returns:** `Number`
+
+```bmath
+|a: Vec| -> Vec
+```
+
+**Returns:** `Vec`
+
+---

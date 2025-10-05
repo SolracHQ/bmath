@@ -1,15 +1,18 @@
-## diagnostics.nim - Static analysis for BMath files
+## diagnostics.nim - Enhanced static analysis for BMath files
 ##
-## Analyzes BMath source code for common issues:
+## Analyzes BMath source code for common issues with improved type checking:
 ## - Undeclared variables
 ## - Unused variables  
 ## - Immutable reassignment
-## - Type mismatches
+## - Type mismatches with signature-based validation
+## - Function call validation (arity, argument types)
+## - Stdlib function usage validation (must be imported)
 ## - Shadowing variables
 ## - Module import issues
 
-import std/[sets, tables, strutils, strformat]
-import ../types/[expression, errors, position, core, value, bm_types]
+import std/[sets, tables, strutils, strformat, sequtils, terminal]
+import ../types/[expression, errors, position, core, bm_types]
+import ../data/stdlib_signatures
 import lexer, parser, optimization
 
 type
@@ -22,6 +25,9 @@ type
     dkModuleNotFound ## Module file not found
     dkCircularImport ## Circular module dependency
     dkUnreachableCode ## Code after return/control flow
+    dkArityMismatch ## Wrong number of arguments to function
+    dkStdlibNotImported ## Stdlib function used without import
+    dkArgumentTypeMismatch ## Argument type doesn't match signature
 
   DiagnosticSeverity* = enum
     dsError
@@ -40,7 +46,7 @@ type
     position*: Position ## Where declared
     isMutable*: bool ## Can be reassigned
     isUsed*: bool ## Has been read
-    varType*: string ## Inferred type (simple tracking)
+    varType*: BMathType ## Inferred type
 
   ModuleInfo* = object
     path*: string
@@ -58,6 +64,7 @@ type
     currentScope*: AnalysisScope
     globalScope*: AnalysisScope
     loadedModules*: Table[string, ModuleInfo]
+    importedStdlibFunctions*: HashSet[string] ## Track imported stdlib functions
 
   AnalysisResult* = object ## Results from static analysis
     diagnostics*: seq[Diagnostic]
@@ -79,10 +86,11 @@ proc addDiagnostic(
 ) =
   let severity =
     case kind
-    of dkUndeclaredVariable, dkReassignImmutable, dkCircularImport, dkModuleNotFound:
+    of dkUndeclaredVariable, dkReassignImmutable, dkCircularImport, dkModuleNotFound,
+        dkStdlibNotImported:
       dsError
-    of dkTypeMismatch:
-      dsError
+    of dkTypeMismatch, dkArityMismatch, dkArgumentTypeMismatch:
+      dsWarning # Warnings since BMath is dynamically typed
     of dkUnusedVariable, dkShadowingVariable:
       dsWarning
     else:
@@ -118,95 +126,69 @@ proc declareVariable(scope: AnalysisScope, name: string, info: VariableInfo): bo
 proc analyzeExpression*(analyzer: var FileAnalyzer, expr: Expression)
 
 # Type inference functions
-proc inferExpressionType(analyzer: var FileAnalyzer, expr: Expression): string =
+proc inferExpressionType(analyzer: var FileAnalyzer, expr: Expression): BMathType =
   ## Infer the type of an expression based on its structure
   case expr.kind
   of ekValue:
-    case expr.value.kind
-    of vkNumber:
-      case expr.value.number.kind
-      of nkInteger:
-        return "Int"
-      of nkReal:
-        return "Real"
-      of nkComplex:
-        return "Complex"
-    of vkBool:
-      return "Bool"
-    of vkString:
-      return "String"
-    of vkFunction:
-      return "Function"
-    of vkVector:
-      return "Vec"
-    of vkSeq:
-      return "Seq"
-    of vkType:
-      return "Type"
-    of vkModule:
-      return "Module"
-    else:
-      return "Unknown"
+    return getType(expr.value)
   of ekIdent:
     try:
       var varInfo = analyzer.currentScope.lookupVariable(expr.identifier.ident)
-      if varInfo.varType.len > 0:
-        return varInfo.varType
-      else:
-        return "Unknown"
+      return varInfo.varType
     except KeyError:
-      return "Unknown"
+      return AnyType
   of ekVector:
-    if expr.vector.len == 0:
-      return "Vec"
-    else:
-      # Try to infer element type from first element
-      let firstType = analyzer.inferExpressionType(expr.vector[0])
-      if firstType != "Unknown":
-        return "Vec<" & firstType & ">"
-      else:
-        return "Vec"
+    return newType(stVector)
   of ekFuncDef:
-    return "Function"
+    return newType(stFunction)
   of ekFuncCall:
-    # Try to infer return type of built-in functions
+    # Try to infer return type from signatures
     if expr.functionCall.function.kind == ekIdent:
       let funcName = expr.functionCall.function.identifier.ident
-      case funcName
-      of "abs", "sqrt", "floor", "ceil", "round":
-        return "Real"
-      of "sin", "cos", "tan", "cot", "sec", "csc", "exp", "log":
-        return "Real"
-      of "re", "im":
-        return "Real"
-      of "len":
-        return "Int"
-      of "type":
-        return "Type"
-      of "vec":
-        return "Vec"
-      of "seq":
-        return "Seq"
+      let signatures = getSignaturesFor(funcName)
+      if signatures.len > 0:
+        # Return the return type of the first matching signature
+        # In a more sophisticated analysis, we'd match based on argument types
+        return signatures[0].returnType
       else:
-        return "Unknown"
-    else:
-      return "Unknown"
+        # Check if it's a known variable
+        try:
+          var varInfo = analyzer.currentScope.lookupVariable(funcName)
+          if varInfo.varType.kind == tkSimple and
+              varInfo.varType.simpleType == stFunction:
+            return AnyType # User function, return type unknown
+        except KeyError:
+          discard
+    return AnyType
   of ekAdd, ekSub, ekMul, ekDiv, ekPow:
     # Infer from operands
     let leftType = analyzer.inferExpressionType(expr.binaryOp.left)
     let rightType = analyzer.inferExpressionType(expr.binaryOp.right)
-    if leftType == "Complex" or rightType == "Complex":
-      return "Complex"
-    elif leftType == "Real" or rightType == "Real":
-      return "Real"
-    elif leftType == "Int" and rightType == "Int":
-      return "Int"
-    else:
-      return "Number"
+    # If either is Any, result is Any
+    if leftType == AnyType or rightType == AnyType:
+      return AnyType
+    # Check for complex propagation
+    if leftType.kind == tkSimple and leftType.simpleType == stComplex:
+      return newType(stComplex)
+    if rightType.kind == tkSimple and rightType.simpleType == stComplex:
+      return newType(stComplex)
+    # Check for real propagation
+    if leftType.kind == tkSimple and leftType.simpleType == stReal:
+      return newType(stReal)
+    if rightType.kind == tkSimple and rightType.simpleType == stReal:
+      return newType(stReal)
+    # Both integers
+    if leftType.kind == tkSimple and rightType.kind == tkSimple and
+        leftType.simpleType == stInteger and rightType.simpleType == stInteger:
+      return newType(stInteger)
+    # Fall back to Number
+    return NumberType
+  of ekMod:
+    return newType(stInteger)
   of ekEq, ekNe, ekLt, ekLe, ekGt, ekGe, ekAnd, ekOr:
-    return "Bool"
+    return newType(stBoolean)
   of ekNot:
-    return "Bool"
+    return newType(stBoolean)
   of ekNeg:
     return analyzer.inferExpressionType(expr.unaryOp.operand)
   of ekGroup:
@@ -216,20 +198,20 @@ proc inferExpressionType(analyzer: var FileAnalyzer, expr: Expression): string =
       # Return type of last expression
       return analyzer.inferExpressionType(expr.blockExpr.expressions[^1])
     else:
-      return "Unknown"
+      return AnyType
   of ekIf:
     # Return common type of then/else branches
     if expr.ifExpr.branches.len > 0:
       let thenType = analyzer.inferExpressionType(expr.ifExpr.branches[0].then)
       let elseType = analyzer.inferExpressionType(expr.ifExpr.elseBranch)
-      if thenType == elseType:
+      if thenType === elseType:
         return thenType
       else:
-        return "Unknown"
+        return AnyType
     else:
-      return "Unknown"
+      return AnyType
   else:
-    return "Unknown"
+    return AnyType
 
 proc analyzeExpressions(analyzer: var FileAnalyzer, expressions: seq[Expression]) =
   for expr in expressions:
@@ -257,7 +239,8 @@ proc analyzeImmutableDecl(analyzer: var FileAnalyzer, expr: Expression) =
     analyzer.addDiagnostic(
       dkShadowingVariable,
       expr.position,
-      fmt"Variable '{name}' shadows existing variable",
+      fmt"Variable '{name}' shadows variable in same scope",
+      "Use a different name",
     )
 
   # Analyze the value expression first and infer its type
@@ -271,7 +254,7 @@ proc analyzeImmutableDecl(analyzer: var FileAnalyzer, expr: Expression) =
 
   if not analyzer.currentScope.declareVariable(name, info):
     analyzer.addDiagnostic(
-      dkShadowingVariable, expr.position, fmt"Variable '{name}' is already declared"
+      dkShadowingVariable, expr.position, fmt"Variable '{name}' already declared"
     )
 
 proc analyzeMutableDecl(analyzer: var FileAnalyzer, expr: Expression) =
@@ -282,7 +265,8 @@ proc analyzeMutableDecl(analyzer: var FileAnalyzer, expr: Expression) =
     analyzer.addDiagnostic(
       dkShadowingVariable,
       expr.position,
-      fmt"Variable '{name}' shadows existing variable",
+      fmt"Variable '{name}' shadows variable in same scope",
+      "Use a different name",
     )
 
   # Analyze the value expression first and infer its type
@@ -296,39 +280,127 @@ proc analyzeMutableDecl(analyzer: var FileAnalyzer, expr: Expression) =
 
   if not analyzer.currentScope.declareVariable(name, info):
     analyzer.addDiagnostic(
-      dkShadowingVariable, expr.position, fmt"Variable '{name}' is already declared"
+      dkShadowingVariable, expr.position, fmt"Variable '{name}' already declared"
     )
 
 proc analyzeAssign(analyzer: var FileAnalyzer, expr: Expression) =
   case expr.assign.lvalue.kind
   of ekIdent:
     let name = expr.assign.lvalue.identifier.ident
-
     try:
-      let varInfo = analyzer.currentScope.lookupVariable(name)
+      var varInfo = analyzer.currentScope.lookupVariable(name)
       if not varInfo.isMutable:
         analyzer.addDiagnostic(
           dkReassignImmutable,
           expr.position,
-          fmt"Cannot assign to immutable variable '{name}'",
-          "Declare with ';=' to make it mutable",
+          fmt"Cannot reassign immutable variable '{name}'",
+          "Declare with ';=' instead of ':=' to make it mutable",
         )
       else:
-        # Mark as used by directly modifying the variable in scope
-        analyzer.currentScope.lookupVariable(name).isUsed = true
+        # Check type compatibility if we have type info
+        let assignedType = analyzer.inferExpressionType(expr.assign.expr)
+        if varInfo.varType != AnyType and assignedType != AnyType:
+          # Only warn if types are definitely incompatible
+          if not (assignedType == varInfo.varType):
+            analyzer.addDiagnostic(
+              dkTypeMismatch,
+              expr.position,
+              fmt"Type mismatch: assigning {assignedType} to variable of type {varInfo.varType}",
+              "Types may not be compatible",
+            )
     except KeyError:
       analyzer.addDiagnostic(
         dkUndeclaredVariable,
         expr.position,
-        fmt"Cannot assign to undeclared variable '{name}'",
-        "Declare it with ':=' or ';=' first",
+        fmt"Variable '{name}' is not declared",
+        "Declare it first with ':=' or ';='",
       )
-  else:
-    # Analyze the lvalue (could be complex expression)
+  of ekVecIndex:
+    # Vector element assignment
     analyzer.analyzeExpression(expr.assign.lvalue)
+  else:
+    analyzer.addDiagnostic(
+      dkTypeMismatch, expr.position, "Invalid assignment target"
+    )
 
   # Analyze the value expression
   analyzer.analyzeExpression(expr.assign.expr)
+
+proc analyzeFunctionCall(analyzer: var FileAnalyzer, expr: Expression) =
+  ## Analyze function call with signature-based validation
+  let funcExpr = expr.functionCall.function
+  let args = expr.functionCall.params
+
+  # Analyze function expression
+  analyzer.analyzeExpression(funcExpr)
+
+  # Analyze all arguments
+  for arg in args:
+    analyzer.analyzeExpression(arg)
+
+  # If it's a simple identifier, try to validate against signatures
+  if funcExpr.kind == ekIdent:
+    let funcName = funcExpr.identifier.ident
+    let signatures = getSignaturesFor(funcName)
+
+    # Check if it's a stdlib function
+    if signatures.len > 0:
+      # Check if it's imported (only matters for stdlib functions)
+      if funcName notin analyzer.importedStdlibFunctions:
+        analyzer.addDiagnostic(
+          dkStdlibNotImported,
+          expr.position,
+          fmt"Stdlib function '{funcName}' used without import",
+          fmt"Add 'use(std::{funcName})' before using it",
+        )
+
+      # Find matching signature
+      var foundMatch = false
+      for sig in signatures:
+        # Check arity
+        let minArgs = sig.params.countIt(not it.isOptional and not it.isVariadic)
+        let hasVariadic = sig.params.anyIt(it.isVariadic)
+
+        if hasVariadic:
+          # With variadic, we need at least minArgs
+          if args.len >= minArgs:
+            foundMatch = true
+            break
+        else:
+          # Without variadic, check exact or optional match
+          let maxArgs = sig.params.len
+          if args.len >= minArgs and args.len <= maxArgs:
+            foundMatch = true
+            # Optionally check argument types if we have concrete type info
+            var typesMatch = true
+            for i in 0 ..< args.len:
+              let argType = analyzer.inferExpressionType(args[i])
+              let paramType = sig.params[i].bmath_type
+              # Only warn if we have concrete types and they don't match
+              if argType != AnyType and paramType != AnyType:
+                if not (argType == paramType):
+                  analyzer.addDiagnostic(
+                    dkArgumentTypeMismatch,
+                    args[i].position,
+                    fmt"Argument {i + 1} type mismatch: expected {paramType}, got {argType}",
+                    "Type may not be compatible",
+                  )
+                  typesMatch = false
+            if typesMatch:
+              break
+
+      # If no signature matched, report arity mismatch
+      if not foundMatch:
+        let sigStrs = signatures.mapIt(
+          fmt"{it.params.len} arg(s)" & (if it.params.anyIt(it.isVariadic): "+" else: "")
+        )
+        let expectedStr = sigStrs.join(" or ")
+        analyzer.addDiagnostic(
+          dkArityMismatch,
+          expr.position,
+          fmt"Function '{funcName}' called with {args.len} arguments, expected: {expectedStr}",
+          "Check function signature",
+        )
 
 proc analyzeBlock(analyzer: var FileAnalyzer, expr: Expression) =
   # Create new block scope
@@ -343,10 +415,7 @@ proc analyzeBlock(analyzer: var FileAnalyzer, expr: Expression) =
   for name, info in analyzer.currentScope.variables:
     if not info.isUsed:
       analyzer.addDiagnostic(
-        dkUnusedVariable,
-        info.position,
-        fmt"Variable '{name}' is declared but never used",
-        "Remove it or prefix with '_' if intentionally unused",
+        dkUnusedVariable, info.position, fmt"Variable '{name}' is never used"
       )
 
   # Restore previous scope
@@ -358,25 +427,14 @@ proc analyzeFunctionDef(analyzer: var FileAnalyzer, expr: Expression) =
   analyzer.currentScope = newAnalysisScope(ekFunction, oldScope)
 
   # Add parameters to scope with their declared types
-  for param in expr.functionDef.params:
-    let paramType =
-      if param.typ == AnyType:
-        "Any"
-      else:
-        $param.typ
-    let info = VariableInfo(
+  for param in expr.functionDef.signature.params:
+    let paramInfo = VariableInfo(
       position: expr.position,
-        # Use function position since parameters don't have positions
-      isMutable: false, # Parameters are immutable by default
+      isMutable: false,
       isUsed: false,
-      varType: paramType,
+      varType: param.bmath_type,
     )
-    if not analyzer.currentScope.declareVariable(param.name, info):
-      analyzer.addDiagnostic(
-        dkShadowingVariable,
-        expr.position,
-        fmt"Parameter '{param.name}' is already declared",
-      )
+    discard analyzer.currentScope.declareVariable(param.name, paramInfo)
 
   # Analyze function body
   analyzer.analyzeExpression(expr.functionDef.body)
@@ -385,16 +443,14 @@ proc analyzeFunctionDef(analyzer: var FileAnalyzer, expr: Expression) =
   for name, info in analyzer.currentScope.variables:
     if not info.isUsed:
       analyzer.addDiagnostic(
-        dkUnusedVariable,
-        info.position,
-        fmt"Parameter '{name}' is never used",
-        "Prefix with '_' if intentionally unused",
+        dkUnusedVariable, info.position, fmt"Parameter '{name}' is never used"
       )
 
   # Restore previous scope
   analyzer.currentScope = oldScope
 
 proc analyzeUse(analyzer: var FileAnalyzer, expr: Expression) =
+  ## Analyze use expression and track imported stdlib functions
   let path = expr.useModule.path
 
   # Only check for .bm extension if it looks like a file path (contains / or .)
@@ -403,10 +459,26 @@ proc analyzeUse(analyzer: var FileAnalyzer, expr: Expression) =
     analyzer.addDiagnostic(
       dkModuleNotFound,
       expr.position,
-      fmt"File module path '{path}' should end with '.bm'",
+      fmt"Module path '{path}' should end with .bm extension",
+      "Add .bm extension to module path",
     )
 
-  # TODO: Track module exports and imports for unused import detection
+  # Track stdlib imports
+  # Handle patterns like: use(std::sin), use(std::{sin, cos}), etc.
+  # For now, we'll mark that we're using std module generally
+  # A more sophisticated analysis would track specific imports
+  if path == "std" or path.startsWith("std::"):
+    # Parse the import to extract function names
+    if path == "std":
+      # Importing entire std module - all functions available
+      for funcName in getAllFunctionNames():
+        analyzer.importedStdlibFunctions.incl(funcName)
+    elif "::" in path:
+      # Specific import like std::sin
+      let parts = path.split("::")
+      if parts.len >= 2 and parts[0] == "std":
+        let funcName = parts[1]
+        analyzer.importedStdlibFunctions.incl(funcName)
 
 proc analyzeModuleAccess(analyzer: var FileAnalyzer, expr: Expression) =
   # Analyze the target (usually 'this' or a module variable)
@@ -414,14 +486,13 @@ proc analyzeModuleAccess(analyzer: var FileAnalyzer, expr: Expression) =
 
   # If target is 'this' and member is an identifier, mark it as used in global scope
   if expr.moduleAccess.target.kind == ekThis:
-    let memberName = expr.moduleAccess.member
-    # Look up the variable in global scope and mark as used
+    let member = expr.moduleAccess.member
     try:
-      analyzer.globalScope.lookupVariable(memberName).isUsed = true
+      # Try to mark as used in global scope
+      analyzer.globalScope.lookupVariable(member).isUsed = true
     except KeyError:
-      # Variable not found in global scope, that's okay for module access
+      # Member not found in global scope
       discard
-
   # Member access doesn't need declaration checking since it's resolved at runtime
 
 proc analyzeExpression(analyzer: var FileAnalyzer, expr: Expression) =
@@ -443,10 +514,7 @@ proc analyzeExpression(analyzer: var FileAnalyzer, expr: Expression) =
   of ekModAccess:
     analyzer.analyzeModuleAccess(expr)
   of ekFuncCall:
-    # Analyze function and arguments
-    analyzer.analyzeExpression(expr.functionCall.function)
-    for arg in expr.functionCall.params:
-      analyzer.analyzeExpression(arg)
+    analyzer.analyzeFunctionCall(expr)
   of ekAdd, ekSub, ekMul, ekDiv, ekMod, ekPow, ekEq, ekNe, ekLt, ekLe, ekGt, ekGe,
       ekAnd, ekOr:
     analyzer.analyzeExpression(expr.binaryOp.left)
@@ -454,21 +522,22 @@ proc analyzeExpression(analyzer: var FileAnalyzer, expr: Expression) =
   of ekNeg, ekNot:
     analyzer.analyzeExpression(expr.unaryOp.operand)
   of ekVector:
-    for i in 0 ..< expr.vector.len:
-      analyzer.analyzeExpression(expr.vector[i])
+    for elem in expr.vector:
+      analyzer.analyzeExpression(elem)
   of ekVecIndex:
     analyzer.analyzeExpression(expr.vectorIndex.vector)
     analyzer.analyzeExpression(expr.vectorIndex.index)
   of ekGroup:
     analyzer.analyzeExpression(expr.groupExpr)
   of ekIf:
-    for branch in expr.ifExpr.branches:
-      analyzer.analyzeExpression(branch.condition)
-      analyzer.analyzeExpression(branch.then)
+    analyzer.analyzeExpression(expr.ifExpr.branches[0].condition)
+    analyzer.analyzeExpression(expr.ifExpr.branches[0].then)
+    for i in 1 ..< expr.ifExpr.branches.len:
+      analyzer.analyzeExpression(expr.ifExpr.branches[i].condition)
+      analyzer.analyzeExpression(expr.ifExpr.branches[i].then)
     analyzer.analyzeExpression(expr.ifExpr.elseBranch)
   else:
-    # Value literals, this, module definitions don't need analysis
-    discard
+    discard # Other expression types don't need special handling
 
 proc analyzeFile*(filePath: string, source: string): seq[Diagnostic] =
   ## Main entry point - analyze entire file and return diagnostics
@@ -477,7 +546,11 @@ proc analyzeFile*(filePath: string, source: string): seq[Diagnostic] =
     source: source,
     diagnostics: @[],
     loadedModules: initTable[string, ModuleInfo](),
+    importedStdlibFunctions: initHashSet[string](),
   )
+
+  # Initialize stdlib signatures
+  initSignaturesCache()
 
   # Create global scope
   analyzer.globalScope = newAnalysisScope(ekModule)
@@ -489,54 +562,72 @@ proc analyzeFile*(filePath: string, source: string): seq[Diagnostic] =
     var parser = newParser(olNone)
 
     while not lexer.atEnd:
-      let tokens = lexer.tokenizeExpression(includeComments = false)
+      let tokens = lexer.tokenizeExpression()
       if tokens.len > 0:
         let ast = parser.parse(tokens)
         analyzer.analyzeExpression(ast)
   except BMathError as e:
-    # Add parse errors as diagnostics
-    let errorPos =
-      if e.stack.len > 0:
-        e.stack[0]
-      else:
-        Position(line: 1, column: 1, filePath: filePath)
-    analyzer.addDiagnostic(dkTypeMismatch, errorPos, fmt"Parse error: {e.msg}")
+    # Add parse error as diagnostic
+    let errorPos = if e.stack.len > 0: e.stack[0] else: Position(line: 0, column: 0, filePath: filePath)
+    analyzer.diagnostics.add(
+      Diagnostic(
+        kind: dkTypeMismatch, # Reuse for parse errors
+        severity: dsError,
+        position: errorPos,
+        message: e.msg,
+        suggestion: "",
+      )
+    )
 
   # Check for unused variables in global scope
   for name, info in analyzer.globalScope.variables:
     if not info.isUsed:
       analyzer.addDiagnostic(
-        dkUnusedVariable,
-        info.position,
-        fmt"Global variable '{name}' is declared but never used",
-        "Remove it or use it in an expression",
+        dkUnusedVariable, info.position, fmt"Variable '{name}' is never used"
       )
 
-  result = analyzer.diagnostics
+  return analyzer.diagnostics
 
 # Pretty printing for diagnostics
 proc `$`*(diag: Diagnostic): string =
   let severityStr =
     case diag.severity
-    of dsError: "ERROR"
-    of dsWarning: "WARN"
-    of dsInfo: "INFO"
-
-  fmt"{severityStr} {diag.position.filePath} {diag.position.line}:{diag.position.column}: {diag.message}"
+    of dsError:
+      "ERROR"
+    of dsWarning:
+      "WARNING"
+    of dsInfo:
+      "INFO"
+  fmt"[{severityStr}] {diag.position.filePath}:{diag.position.line}:{diag.position.column} - {diag.message}"
 
 proc showDiagnostics*(diagnostics: seq[Diagnostic], source: string = "") =
   ## Display diagnostics with source context
   for diag in diagnostics:
-    echo diag
-    if diag.suggestion.len > 0:
-      echo "  Suggestion: ", diag.suggestion
+    # Print severity and message
+    case diag.severity
+    of dsError:
+      stdout.styledWrite(fgRed, styleBright, "[ERROR] ")
+    of dsWarning:
+      stdout.styledWrite(fgYellow, styleBright, "[WARNING] ")
+    of dsInfo:
+      stdout.styledWrite(fgCyan, styleBright, "[INFO] ")
 
-    # Show source context if available
-    if source.len > 0:
-      let lines = source.splitLines()
-      if diag.position.line <= lines.len and diag.position.line > 0:
+    echo fmt"{diag.position.filePath}:{diag.position.line}:{diag.position.column}"
+    echo "  ", diag.message
+
+    if diag.suggestion.len > 0:
+      stdout.styledWrite(fgGreen, "  Suggestion: ")
+      echo diag.suggestion
+
+    # Show source line if available
+    if source.len > 0 and diag.position.line > 0:
+      let lines = source.split('\n')
+      if diag.position.line <= lines.len:
         let line = lines[diag.position.line - 1]
         echo "  ", line
-        if diag.position.column > 0 and diag.position.column <= line.len:
-          echo "  ", " ".repeat(diag.position.column - 1), "^"
-    echo ""
+        if diag.position.column > 0:
+          let marker = " ".repeat(diag.position.column + 1) & "^"
+          stdout.styledWrite(fgRed, styleBright, marker)
+          echo ""
+
+    echo "" # Blank line between diagnostics

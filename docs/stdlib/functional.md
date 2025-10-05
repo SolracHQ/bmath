@@ -1,100 +1,166 @@
-# Functional Programming Utilities
+<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->
+<!-- Version: 0.12.0 -->
 
-This section covers functions for transforming and processing collections using functional programming patterns.
+## Functional
 
-- **map**  
-  Applies a function to each element of a vector or sequence, returning a new lazy sequence.  
-  **Accepted Types:** A vector or sequence and a function that takes a value as input and returns a transformed value.  
-  **Example:**  
+### `map`
 
-  ```bm
-  [1, 2, 3] -> map(|x| x * 2)
-  ```
+Apply a function to each element of a collection
 
-  Alternative syntax:
+**Signatures:**
 
-  ```bm
-  map([1, 2, 3], |x| x * 2)
-  ```
+```bmath
+|collection: Vec, fn: Function| -> Vec
+```
 
-- **filter**  
-  Filters a vector or sequence using a predicate function, returning a new lazy sequence containing only the elements that satisfy the predicate.  
-  **Accepted Types:** A vector or sequence and a function that takes a value and returns a boolean.  
-  **Example:**  
+**Parameters:**
 
-  ```bm
-  [1, 2, 3, 4] -> filter(|x| x % 2 == 0)
-  ```
+- `collection: Vec`: Vector to map over
+- `fn: Function`: Function to apply to each element
 
-  Alternative syntax:
+**Returns:** `Vec`
 
-  ```bm
-  filter([1, 2, 3, 4], |x| x % 2 == 0)
-  ```
+```bmath
+|collection: Seq, fn: Function| -> Seq
+```
 
-- **reduce**  
-  Reduces a vector by applying a binary function to combine its elements into a single result, starting from an initial accumulator value.  
-  **Accepted Types:** A non-empty vector or sequence and a binary function that takes two values and returns a value.  
-  **Example:**  
+**Parameters:**
 
-  ```bm
-  [1, 2, 3, 4] -> reduce(0, |acc, x| acc + x)
-  ```
+- `collection: Seq`: Sequence to map over
+- `fn: Function`: Function to apply to each element
 
-  Alternative syntax:
+**Returns:** `Seq`
 
-  ```bm
-  reduce([1, 2, 3, 4], 0, |acc, x| acc + x)
-  ```
+---
 
-- **sum**  
-  Computes the total sum of all elements in a vector or sequence.  
-  **Accepted Types:** A vector or sequence of numeric values.  
-  **Example:**  
+### `filter`
 
-  ```bm
-  [1, 2, 3, 4] -> sum()
-  ```
+Filter elements by predicate function
 
-- **any**
+**Signatures:**
 
-  Returns true if at least one element in a Vec or Seq of Bool values is true.
+```bmath
+|collection: Vec, fn: Function| -> Seq
+```
 
-  **Accepted Types:** A Vec or Seq of Bool values.
+**Parameters:**
 
-  **Example:**
+- `collection: Vec`: Vector to filter
+- `fn: Function`: Predicate function
 
-  ```bm
-  [false, false, true] -> any()
-  ```
+**Returns:** `Seq`
 
-- **all**
+```bmath
+|collection: Seq, fn: Function| -> Seq
+```
 
-  Returns true only if every element in a Vec or Seq of Bool values is true.
+**Parameters:**
 
-  **Accepted Types:** A Vec or Seq of Bool values.
+- `collection: Seq`: Sequence to filter
+- `fn: Function`: Predicate function
 
-  **Example:**
+**Returns:** `Seq`
 
-  ```bm
-  [true, true, true] -> all()
-  ```
+---
 
-- **nth**  
-  Retrieves the element at the specified index from a vector or sequence. Also available as **at**.  
-  **Accepted Types:** A vector or sequence and an integer index value.  
-  **Example:**
+### `reduce`
 
-  ```bm
-  [10, 20, 30] -> nth(1)  // Returns 20 from vector
-  ```
+Reduce collection with accumulator function
 
-  ```bm
-  [10, 20, 30] -> at(1)   // Same function, different name
-  ```
+**Signatures:**
 
-  ```bm
-  seq(100, |i| i) -> nth(5)   // Returns the 6th value from sequence
-  ```
+```bmath
+|collection: Vec, initial: Any, fn: Function| -> Any
+```
 
-  Note: When used with sequences, this will consume elements up to the requested index.
+**Parameters:**
+
+- `collection: Vec`: Vector to reduce
+- `initial: Any`: Initial accumulator value
+- `fn: Function`: Binary accumulator function
+
+**Returns:** `Any`
+
+```bmath
+|collection: Seq, initial: Any, fn: Function| -> Any
+```
+
+**Parameters:**
+
+- `collection: Seq`: Sequence to reduce
+- `initial: Any`: Initial accumulator value
+- `fn: Function`: Binary accumulator function
+
+**Returns:** `Any`
+
+---
+
+### `sum`
+
+Sum all numeric elements in a collection
+
+**Signature:**
+
+```bmath
+|a: Vec | Seq| -> Number
+```
+
+**Returns:** `Number`
+
+---
+
+### `any`
+
+Check if any element is truthy
+
+**Signature:**
+
+```bmath
+|a: Vec | Seq| -> Bool
+```
+
+**Returns:** `Bool`
+
+---
+
+### `all`
+
+Check if all elements are truthy
+
+**Signature:**
+
+```bmath
+|a: Vec | Seq| -> Bool
+```
+
+**Returns:** `Bool`
+
+---
+
+### `nth`
+
+Get nth element from a vector or sequence
+
+**Signature:**
+
+```bmath
+|value: Vec | Seq, index: Int| -> Any
+```
+
+**Returns:** `Any`
+
+---
+
+### `at`
+
+Alias for nth - get element at index
+
+**Signature:**
+
+```bmath
+|sequence: Vec | Seq, index: Int| -> Any
+```
+
+**Returns:** `Any`
+
+---

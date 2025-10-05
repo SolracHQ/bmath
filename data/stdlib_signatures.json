@@ -1,0 +1,1199 @@
+{
+  "description": "BMath Standard Library Function Signatures - Version 2 with Sum Types",
+  "version": "0.12.0",
+  "types": {
+    "Collection": ["Vec", "Seq"],
+    "Number": ["Int", "Real", "Complex"]
+  },
+  "functions": {
+    "exit": {
+      "description": "Exits the program with an optional exit code",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "code",
+              "type": "Int",
+              "optional": true,
+              "description": "Exit code (defaults to 0)"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "try_or": {
+      "description": "Executes a function and returns its result, or a default value if an exception occurs",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Function to try executing"
+            },
+            {
+              "name": "default",
+              "type": "Any",
+              "description": "Default value to return on error"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "try_catch": {
+      "description": "Executes a function and returns its result, or passes the exception to a handler function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Function to try executing"
+            },
+            {
+              "name": "handler",
+              "type": "Function",
+              "description": "Handler function that receives error"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "print": {
+      "description": "Prints any number of values separated by a single space",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "values",
+              "type": "Any",
+              "variadic": true,
+              "description": "Values to print"
+            }
+          ],
+          "returns": ["Any", "Vec"]
+        }
+      ]
+    },
+    "help": {
+      "description": "Display help information for a function or value",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "value",
+              "type": "Any",
+              "optional": true,
+              "description": "Function or value to get help for"
+            }
+          ],
+          "returns": "String"
+        }
+      ],
+      "examples": [
+        "help(sqrt)",
+        "help(print)",
+        "help(map)"
+      ]
+    },
+    "sqrt": {
+      "description": "Square root of a number",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number",
+              "description": "Value to take the square root of"
+            }
+          ],
+          "returns": "Number"
+        }
+      ]
+    },
+    "abs": {
+      "description": "Absolute value of a number",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number",
+              "description": "Value to take the absolute value of"
+            }
+          ],
+          "returns": "Number"
+        }
+      ]
+    },
+    "vec": {
+      "description": "Create a vector of specified length",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "length",
+              "type": "Int",
+              "description": "Length of the vector"
+            },
+            {
+              "name": "fn_or_value",
+              "type": "Any",
+              "description": "Function to apply to each index or value to repeat"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "seq": {
+      "description": "Create a sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "value_or_fn",
+              "type": "Any",
+              "description": "Value for infinite sequence or function with counter"
+            }
+          ],
+          "returns": "Seq"
+        },
+        {
+          "params": [
+            {
+              "name": "length",
+              "type": "Int",
+              "description": "Length of finite sequence"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Function to generate values"
+            }
+          ],
+          "returns": "Seq"
+        }
+      ]
+    },
+    "pow": {
+      "description": "Raise base to exponent power",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "base",
+              "type": "Number"
+            },
+            {
+              "name": "exp",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        }
+      ]
+    },
+    "floor": {
+      "description": "Round down to nearest integer",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": ["Int", "Real"]
+            }
+          ],
+          "returns": "Int"
+        }
+      ]
+    },
+    "ceil": {
+      "description": "Round up to nearest integer",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": ["Int", "Real"]
+            }
+          ],
+          "returns": "Int"
+        }
+      ]
+    },
+    "round": {
+      "description": "Round to nearest integer",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": ["Int", "Real"]
+            }
+          ],
+          "returns": "Int"
+        }
+      ]
+    },
+    "re": {
+      "description": "Real part of a complex number",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Real"
+        }
+      ]
+    },
+    "im": {
+      "description": "Imaginary part of a complex number",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Real"
+        }
+      ]
+    },
+    "sin": {
+      "description": "Sine trigonometric function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "cos": {
+      "description": "Cosine trigonometric function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "tan": {
+      "description": "Tangent trigonometric function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "cot": {
+      "description": "Cotangent trigonometric function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "sec": {
+      "description": "Secant trigonometric function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "csc": {
+      "description": "Cosecant trigonometric function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "log": {
+      "description": "Logarithm with optional base",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            },
+            {
+              "name": "base",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            },
+            {
+              "name": "base",
+              "type": "Number"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "exp": {
+      "description": "Exponential function (e^x)",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Number"
+            }
+          ],
+          "returns": "Number"
+        },
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "dot": {
+      "description": "Dot product of two vectors",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            },
+            {
+              "name": "b",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Number"
+        }
+      ]
+    },
+    "first": {
+      "description": "First element of a vector",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "vector",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "last": {
+      "description": "Last element of a vector",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "vector",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "len": {
+      "description": "Length of a vector",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "vector",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Int"
+        }
+      ]
+    },
+    "merge": {
+      "description": "Merge two vectors",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Vec"
+            },
+            {
+              "name": "b",
+              "type": "Vec"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "slice": {
+      "description": "Extract a slice from a vector",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "vector",
+              "type": "Vec"
+            },
+            {
+              "name": "end",
+              "type": "Int",
+              "description": "End index (when only 2 args)"
+            }
+          ],
+          "returns": "Vec"
+        },
+        {
+          "params": [
+            {
+              "name": "vector",
+              "type": "Vec"
+            },
+            {
+              "name": "start",
+              "type": "Int",
+              "description": "Start index"
+            },
+            {
+              "name": "end",
+              "type": "Int",
+              "description": "End index"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "set": {
+      "description": "Set an element in a vector",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "vector",
+              "type": "Vec"
+            },
+            {
+              "name": "index",
+              "type": "Int"
+            },
+            {
+              "name": "value",
+              "type": "Any"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "skip": {
+      "description": "Skip n elements from a sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "sequence",
+              "type": "Seq"
+            },
+            {
+              "name": "n",
+              "type": "Int"
+            }
+          ],
+          "returns": "Seq"
+        }
+      ]
+    },
+    "take": {
+      "description": "Take first n elements from a sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "sequence",
+              "type": "Seq"
+            },
+            {
+              "name": "n",
+              "type": "Int"
+            }
+          ],
+          "returns": "Seq"
+        }
+      ]
+    },
+    "has_next": {
+      "description": "Check if sequence has more elements",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "sequence",
+              "type": "Seq"
+            }
+          ],
+          "returns": "Bool"
+        }
+      ]
+    },
+    "next": {
+      "description": "Get next element from sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "sequence",
+              "type": "Seq"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "collect": {
+      "description": "Collect all elements from a sequence into a vector",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "s",
+              "type": "Seq"
+            }
+          ],
+          "returns": "Vec"
+        }
+      ]
+    },
+    "zip": {
+      "description": "Zip two sequences together",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "seq1",
+              "type": "Seq"
+            },
+            {
+              "name": "seq2",
+              "type": "Seq"
+            }
+          ],
+          "returns": "Seq"
+        }
+      ]
+    },
+    "map": {
+      "description": "Apply a function to each element of a collection",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": "Vec",
+              "description": "Vector to map over"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Function to apply to each element"
+            }
+          ],
+          "returns": "Vec"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": "Seq",
+              "description": "Sequence to map over"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Function to apply to each element"
+            }
+          ],
+          "returns": "Seq"
+        }
+      ]
+    },
+    "filter": {
+      "description": "Filter elements by predicate function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": "Vec",
+              "description": "Vector to filter"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Predicate function"
+            }
+          ],
+          "returns": "Seq"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": "Seq",
+              "description": "Sequence to filter"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Predicate function"
+            }
+          ],
+          "returns": "Seq"
+        }
+      ]
+    },
+    "reduce": {
+      "description": "Reduce collection with accumulator function",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": "Vec",
+              "description": "Vector to reduce"
+            },
+            {
+              "name": "initial",
+              "type": "Any",
+              "description": "Initial accumulator value"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Binary accumulator function"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": "Seq",
+              "description": "Sequence to reduce"
+            },
+            {
+              "name": "initial",
+              "type": "Any",
+              "description": "Initial accumulator value"
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "description": "Binary accumulator function"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "sum": {
+      "description": "Sum all numeric elements in a collection",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": ["Vec", "Seq"]
+            }
+          ],
+          "returns": "Number"
+        }
+      ]
+    },
+    "any": {
+      "description": "Check if any element is truthy",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": ["Vec", "Seq"]
+            }
+          ],
+          "returns": "Bool"
+        }
+      ]
+    },
+    "all": {
+      "description": "Check if all elements are truthy",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": ["Vec", "Seq"]
+            }
+          ],
+          "returns": "Bool"
+        }
+      ]
+    },
+    "nth": {
+      "description": "Get nth element from a vector or sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "value",
+              "type": ["Vec", "Seq"]
+            },
+            {
+              "name": "index",
+              "type": "Int"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "at": {
+      "description": "Alias for nth - get element at index",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "sequence",
+              "type": ["Vec", "Seq"]
+            },
+            {
+              "name": "index",
+              "type": "Int"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "min": {
+      "description": "Find minimum value from multiple arguments, vector, or sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "values",
+              "type": "Any",
+              "variadic": true,
+              "description": "Values to compare"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": ["Vec", "Seq"],
+              "description": "Collection to find minimum in"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": ["Vec", "Seq"],
+              "description": "Collection to find minimum in"
+            },
+            {
+              "name": "compareFn",
+              "type": "Function",
+              "description": "Custom comparison function"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "values",
+              "type": "Any",
+              "variadic": true,
+              "description": "Values to compare (last one is compare function)"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "max": {
+      "description": "Find maximum value from multiple arguments, vector, or sequence",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "values",
+              "type": "Any",
+              "variadic": true,
+              "description": "Values to compare"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": ["Vec", "Seq"],
+              "description": "Collection to find maximum in"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "collection",
+              "type": ["Vec", "Seq"],
+              "description": "Collection to find maximum in"
+            },
+            {
+              "name": "compareFn",
+              "type": "Function",
+              "description": "Custom comparison function"
+            }
+          ],
+          "returns": "Any"
+        },
+        {
+          "params": [
+            {
+              "name": "values",
+              "type": "Any",
+              "variadic": true,
+              "description": "Values to compare (last one is compare function)"
+            }
+          ],
+          "returns": "Any"
+        }
+      ]
+    },
+    "assert": {
+      "description": "Assert condition is true",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "condition",
+              "type": "Bool",
+              "description": "Condition to check"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true,
+              "description": "Message to display on failure"
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true,
+              "description": "Message to return on success"
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "assert_eq": {
+      "description": "Assert two values are equal",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "expected",
+              "type": "Any"
+            },
+            {
+              "name": "actual",
+              "type": "Any"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "assert_neq": {
+      "description": "Assert two values are not equal",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "first",
+              "type": "Any"
+            },
+            {
+              "name": "second",
+              "type": "Any"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "assert_lt": {
+      "description": "Assert first value is less than second",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Any"
+            },
+            {
+              "name": "b",
+              "type": "Any"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "assert_gt": {
+      "description": "Assert first value is greater than second",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "a",
+              "type": "Any"
+            },
+            {
+              "name": "b",
+              "type": "Any"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "assert_type": {
+      "description": "Assert value has expected type",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "value",
+              "type": "Any"
+            },
+            {
+              "name": "expected_type",
+              "type": "Type"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "assert_error": {
+      "description": "Assert function throws an error",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "fn",
+              "type": "Function"
+            },
+            {
+              "name": "failureMessage",
+              "type": "String",
+              "optional": true
+            },
+            {
+              "name": "successMessage",
+              "type": "String",
+              "optional": true
+            }
+          ],
+          "returns": ["Bool", "String"]
+        }
+      ]
+    },
+    "type": {
+      "description": "Get the type of a value",
+      "signatures": [
+        {
+          "params": [
+            {
+              "name": "value",
+              "type": "Any"
+            }
+          ],
+          "returns": "Type"
+        }
+      ]
+    }
+  }
+}

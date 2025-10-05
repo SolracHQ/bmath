@@ -4,41 +4,6 @@ import ../types/[value, bm_types, number, vector, errors]
 import sequence
 import std/[complex]
 
-proc getType*(value: Value): BMathType =
-  ## Returns the type of a value.
-  ##
-  ## Parameters:
-  ##   value: Value - The value to get the type of.
-  ##
-  ## Returns:
-  ##   Type - The type of the value.
-
-  case value.kind
-  of vkNumber:
-    case value.number.kind
-    of nkInteger:
-      return newType(stInteger)
-    of nkReal:
-      return newType(stReal)
-    of nkComplex:
-      return newType(stComplex)
-  of vkBool:
-    return newType(stBoolean)
-  of vkFunction, vkNativeFunc:
-    return newType(stFunction)
-  of vkVector:
-    return newType(stVector)
-  of vkSeq:
-    return newType(stSequence)
-  of vkType:
-    return newType(stType)
-  of vkString:
-    return newType(stString)
-  of vkError:
-    return newType(stError)
-  of vkModule:
-    return newType(stModule)
-
 proc extractType*(value: Value): Value =
   ## Extracts the type from a value.
   ## 

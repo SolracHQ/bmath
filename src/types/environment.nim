@@ -10,134 +10,27 @@
 ## relationships between environments, allowing for variable shadowing
 ## and proper closure behavior.
 
-import std/[sets, tables, macros, complex]
-import ../stdlib/core
+import std/[tables]
 import ../types/[value, expression, errors]
 
 from ../types/core import EnvironmentKind
 
-from math import E, PI
-
-macro native(call: untyped): Value =
-  ## Creates a NativeFunc from function call syntax.
-  ## 
-  ## This macro simplifies wrapping Nim functions as native functions
-  ## in the interpreter, automatically validating argument counts and
-  ## generating appropriate error messages.
-  ## 
-  ## Usage:
-  ##   native(pow(a, b))  # Creates a NativeFunc that expects exactly 2 arguments
-  ##   native(sqrt(x))    # Creates a NativeFunc that expects exactly 1 argument
-  ##
-  ## Params:
-  ##   call: untyped - A function call expression to wrap as a native function
-  ##
-  ## Returns:
-  ##   Value - A vkNativeFunc value that performs argument validation before
-  ##           calling the wrapped function
-  let funcSym: NimNode = call[0]
-  let funcName = $funcSym
-  let callArgs = call.len - 1
-  let param = ident("args")
-  # Generate argument unpacking
-  var funcCall = newCall(funcSym)
-  for i in 0 ..< callArgs:
-    funcCall.add:
-      quote:
-        `param`[`i`]
-
-  # Construct NativeFunc using quote for clarity
-  result = quote:
-    Value(
-      kind: vkNativeFunc,
-      metadata: ValueMetadata(isMutable: false),
-      nativeFn: NativeFn(
-        callable: proc(`param`: openArray[Value], _: FnInvoker): Value =
-          if `callArgs` != `param`.len:
-            raise newInvalidArgumentError(
-              "Invalid number of arguments for function `" & `funcName` & "`" &
-                " expected " & $`callArgs` & " got " & $`param`.len
-            )
-          `funcCall`,
-        signatures: @[],
-      ),
-    )
-
-# Empty global environment for when globals are completely disabled
-let empty_global =
-  Environment(kind: ekModule, parent: nil, values: initTable[string, Value]())
-
-# Minimal global environment with only essential functions
-let minimal_global = Environment(
-  kind: ekModule,
-  parent: nil,
-  values: toTable(
-    {
-      "exit": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: exit, signatures: @[]),
-      ),
-      "print": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: print, signatures: @[]),
-      ),
-      "try_or": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: try_or, signatures: @[]),
-      ),
-      "try_catch": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: try_catch, signatures: @[]),
-      ),
-      "concat": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: concat, signatures: @[]),
-      ),
-      "sqrt": native(sqrt(a)),
-      "abs": native(abs(a)),
-      "vec": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: vec, signatures: @[]),
-      ),
-      "seq": Value(
-        kind: vkNativeFunc,
-        metadata: ValueMetadata(isMutable: false),
-        nativeFn: NativeFn(callable: seq, signatures: @[]),
-      ),
-    }
-  ),
-)
-
 proc newEnv*(
     kind: EnvironmentKind = ekBlock,
     parent: Environment = nil,
-    disableGlobals: bool = false,
 ): Environment =
   ## Creates a new environment with specified kind and optional parent.
-  ##
-  ## If no parent is provided, creates an environment with the appropriate global environment
-  ## as its parent based on the disableGlobals flag.
   ##
   ## Params:
   ##   kind: EnvironmentKind - The kind of scope this environment represents
   ##   parent: Environment - (optional) The parent environment for lexical scoping (default is nil)
-  ##   disableGlobals: bool - (optional) If true, use empty globals; if false, use minimal globals
   ##
   ## Returns:
-  ##   Environment - A new environment instance with the appropriate parent chain
+  ##   Environment - A new environment instance
   new(result)
   result.kind = kind
   result.values = initTable[string, Value]()
-  if parent == nil:
-    result.parent = if disableGlobals: empty_global else: minimal_global
-  else:
-    result.parent = parent
+  result.parent = parent
 
 proc `in`*(name: string, env: Environment): bool =
   ## Checks if a variable name exists in the current environment.
@@ -207,6 +100,32 @@ proc declareVariable*(env: Environment, name: string, value: Value) =
       newRedefinitionError("Variable '" & name & "' is already defined in this scope")
 
   env.values[name] = value
+
+proc declareMutableVariable*(env: Environment, name: string, value: Value) =
+  ## Declares a mutable variable in the current environment.
+  ## If the variable already exists and is mutable, it will be reassigned.
+  ## If the variable exists but is immutable, raises an error.
+  ##
+  ## This is useful for use() expressions where you want to allow redeclaration:
+  ##   use(std::print)("hello")
+  ##   use(std::print)("world")  # This should work
+  ##
+  ## Params:
+  ##   env: Environment - The environment to declare the variable in
+  ##   name: string - The name of the variable to declare
+  ##   value: Value - The value to bind to the variable name (must be mutable)
+  ##
+  ## Raises:
+  ##   ImmutableAssignmentError - If trying to redeclare an immutable variable
+  if name in env.values:
+    let existingValue = env.values[name]
+    if not existingValue.metadata.isMutable:
+      raise newImmutableAssignmentError(name)
+    # Variable exists and is mutable, so we can reassign it
+    env.values[name] = value
+  else:
+    # Variable doesn't exist, create it
+    env.values[name] = value
 
 proc assignVariable*(env: Environment, name: string, value: Value) =
   ## Assigns a value to an existing mutable variable.

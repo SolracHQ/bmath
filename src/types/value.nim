@@ -38,7 +38,7 @@ template newValue*(n: typed): Value =
   elif n is seq:
     Value(kind: vkVector, metadata: ValueMetadata(isMutable: false), vector: n)
   elif n is BMathType:
-    Value(kind: vkType, metadata: ValueMetadata(isMutable: false), typ: n)
+    Value(kind: vkType, metadata: ValueMetadata(isMutable: false), bmath_type: n)
   elif n is string:
     Value(kind: vkString, metadata: ValueMetadata(isMutable: false), content: n)
   else:
@@ -74,10 +74,10 @@ template newMutableValue*(n: typed): Value =
     {.error: message.}
 
 proc newValue*(
-    body: Expression, env: Environment, params: seq[Parameter]
+    body: Expression, env: Environment, signature: Signature
 ): Value {.inline.} =
   ## Creates a new Value object wrapping a user-defined function.
-  var functionObj = Function(body: body, env: env, params: params)
+  var functionObj = Function(body: body, env: env, signature: signature)
   result = Value(
     kind: vkFunction, metadata: ValueMetadata(isMutable: false), function: functionObj
   )
@@ -131,14 +131,14 @@ proc `$`*(value: Value): string =
   of vkNativeFunc:
     "<native func>"
   of vkFunction:
-    "|" & value.function.params.join(", ") & "| -> " &
+    "|" & value.function.signature.params.join(", ") & "| -> " &
       $value.function.signature.returnType
   of vkVector:
     "[" & value.vector.toSeq.mapIt($it).join(", ") & "]"
   of vkSeq:
     "<seq>"
   of vkType:
-    $value.typ
+    $value.bmath_type
   of vkString:
     "\"" & value.content & "\""
   of vkError:
@@ -621,7 +621,7 @@ proc `==`*(a, b: Value): Value {.inline.} =
           break
       result = newValue(eq)
   elif a.kind == vkType and b.kind == vkType:
-    result = newValue(a.typ == b.typ)
+    result = newValue(a.bmath_type == b.bmath_type)
   elif a.kind == vkBool and b.kind == vkBool:
     result = newValue(a.boolean == b.boolean)
   elif a.kind == vkNativeFunc and b.kind == vkNativeFunc:

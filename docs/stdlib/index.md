@@ -1,27 +1,48 @@
-# Math CLI Language Standard Library Index
+<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->
+<!-- Version: 0.12.0 -->
 
-This index provides links to all sections of the standard library documentation.
+# BMath Standard Library Documentation
 
-## Table of Contents
+Version: 0.12.0
 
-- [General Functions](general-functions.md)
-- [Arithmetic Functions](arithmetic.md)
-- [Comparison and Logical Operators](comparison-logical.md)
-- [Mathematical Constants](constants.md)
-- [Trigonometric and Mathematical Functions](trigonometric.md)
-- [Vector Operations](vector-operations.md)
-- [Sequence Operations](sequence-operations.md)
-- [Functional Utilities](functional.md)
-- [Types](types.md)
+## Function Categories
 
-## General Notes
+### [Core Functions](core-functions.md)
 
-- All built-in functions are registered in the global environment and are protected from being overwritten.
-- Functions are first-class citizens, implemented as inline lambda expressions. Parameters are local, and closures capture references to variables.
-- Operators follow promotion rules: when operating on numbers of different types (e.g., integer, float, complex), the system promotes the operand to the higher type (int → float → complex) to ensure consistent results.
-- Vector operations perform element-wise computations with proper dimensionality checks.
-- Sequences provide lazy evaluation, enabling efficient processing and transformation without immediate materialization.
-- Division (/) and Modulo (%) operations raise an exception if the divisor is zero.
-- Comparison operators do not support complex numbers; attempting such comparisons raises an exception.
-- The square root of negative real numbers returns a complex number rather than raising an error.
-- Several functions have distinct behaviors depending on whether they operate on a concrete vector or a lazy sequence (e.g., `map`, `filter`, `collect`).
+5 functions: `exit`, `try_or`, `try_catch`, `print`, `help`
+
+### [Arithmetic](arithmetic.md)
+
+8 functions: `pow`, `sqrt`, `abs`, `floor`, `ceil`, `round`, `re`, `im`
+
+### [Trigonometric](trigonometric.md)
+
+8 functions: `sin`, `cos`, `tan`, `cot`, `sec`, `csc`, `log`, `exp`
+
+### [Vector Operations](vector-operations.md)
+
+8 functions: `vec`, `dot`, `first`, `last`, `len`, `merge`, `slice`, `set`
+
+### [Sequence Operations](sequence-operations.md)
+
+7 functions: `seq`, `skip`, `take`, `has_next`, `next`, `collect`, `zip`
+
+### [Functional](functional.md)
+
+8 functions: `map`, `filter`, `reduce`, `sum`, `any`, `all`, `nth`, `at`
+
+### [Comparison](comparison.md)
+
+2 functions: `min`, `max`
+
+### [Assertions](assertions.md)
+
+7 functions: `assert`, `assert_eq`, `assert_neq`, `assert_lt`, `assert_gt`, `assert_type`, `assert_error`
+
+### [Type System](type-system.md)
+
+1 functions: `type`
+
+## Complete Reference
+
+See [reference.md](reference.md) for the complete function reference.

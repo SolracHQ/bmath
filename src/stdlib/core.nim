@@ -357,3 +357,97 @@ proc seq*(values: openArray[Value], invoker: FnInvoker): Value =
     )
 
   result = Value(kind: vkSeq, sequence: resultSeq)
+
+proc help*(args: openArray[Value], invoker: FnInvoker): Value =
+  ## Display help information for a function or value
+  ##
+  ## Parameters:
+  ## - args: An array containing exactly 1 value:
+  ##   - The function or identifier to get help for
+  ##
+  ## Returns:
+  ## - A string containing the help information
+  ##
+  ## Raises:
+  ## - InvalidArgumentError: If not exactly 1 argument is provided
+  
+  if args.len != 1:
+    raise newInvalidArgumentError(
+      "help expects exactly 1 argument, but got " & $args.len & " arguments"
+    )
+  
+  let value = args[0]
+  var helpText = ""
+  
+  case value.kind
+  of vkNativeFunc:
+    # Display help for native functions
+    if value.nativeFn.metadata.description != "":
+      helpText &= value.nativeFn.metadata.description & "\n\n"
+    
+    if value.nativeFn.signatures.len > 0:
+      helpText &= "Signatures:\n"
+      for sig in value.nativeFn.signatures:
+        helpText &= "  |"
+        for i, param in sig.params:
+          if i > 0:
+            helpText &= ", "
+          if param.isVariadic:
+            helpText &= "..."
+          helpText &= param.name & ": " & $param.bmath_type
+          if param.isOptional:
+            helpText &= " (optional)"
+          if param.description != "":
+            helpText &= " - " & param.description
+        helpText &= "| => " & $sig.returnType & "\n"
+    
+    if value.nativeFn.metadata.examples.len > 0:
+      helpText &= "\nExamples:\n"
+      for example in value.nativeFn.metadata.examples:
+        helpText &= "  " & example & "\n"
+  
+  of vkFunction:
+    # Display help for user-defined functions
+    if value.function.metadata.description != "":
+      helpText &= value.function.metadata.description & "\n\n"
+    
+    helpText &= "User-defined function\n"
+    helpText &= "Signature: |"
+    for i, param in value.function.signature.params:
+      if i > 0:
+        helpText &= ", "
+      helpText &= param.name & ": " & $param.bmath_type
+      if param.isOptional:
+        helpText &= " (optional)"
+      if param.description != "":
+        helpText &= " - " & param.description
+    helpText &= "| => " & $value.function.signature.returnType
+  
+  of vkNumber:
+    helpText = "Number: " & $value
+  
+  of vkBool:
+    helpText = "Boolean: " & $value
+  
+  of vkString:
+    helpText = "String: " & $value
+  
+  of vkVector:
+    helpText = "Vector of length " & $value.vector.size
+  
+  of vkSeq:
+    helpText = "Sequence"
+  
+  of vkType:
+    helpText = "Type: " & $value.bmath_type
+  
+  of vkError:
+    helpText = "Error: " & value.error
+  
+  of vkModule:
+    helpText = "Module"
+  
+  if helpText == "":
+    helpText = "No help available for this value"
+  
+  return newValue(helpText)

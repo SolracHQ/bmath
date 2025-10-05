@@ -2,6 +2,7 @@
 
 import std/sets
 from core import BMathType, BMathSimpleType, BMathTypeKind
+from core import Value, ValueKind, NumberKind
 export BMathType, BMathSimpleType, BMathTypeKind
 
 const
@@ -16,9 +17,40 @@ const
   )
   NumberType* = BMathType(kind: tkSum, types: toHashSet([stInteger, stReal, stComplex]))
 
-proc newType*(`type`: BMathSimpleType): BMathType =
+proc newType*(bmath_simple_type: varargs[BMathSimpleType]): BMathType =
   ## Create a new BMathType object from a BMathSimpleType
-  BMathType(kind: tkSimple, simpleType: `type`)
+  if bmath_simple_type.len == 1:
+    BMathType(kind: tkSimple, simpleType: bmath_simple_type[0])
+  else:
+    BMathType(kind: tkSum, types: toHashSet(bmath_simple_type))
+
+proc getType*(v: Value): BMathType =
+  ## Returns the BMathType corresponding to the given Value
+  case v.kind
+  of vkNumber:
+    case v.number.kind
+    of nkInteger:
+      newType(stInteger)
+    of nkReal:
+      newType(stReal)
+    of nkComplex:
+      newType(stComplex)
+  of vkBool:
+    newType(stBoolean)
+  of vkVector:
+    newType(stVector)
+  of vkSeq:
+    newType(stSequence)
+  of vkFunction, vkNativeFunc:
+    newType(stFunction)
+  of vkType:
+    newType(stType)
+  of vkString:
+    newType(stString)
+  of vkError:
+    newType(stError)
+  of vkModule:
+    newType(stModule)
 
 proc `===`*(a, b: BMathType): bool =
   ## Compares two BMathTypes for identity
@@ -31,8 +63,6 @@ proc `===`*(a, b: BMathType): bool =
       return a.simpleType == b.simpleType
     of tkSum:
       return a.types == b.types
-    of tkError:
-      return a.error == b.error
 
 proc `==`*(a, b: BMathType): bool =
   ## Compares two BMathTypes for equality
@@ -69,8 +99,6 @@ proc `==`*(a, b: BMathType): bool =
       return isSubtypeSimple(a.simpleType, b.simpleType)
     of tkSum:
       return a.types == b.types
-    of tkError:
-      return a.error == b.error
 
 proc `$`*(t: BMathType): string =
   ## Returns a human-readable representation of the BMathType
@@ -106,5 +134,3 @@ proc `$`*(t: BMathType): string =
       return "Number"
     else:
       result = "Sum(" & $t.types & ")"
-  of tkError:
-    result = "Error(" & $t.error & ")"

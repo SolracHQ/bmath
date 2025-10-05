@@ -70,3 +70,5 @@ runArithmeticExamples := || => String {
 
   "=== Arithmetic examples completed ==="
 }
+
+runArithmeticExamples()

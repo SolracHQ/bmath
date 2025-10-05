@@ -140,8 +140,8 @@ proc evalMutableDecl(ctx: EvalContext, expr: Expression): Value {.inline.} =
   let mutableVal = val.withMutability(true) # Ensure value is marked as mutable
   case expr.mutableDecl.lvalue.kind
   of ekIdent:
-    # Mutable declarations create new bindings marked as mutable
-    ctx.env.declareVariable(expr.mutableDecl.lvalue.identifier.ident, mutableVal)
+    # Mutable declarations allow redeclaration if the existing variable is mutable
+    ctx.env.declareMutableVariable(expr.mutableDecl.lvalue.identifier.ident, mutableVal)
   else:
     raise newTypeError("Invalid left-hand side in mutable declaration")
   mutableVal
@@ -205,10 +205,10 @@ proc evalFunctionDef(ctx: EvalContext, expr: Expression): Value {.inline.} =
           functionCaptureEnv.values[name] = value
       currentEnv = currentEnv.parent
 
-    newValue(expr.functionDef.body, functionCaptureEnv, expr.functionDef.params)
+    newValue(expr.functionDef.body, functionCaptureEnv, expr.functionDef.signature)
   else:
     # We're directly in the capture environment, use it as-is
-    newValue(expr.functionDef.body, captureEnv, expr.functionDef.params)
+    newValue(expr.functionDef.body, captureEnv, expr.functionDef.signature)
 
 proc callNativeFunction(
     ctx: EvalContext, nativeFn: NativeFn, args: openArray[Value]
@@ -218,13 +218,13 @@ proc callNativeFunction(
   nativeFn.callable(args, invoker)
 
 proc callUserFunction(ctx: EvalContext, fun: Function, args: openArray[Value]): Value =
-  if args.len != fun.params.len:
+  if args.len != fun.signature.params.len:
     raise newInvalidArgumentError(
-      "Function expects " & $(fun.params.len) & " arguments, got " & $(args.len)
+      "Function expects " & $(fun.signature.params.len) & " arguments, got " & $(args.len)
     )
 
   let funcEnv = newEnv(ekFunction, parent = fun.env)
-  for i, param in fun.params.pairs:
+  for i, param in fun.signature.params.pairs:
     funcEnv.declareVariable(param.name, args[i])
 
   let funcCtx = newEvalContext(ctx.interpreter, funcEnv)
@@ -249,7 +249,7 @@ proc evalFunctionCall(ctx: EvalContext, expr: Expression): Value {.inline.} =
   if callee.kind == vkType:
     if expr.functionCall.params.len != 1:
       raise newInvalidArgumentError("Type constructor expects one argument")
-    return typesStdlib.casting(callee.typ, ctx.evaluate(expr.functionCall.params[0]))
+    return typesStdlib.casting(callee.bmath_type, ctx.evaluate(expr.functionCall.params[0]))
 
   # Handle function calls
   if callee.kind notin {vkFunction, vkNativeFunc}:
@@ -444,10 +444,14 @@ proc newInterpreter*(
     scriptPath: string = "", disableGlobals: bool = false
 ): Interpreter =
   result = Interpreter()
-  result.env = newEnv(ekModule, disableGlobals = disableGlobals)
+  result.env = newEnv(ekModule)
   result.importStack = @[]
   result.disableGlobals = disableGlobals
   result.loadedModules = {"std": stdlib.createStdModule()}.toTable()
+
+  # Inject core globals unless disabled
+  if not disableGlobals:
+    stdlib.injectCoreGlobals(result.env)
 
   if scriptPath != "":
     result.currentDir = scriptPath.parentDir.absolutePath

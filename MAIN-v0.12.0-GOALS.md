@@ -113,56 +113,57 @@
 
 ### Type System Redesign
 
-**Core Type System Refactoring**
+**Core Type System Refactoring** ✅ Phase 1 Complete
 
-- [ ] Remove `Signature` type from `core.nim`
-- [ ] Add `TypeAnnotation`, `FunctionSignature`, `ParamType` types
-- [ ] Add `isVariadic` field to `FunctionSignature` for varargs support
-- [ ] Add `isOptional` field to `ParamType` for optional parameters
-- [ ] Update `Function` to use `typeAnnotation: Option[TypeAnnotation]`
-- [ ] Update `NativeFn` to use `typeAnnotation: Option[TypeAnnotation]`
-- [ ] Move `getType()` from `stdlib/types.nim` to `types/bm_types.nim`
-- [ ] Update all imports across codebase
+- [x] Keep `Signature` type with `params: seq[Parameter]` and `returnType: BMathType`
+- [x] Add `isVariadic: bool` field to `Parameter` type for varargs support
+- [x] Update `Function` to use single `signature: Signature`
+- [x] Update `NativeFn` to use `signatures: seq[Signature]` for overloading
+- [x] Update parser to populate `signature` correctly in function definitions
+- [x] Update interpreter to use `function.signature.params` instead of `function.params`
+- [x] Move `getType()` from `stdlib/types.nim` to `types/bm_types.nim`
+- [x] Update all references across codebase (parser, interpreter, expression, value, hover, diagnostics)
 
-**Stdlib Type Annotations**
+**Stdlib Type Annotations** 🔄 Phase 2 In Progress
 
-- [ ] Create `stdlib/type_dsl.nim` with helper templates (`sig`, `optSig`, `multiSig`)
-- [ ] Create `nativeFn()` helper function for cleaner syntax
-- [ ] Add type annotations to all ~50 stdlib functions:
-  - [ ] Core functions (6): `exit`, `try_or`, `try_catch`, `print`, `vec`, `seq`
-  - [ ] Arithmetic functions (8): `sqrt`, `abs`, `pow`, `floor`, `ceil`, `round`, `re`, `im`
-  - [ ] Trigonometry functions (8): `sin`, `cos`, `tan`, `cot`, `sec`, `csc`, `log`, `exp`
-  - [ ] Vector functions (7): `dot`, `first`, `last`, `len`, `merge`, `slice`, `set`
-  - [ ] Sequence functions (6): `skip`, `take`, `has_next`, `next`, `collect`, `zip`
-  - [ ] Functional functions (7): `map`, `filter`, `reduce`, `sum`, `any`, `all`, `nth`
-  - [ ] Comparison functions (2): `min`, `max`
-  - [ ] Assertion functions (7): `assert`, `assert_eq`, `assert_neq`, `assert_lt`, `assert_gt`, `assert_type`, `assert_error`
-  - [ ] Type functions (1): `type`
+- [x] Create `nativeFn()` helper to simplify native function creation with signatures
+- [x] Add `Signature` annotations to all ~50 stdlib functions:
+  - [x] Core functions (6): `exit`, `try_or`, `try_catch`, `print` (varargs), `vec` (2 sigs), `seq` (4 sigs)
+  - [x] Arithmetic functions (8): `sqrt`, `abs`, `pow`, `floor`, `ceil`, `round`, `re`, `im`
+  - [x] Trigonometry functions (8): `sin`, `cos`, `tan`, `cot`, `sec`, `csc`, `log` (2 sigs), `exp`
+  - [x] Vector functions (7): `dot`, `first`, `last`, `len`, `merge`, `slice` (2 sigs), `set`
+  - [x] Sequence functions (6): `skip`, `take`, `has_next`, `next`, `collect`, `zip`
+  - [x] Functional functions (7): `map`, `filter`, `reduce`, `sum`, `any`, `all`, `nth`
+  - [x] Comparison functions (2): `min` (varargs), `max` (varargs)
+  - [x] Assertion functions (7): `assert` (2 sigs), `assert_eq` (2 sigs), `assert_neq` (2 sigs), `assert_lt` (2 sigs), `assert_gt` (2 sigs), `assert_type` (2 sigs), `assert_error` (2 sigs)
+  - [x] Type functions (1): `type`
 
-**Type Checker Implementation**
+**Type Checker Implementation** 🔄 Phase 3 Planned
 
 - [ ] Create `types/type_checker.nim` module
 - [ ] Implement `TypeCheckMode` enum (tcmNone, tcmWarn, tcmStrict)
-- [ ] Implement `matchesSignature()` with varargs support
-- [ ] Implement `findMatchingSignature()` for overload resolution
+- [ ] Implement `matchesSignature(args, signature)` with varargs support (last param with `isVariadic: true`)
+- [ ] Implement `findMatchingSignature(args, signatures)` for overload resolution (try each signature)
 - [ ] Implement `checkCall()` with multi-signature matching
 - [ ] Add `typeCheckMode` field to `Interpreter`
-- [ ] Integrate type checking into `callFunction()`
+- [ ] Integrate type checking into `callFunction()` and `callUserFunction()`
 - [ ] Add `--type-check=none|warn|strict` CLI flag
 
-**LSP Integration**
+**LSP Integration** 📋 Phase 4 Planned
 
-- [ ] Update hover to show all function signatures
+- [ ] Update hover to show function signatures (parse `signatures` array for native functions)
 - [ ] Update diagnostics to show type mismatches as warnings/errors
 - [ ] Add signature help for function calls with multiple overloads
 - [ ] Show inferred types for variables on hover
+- [ ] Display parameter types for user-defined functions
 
-**User-Defined Function Type Annotations**
+**User-Defined Function Type Annotations** ✅ Partially Complete
 
-- [ ] Update parser to extract type annotations from function literals
-- [ ] Store annotations in `Function.typeAnnotation`
-- [ ] Enable type checking for user-defined functions
-- [ ] Support multiple signatures for user functions (if needed)
+- [x] Parser extracts type annotations from function literals `|x: Int| => Real { ... }`
+- [x] Store annotations in `Function.signature`
+- [x] Interpreter uses `signature.params` for parameter binding
+- [ ] Enable type checking for user-defined functions in `callUserFunction()`
+- [ ] Add syntax support for varargs in user functions (e.g., `|x: Int, rest...: Int|`)
 
 ### Effect Tracking System Implementation
 

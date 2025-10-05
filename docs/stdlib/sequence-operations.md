@@ -1,81 +1,117 @@
-# Sequence Operations
+<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->
+<!-- Version: 0.12.0 -->
 
-This section covers operations related to sequences and lazy evaluation.
+## Sequence Operations
 
-- **sequence**  
-  Constructs a lazy-evaluated Seq of values.  
-  **Accepted Types:**
-  - A single value to create an infinite Seq of that value
-  - A single function to create an infinite Seq calling that function with indices 0, 1, 2...
-  - An Int size and a function to create a finite Seq
-  - A Vec to create a Seq from the Vec's elements
-  
-  **Examples:**
+### `seq`
 
-  ```bm
-  # Create a finite sequence of 5 elements using a function
-  seq(5, |x| x * x) # output: lazy sequence of [0, 1, 4, 9, 16]
-  
-  # Create an infinite sequence using a function
-  seq(|x| x + 1) # output: lazy infinite sequence starting with [1, 2, 3, ...]
-  
-  # Create an infinite sequence of a constant value
-  seq(42) # output: lazy infinite sequence of [42, 42, 42, ...]
-  
-  # Create a sequence from a vector
-  seq([10, 20, 30]) # output: lazy sequence of [10, 20, 30]
-  ```
+Create a sequence
 
-- **skip**  
-  Skips the first n elements of a Seq and returns the subsequent element.  
-  **Accepted Types:** A Seq and an Int specifying how many elements to skip.  
-  **Example:**  
+**Signatures:**
 
-  ```bm
-  skip(someSeq, 2)
-  ```
+```bmath
+|value_or_fn: Any| -> Seq
+```
 
-- **hasNext**  
-  Checks if a Seq has a next element available.  
-  **Accepted Types:** A Seq.  
-  **Example:**  
+**Parameters:**
 
-  ```bm
-  hasNext(someSeq)
-  ```
+- `value_or_fn: Any`: Value for infinite sequence or function with counter
 
-- **next**  
-  Retrieves the next element of a sequence.  
-  **Accepted Types:** A sequence.  
-  **Example:**  
+**Returns:** `Seq`
 
-  ```bm
-  next(someSeq)
-  ```
+```bmath
+|length: Int, fn: Function| -> Seq
+```
 
-- **collect**  
-  Forces evaluation of a lazy Seq and collects its elements into a concrete Vec.  
-  **Accepted Types:** A Seq.  
-  **Example:**  
+**Parameters:**
 
-  ```bm
-  collect(someLazySeq)
-  ```
+- `length: Int`: Length of finite sequence
+- `fn: Function`: Function to generate values
 
-- **take**  
-  Creates a new Seq containing only the first n elements of the input Seq.  
-  **Accepted Types:** A Seq and a non-negative Int specifying how many elements to take.  
-  **Example:**  
+**Returns:** `Seq`
 
-  ```bm
-  take(seq(|x| x * x), 5)  # lazy sequence of [0, 1, 4, 9, 16]
-  ```
+---
 
-- **zip**  
-  Creates a sequence by pairing elements from two sequences.  
-  **Accepted Types:** Two sequences.  
-  **Example:**  
+### `skip`
 
-  ```bm
-  zip(seq([1, 2, 3]), seq([10, 20, 30]))  # lazy sequence of [[1, 10], [2, 20], [3, 30]]
-  ```
+Skip n elements from a sequence
+
+**Signature:**
+
+```bmath
+|sequence: Seq, n: Int| -> Seq
+```
+
+**Returns:** `Seq`
+
+---
+
+### `take`
+
+Take first n elements from a sequence
+
+**Signature:**
+
+```bmath
+|sequence: Seq, n: Int| -> Seq
+```
+
+**Returns:** `Seq`
+
+---
+
+### `has_next`
+
+Check if sequence has more elements
+
+**Signature:**
+
+```bmath
+|sequence: Seq| -> Bool
+```
+
+**Returns:** `Bool`
+
+---
+
+### `next`
+
+Get next element from sequence
+
+**Signature:**
+
+```bmath
+|sequence: Seq| -> Any
+```
+
+**Returns:** `Any`
+
+---
+
+### `collect`
+
+Collect all elements from a sequence into a vector
+
+**Signature:**
+
+```bmath
+|s: Seq| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `zip`
+
+Zip two sequences together
+
+**Signature:**
+
+```bmath
+|seq1: Seq, seq2: Seq| -> Seq
+```
+
+**Returns:** `Seq`
+
+---

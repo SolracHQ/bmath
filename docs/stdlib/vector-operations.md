@@ -1,86 +1,136 @@
-# Vector Operations
+<!-- Auto-generated from stdlib_signatures.json - DO NOT EDIT MANUALLY -->
+<!-- Version: 0.12.0 -->
 
-This section covers operations specific to vectors.
+## Vector Operations
 
-- **vec**  
-  Constructs a new Vec with specified elements.  
-  **Accepted Types:**
-  - An Int size and a function that transforms the index into a value
-  - An Int size and a constant value to repeat
-  
-  **Examples:**
+### `vec`
 
-  ```bm
-  # Using a function that doubles the index
-  vec(5, |x| x * 2) # output: [0, 2, 4, 6, 8]
-  
-  # Using a constant value to create a vector of repeated values
-  vec(3, 42) # output: [42, 42, 42]
-  ```
+Create a vector of specified length
 
-- **dot**  
-  Computes the dot product of two Vec of numbers.  
-  **Accepted Types:** Two Vec of numeric values (each Vec can contain Int, Real, or Complex, but they must be of the same length).  
-  **Example:**
+**Signature:**
 
-  ```bm
-  dot([1, 2, 3], [4, 5, 6])
-  ```
+```bmath
+|length: Int, fn_or_value: Any| -> Vec
+```
 
-- **first**  
-  Retrieves the first element of a vector.  
-  **Accepted Types:** A single vector.  
-  **Example:**
+**Parameters:**
 
-  ```bm
-  first([10, 20, 30])
-  ```
+- `length: Int`: Length of the vector
+- `fn_or_value: Any`: Function to apply to each index or value to repeat
 
-- **last**  
-  Retrieves the last element of a vector.  
-  **Accepted Types:** A single vector.  
-  **Example:**
+**Returns:** `Vec`
 
-  ```bm
-  last([10, 20, 30])
-  ```
+---
 
-- **len**  
-  Returns the length of a vector.  
-  **Accepted Types:** A single vector.  
-  **Example:**
+### `dot`
 
-  ```bm
-  len([10, 20, 30])
-  ```
+Dot product of two vectors
 
-- **merge**  
-  Concatenates two vectors into a single new vector.  
-  **Accepted Types:** Two vectors.  
-  **Example:**
+**Signature:**
 
-  ```bm
-  merge([1, 2], [3, 4])  # output: [1, 2, 3, 4]
-  ```
+```bmath
+|a: Vec, b: Vec| -> Number
+```
 
-- **slice**  
-  Creates a new vector containing a subset of elements from an existing vector.  
-  **Accepted Types:**
-  - A vector and an end index (for 0 to end-1 slice)
-  - A vector with start and end indices (for start to end-1 slice)
-  
-  **Example:**
+**Returns:** `Number`
 
-  ```bm
-  slice([10, 20, 30, 40, 50], 3)  # output: [10, 20, 30]
-  slice([10, 20, 30, 40, 50], 1, 4)  # output: [20, 30, 40]
-  ```
+---
 
-- **set**  
-  Sets the value at a specific index in a vector and returns the previous value.  
-  **Accepted Types:** A vector, an integer index, and a value to set.  
-  **Example:**
+### `first`
 
-  ```bm
-  set([10, 20, 30], 1, 99)  # modifies the vector to [10, 99, 30] and returns 20
-  ```
+First element of a vector
+
+**Signature:**
+
+```bmath
+|vector: Vec| -> Any
+```
+
+**Returns:** `Any`
+
+---
+
+### `last`
+
+Last element of a vector
+
+**Signature:**
+
+```bmath
+|vector: Vec| -> Any
+```
+
+**Returns:** `Any`
+
+---
+
+### `len`
+
+Length of a vector
+
+**Signature:**
+
+```bmath
+|vector: Vec| -> Int
+```
+
+**Returns:** `Int`
+
+---
+
+### `merge`
+
+Merge two vectors
+
+**Signature:**
+
+```bmath
+|a: Vec, b: Vec| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
+
+### `slice`
+
+Extract a slice from a vector
+
+**Signatures:**
+
+```bmath
+|vector: Vec, end: Int| -> Vec
+```
+
+**Parameters:**
+
+- `end: Int`: End index (when only 2 args)
+
+**Returns:** `Vec`
+
+```bmath
+|vector: Vec, start: Int, end: Int| -> Vec
+```
+
+**Parameters:**
+
+- `start: Int`: Start index
+- `end: Int`: End index
+
+**Returns:** `Vec`
+
+---
+
+### `set`
+
+Set an element in a vector
+
+**Signature:**
+
+```bmath
+|vector: Vec, index: Int, value: Any| -> Vec
+```
+
+**Returns:** `Vec`
+
+---
